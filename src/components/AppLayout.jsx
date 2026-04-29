@@ -42,13 +42,15 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f4ead2]">
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[300px_1fr]">
-        <aside className="border-r border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.22),transparent_38%),linear-gradient(180deg,#090909_0%,#111111_100%)] px-5 py-6">
+        <aside className="border-r border-[#d9b341]/20 bg-[radial-gradient(circle_at_top,rgba(217,179,65,0.18),transparent_38%),linear-gradient(180deg,#090909_0%,#111111_100%)] px-5 py-6">
           <div className="mb-8 flex items-center gap-3 border-b border-white/10 pb-5">
-            <div className="rounded-2xl border border-[#d4af37]/40 bg-[#d4af37]/10 p-2 text-[#d4af37] shadow-[0_0_24px_rgba(212,175,55,0.16)]">
-              <Crown size={22} />
-            </div>
+            <img
+              src="/logo.svg"
+              alt="Thiago Iazzetti Personal Premium"
+              className="h-14 w-14 rounded-2xl bg-white object-cover p-1 shadow-[0_0_24px_rgba(217,179,65,0.16)]"
+            />
             <div>
-              <p className="font-title text-xl text-[#f5d77a]">
+              <p className="font-title text-xl text-[#d9c179]">
                 Thiago Iazzetti
               </p>
               <p className="font-body text-xs text-white/60">
@@ -76,13 +78,13 @@ export default function AppLayout() {
               <p className="font-body text-xs uppercase tracking-[0.24em] text-white/50">
                 Tenant ativo
               </p>
-              <p className="font-title text-lg text-[#f5d77a]">{tenantId}</p>
+              <p className="font-title text-lg text-[#d9c179]">{tenantId}</p>
               <p className="font-body text-sm text-white/55">{user?.email}</p>
             </div>
             <div className="flex items-center gap-3">
               <Link
                 to={`/${tenantId}`}
-                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 font-body text-sm text-white/80 transition hover:border-[#d4af37]/50 hover:text-white"
+                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 font-body text-sm text-white/80 transition hover:border-[#d9b341]/50 hover:text-white"
               >
                 <Bell size={16} />
                 Publico
@@ -90,7 +92,7 @@ export default function AppLayout() {
               <button
                 type="button"
                 onClick={signOut}
-                className="flex items-center gap-2 rounded-2xl border border-[#d4af37]/60 bg-[#d4af37] px-3 py-2 font-body text-sm font-semibold text-black transition hover:brightness-110"
+                className="flex items-center gap-2 rounded-2xl border border-[#d9b341]/60 bg-[#d9b341] px-3 py-2 font-body text-sm font-semibold text-black transition hover:brightness-110"
               >
                 <LogOut size={16} />
                 Sair

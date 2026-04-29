@@ -151,9 +151,9 @@ export default function DashboardPage() {
               <Line
                 type="monotone"
                 dataKey="carga"
-                stroke="#D4AF37"
+                stroke="#D9B341"
                 strokeWidth={3}
-                dot={{ fill: "#D4AF37", r: 4 }}
+                dot={{ fill: "#D9B341", r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>

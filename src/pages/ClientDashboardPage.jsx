@@ -5,20 +5,20 @@ import { useTenant } from "../contexts/TenantContext.jsx";
 
 function WorkoutCard({ workout }) {
   return (
-    <article className="rounded-[1.5rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-5">
+    <article className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-white/40">
             Treino
           </p>
-          <h3 className="mt-2 font-title text-2xl text-[#f5d77a]">
+          <h3 className="mt-2 font-title text-2xl text-[#d9c179]">
             {workout.title}
           </h3>
           <p className="mt-2 text-sm text-white/62">
             {workout.objective || "Objetivo definido pelo personal."}
           </p>
         </div>
-        <Dumbbell className="text-[#d4af37]" />
+        <Dumbbell className="text-[#d9b341]" />
       </div>
 
       <div className="mt-5 space-y-3">
@@ -96,11 +96,11 @@ export default function ClientDashboardPage() {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+      <section className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
         <p className="text-xs uppercase tracking-[0.28em] text-white/40">
           Area do aluno
         </p>
-        <h1 className="mt-2 font-title text-4xl text-[#f5d77a]">
+        <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
           Seu plano, seus treinos e sua rotina
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
@@ -117,7 +117,7 @@ export default function ClientDashboardPage() {
 
       {loading ? (
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-white/65">
-          <Loader2 className="animate-spin text-[#d4af37]" size={18} />
+          <Loader2 className="animate-spin text-[#d9b341]" size={18} />
           Carregando seu perfil...
         </div>
       ) : null}
@@ -131,7 +131,7 @@ export default function ClientDashboardPage() {
                   <p className="text-xs uppercase tracking-[0.24em] text-white/40">
                     Plano contratado
                   </p>
-                  <h2 className="mt-2 font-title text-3xl text-[#f5d77a]">
+                  <h2 className="mt-2 font-title text-3xl text-[#d9c179]">
                     {activePlan?.name || "Sem plano ativo"}
                   </h2>
                   <p className="mt-3 max-w-xl text-sm leading-7 text-white/68">
@@ -139,7 +139,7 @@ export default function ClientDashboardPage() {
                       "Selecione um plano publico para iniciar."}
                   </p>
                 </div>
-                <Sparkles className="text-[#d4af37]" />
+                <Sparkles className="text-[#d9b341]" />
               </div>
             </article>
 
@@ -149,11 +149,11 @@ export default function ClientDashboardPage() {
                   <p className="text-xs uppercase tracking-[0.24em] text-white/40">
                     Agenda
                   </p>
-                  <h2 className="mt-2 font-title text-2xl text-[#f5d77a]">
+                  <h2 className="mt-2 font-title text-2xl text-[#d9c179]">
                     Proximas rotinas
                   </h2>
                 </div>
-                <CalendarDays className="text-[#d4af37]" />
+                <CalendarDays className="text-[#d9b341]" />
               </div>
 
               <div className="mt-5 space-y-3">

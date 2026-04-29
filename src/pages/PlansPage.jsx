@@ -17,11 +17,11 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
           <p className="text-xs uppercase tracking-[0.28em] text-white/40">
             Plano
           </p>
-          <h3 className="mt-2 font-title text-2xl text-[#f5d77a]">
+          <h3 className="mt-2 font-title text-2xl text-[#d9c179]">
             {plan.name}
           </h3>
         </div>
-        <div className="rounded-2xl border border-[#d4af37]/30 bg-[#d4af37]/10 p-3 text-[#d4af37]">
+        <div className="rounded-2xl border border-[#d9b341]/30 bg-[#d9b341]/10 p-3 text-[#d9b341]">
           <Crown size={18} />
         </div>
       </div>
@@ -39,11 +39,11 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
 
       <div className="mt-6 space-y-3 text-sm text-white/70">
         <div className="flex items-center gap-2">
-          <ShieldCheck size={16} className="text-[#d4af37]" />
+          <ShieldCheck size={16} className="text-[#d9b341]" />
           Contrato vinculado ao tenant
         </div>
         <div className="flex items-center gap-2">
-          <Check size={16} className="text-[#d4af37]" />
+          <Check size={16} className="text-[#d9b341]" />
           Acesso ao plano e orientacoes do personal
         </div>
       </div>
@@ -54,7 +54,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
         className={`mt-6 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
           selected
             ? "bg-white text-black"
-            : "bg-[#d4af37] text-black hover:brightness-110"
+            : "bg-[#d9b341] text-black hover:brightness-110"
         }`}
       >
         {actionLabel}
@@ -130,13 +130,13 @@ export default function PlansPage({ mode = "public" }) {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+      <section className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(217,179,65,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-white/40">
               Catálogo do tenant
             </p>
-            <h1 className="mt-2 font-title text-4xl text-[#f5d77a]">
+            <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
               Planos publicos
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
@@ -151,13 +151,13 @@ export default function PlansPage({ mode = "public" }) {
           <div className="mt-5 flex flex-wrap gap-3 text-sm text-white/70">
             <Link
               to={`/`}
-              className="rounded-full border border-white/10 px-4 py-2 transition hover:border-[#d4af37]/50 hover:text-white"
+              className="rounded-full border border-white/10 px-4 py-2 transition hover:border-[#d9b341]/50 hover:text-white"
             >
               Abrir página inicial
             </Link>
             <Link
               to={user?.role === "ALUNO" ? "/cliente" : "/login"}
-              className="rounded-full bg-[#d4af37] px-4 py-2 font-semibold text-black transition hover:brightness-110"
+              className="rounded-full bg-[#d9b341] px-4 py-2 font-semibold text-black transition hover:brightness-110"
             >
               Continuar
             </Link>
@@ -173,7 +173,7 @@ export default function PlansPage({ mode = "public" }) {
 
       {loading ? (
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-white/65">
-          <Loader2 className="animate-spin text-[#d4af37]" size={18} />
+          <Loader2 className="animate-spin text-[#d9b341]" size={18} />
           Carregando planos...
         </div>
       ) : null}

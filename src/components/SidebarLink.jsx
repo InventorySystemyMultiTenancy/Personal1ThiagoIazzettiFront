@@ -8,8 +8,8 @@ export default function SidebarLink({ to, icon: Icon, label, activeHint }) {
       className={({ isActive }) =>
         `group flex items-center gap-3 rounded-2xl border px-3 py-2.5 text-sm transition ${
           isActive
-            ? "border-[#d4af37] bg-[#d4af37] text-black shadow-[0_12px_30px_rgba(212,175,55,0.24)]"
-            : "border-white/10 text-white/72 hover:border-[#d4af37]/60 hover:bg-white/5 hover:text-white"
+            ? "border-[#d9b341] bg-[#d9b341] text-black shadow-[0_12px_30px_rgba(217,179,65,0.24)]"
+            : "border-white/10 text-white/72 hover:border-[#d9b341]/60 hover:bg-white/5 hover:text-white"
         }`
       }
     >

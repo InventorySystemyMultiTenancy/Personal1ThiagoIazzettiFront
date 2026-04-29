@@ -1,18 +1,8 @@
 import React, { Suspense, useEffect } from "react";
-import {
-  Navigate,
-  Outlet,
-  Route,
-  Routes,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import { useAuth } from "./contexts/AuthContext.jsx";
-import {
-  TenantProvider,
-  getTenantFromHost,
-} from "./contexts/TenantContext.jsx";
+import { TenantProvider } from "./contexts/TenantContext.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
@@ -77,16 +67,6 @@ function TenantHomeRedirect() {
 }
 
 export default function App() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const hostTenant = getTenantFromHost();
-
-  useEffect(() => {
-    if (hostTenant && location.pathname === "/") {
-      navigate(`/planos`, { replace: true });
-    }
-  }, [hostTenant, location.pathname, navigate]);
-
   return (
     <Suspense fallback={<RouteFallback />}>
       <TenantProvider>

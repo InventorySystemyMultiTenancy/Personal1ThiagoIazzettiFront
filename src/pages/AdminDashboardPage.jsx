@@ -18,9 +18,9 @@ function StatCard({ icon: Icon, label, value }) {
           <p className="text-xs uppercase tracking-[0.25em] text-white/40">
             {label}
           </p>
-          <p className="mt-3 font-title text-3xl text-[#f5d77a]">{value}</p>
+          <p className="mt-3 font-title text-3xl text-[#d9c179]">{value}</p>
         </div>
-        <div className="rounded-2xl border border-[#d4af37]/25 bg-[#d4af37]/10 p-3 text-[#d4af37]">
+        <div className="rounded-2xl border border-[#d9b341]/25 bg-[#d9b341]/10 p-3 text-[#d9b341]">
           <Icon size={18} />
         </div>
       </div>
@@ -114,13 +114,13 @@ export default function AdminDashboardPage() {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+      <section className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-white/40">
               Painel do personal
             </p>
-            <h1 className="mt-2 font-title text-4xl text-[#f5d77a]">
+            <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
               Visao geral
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
@@ -132,14 +132,14 @@ export default function AdminDashboardPage() {
             <button
               type="button"
               onClick={handleCreateQuickStudent}
-              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/75 transition hover:border-[#d4af37]/50 hover:text-white"
+              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/75 transition hover:border-[#d9b341]/50 hover:text-white"
             >
               Novo aluno
             </button>
             <button
               type="button"
               onClick={handleCreateQuickPlan}
-              className="rounded-full bg-[#d4af37] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110"
+              className="rounded-full bg-[#d9b341] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110"
             >
               Novo plano
             </button>
@@ -155,7 +155,7 @@ export default function AdminDashboardPage() {
 
       {loading ? (
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-white/65">
-          <Loader2 className="animate-spin text-[#d4af37]" size={18} />
+          <Loader2 className="animate-spin text-[#d9b341]" size={18} />
           Carregando dados do painel...
         </div>
       ) : null}
@@ -173,11 +173,11 @@ export default function AdminDashboardPage() {
               <p className="text-xs uppercase tracking-[0.28em] text-white/40">
                 Alunos ativos
               </p>
-              <h2 className="mt-2 font-title text-2xl text-[#f5d77a]">
+              <h2 className="mt-2 font-title text-2xl text-[#d9c179]">
                 Carteira atual
               </h2>
             </div>
-            <BarChart3 className="text-[#d4af37]" />
+            <BarChart3 className="text-[#d9b341]" />
           </div>
 
           <div className="mt-5 space-y-3">
@@ -214,11 +214,11 @@ export default function AdminDashboardPage() {
               <p className="text-xs uppercase tracking-[0.28em] text-white/40">
                 Planos de assinatura
               </p>
-              <h2 className="mt-2 font-title text-2xl text-[#f5d77a]">
+              <h2 className="mt-2 font-title text-2xl text-[#d9c179]">
                 Biblioteca real
               </h2>
             </div>
-            <Wallet className="text-[#d4af37]" />
+            <Wallet className="text-[#d9b341]" />
           </div>
 
           <div className="mt-5 space-y-3">
@@ -239,7 +239,7 @@ export default function AdminDashboardPage() {
                         {plan.description || "Plano premium"}
                       </p>
                     </div>
-                    <p className="font-title text-xl text-[#f5d77a]">
+                    <p className="font-title text-xl text-[#d9c179]">
                       {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
                     </p>
                   </div>

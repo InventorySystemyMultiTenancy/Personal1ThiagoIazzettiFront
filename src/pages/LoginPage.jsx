@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Crown, Lock, Mail } from "lucide-react";
+import { ArrowRight, Lock, Mail } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useTenant } from "../contexts/TenantContext.jsx";
 
@@ -37,15 +37,17 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#080808] px-6 py-10 text-[#f6ebcf]">
+    <main className="min-h-screen bg-[#090909] px-6 py-10 text-[#f2f2f2]">
       <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl items-center gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <section className="rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.22),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-8 shadow-[0_30px_90px_rgba(0,0,0,0.4)]">
+        <section className="rounded-[2rem] border border-[#d9b341]/20 bg-[radial-gradient(circle_at_top,rgba(217,179,65,0.18),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-8 shadow-[0_30px_90px_rgba(0,0,0,0.4)]">
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl border border-[#d4af37]/40 bg-[#d4af37]/10 p-2 text-[#d4af37]">
-              <Crown size={20} />
-            </div>
+            <img
+              src="/logo.svg"
+              alt="Thiago Iazzetti Personal Premium"
+              className="h-12 w-12 rounded-2xl bg-white object-cover p-1"
+            />
             <div>
-              <p className="font-title text-xl text-[#f5d77a]">
+              <p className="font-title text-xl text-[#d9c179]">
                 Thiago Iazzetti
               </p>
               <p className="text-xs uppercase tracking-[0.22em] text-white/45">
@@ -54,7 +56,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <h1 className="mt-8 font-title text-5xl leading-tight text-[#fff1cc]">
+          <h1 className="mt-8 font-title text-5xl leading-tight text-[#f2e3b3]">
             Entrar na plataforma real.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-8 text-white/70">
@@ -64,13 +66,13 @@ export default function LoginPage() {
 
           <div className="mt-8 space-y-4 text-sm text-white/72">
             <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-              <p className="font-semibold text-[#f5d77a]">Personal</p>
+              <p className="font-semibold text-[#d9c179]">Personal</p>
               <p className="mt-1">
                 Acesso ao painel, alunos, planos e treinos.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-              <p className="font-semibold text-[#f5d77a]">Aluno</p>
+              <p className="font-semibold text-[#d9c179]">Aluno</p>
               <p className="mt-1">
                 Acesso ao perfil, plano contratado e treinos.
               </p>
@@ -78,17 +80,17 @@ export default function LoginPage() {
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-white/10 bg-black/45 p-8 shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur">
+        <section className="rounded-[2rem] border border-[#d9b341]/20 bg-black/45 p-8 shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur">
           <p className="text-xs uppercase tracking-[0.3em] text-white/45">
             Acesso
           </p>
-          <h2 className="mt-3 font-title text-3xl text-[#f5d77a]">Login</h2>
+          <h2 className="mt-3 font-title text-3xl text-[#d9c179]">Login</h2>
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <label className="block text-sm text-white/70">
               Email
-              <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-[#d4af37]/60">
-                <Mail size={18} className="text-[#d4af37]" />
+              <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-[#d9b341]/60">
+                <Mail size={18} className="text-[#d9b341]" />
                 <input
                   name="email"
                   type="email"
@@ -103,8 +105,8 @@ export default function LoginPage() {
 
             <label className="block text-sm text-white/70">
               Senha
-              <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-[#d4af37]/60">
-                <Lock size={18} className="text-[#d4af37]" />
+              <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 focus-within:border-[#d9b341]/60">
+                <Lock size={18} className="text-[#d9b341]" />
                 <input
                   name="password"
                   type="password"
@@ -126,7 +128,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d4af37] px-4 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d9b341] px-4 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? "Entrando..." : "Entrar agora"}
               <ArrowRight size={16} />
@@ -136,7 +138,7 @@ export default function LoginPage() {
           <div className="mt-6 flex flex-col gap-3 text-sm text-white/65 sm:flex-row sm:items-center sm:justify-between">
             <Link
               to="/cadastro"
-              className="text-[#f5d77a] transition hover:text-white"
+              className="text-[#d9c179] transition hover:text-white"
             >
               Criar conta de aluno
             </Link>

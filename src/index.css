@@ -3,8 +3,13 @@
 
 :root {
   font-family: "Manrope", "Inter", system-ui, sans-serif;
-  color: #f6ebcf;
-  background-color: #080808;
+  color: #f2f2f2;
+  background-color: #090909;
+  --brand-primary: #d9b341;
+  --brand-secondary: #d9c179;
+  --brand-soft: #f2e3b3;
+  --brand-highlight: #d9a74a;
+  --brand-neutral: #f2f2f2;
   color-scheme: dark;
 }
 
@@ -17,9 +22,14 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(212, 175, 55, 0.12), transparent 36%),
-    linear-gradient(180deg, #070707 0%, #0d0d0d 100%);
-  color: #f6ebcf;
+    radial-gradient(circle at top, rgba(217, 179, 65, 0.16), transparent 34%),
+    radial-gradient(
+      circle at right bottom,
+      rgba(217, 167, 74, 0.12),
+      transparent 22%
+    ),
+    linear-gradient(180deg, #090909 0%, #111111 100%);
+  color: #f2f2f2;
 }
 
 #root {
@@ -32,8 +42,8 @@ a {
 }
 
 ::selection {
-  background: rgba(212, 175, 55, 0.28);
-  color: #fff9e6;
+  background: rgba(217, 179, 65, 0.32);
+  color: #ffffff;
 }
 
 @layer utilities {
