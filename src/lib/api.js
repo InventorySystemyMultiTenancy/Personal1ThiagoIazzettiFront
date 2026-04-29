@@ -147,51 +147,57 @@ export async function getPublicPlans(personalId) {
   return request("/aluno-plans/public", { tenantId: personalId, auth: false });
 }
 
-export async function listStudents() {
-  return request("/alunos");
+export async function listStudents(tenantId) {
+  return request("/alunos", { tenantId });
 }
 
-export async function getMyStudentProfile() {
-  return request("/alunos/me");
+export async function getMyStudentProfile(tenantId) {
+  return request("/alunos/me", { tenantId });
 }
 
-export async function createStudent(payload) {
-  return request("/alunos", { method: "POST", body: payload });
+export async function createStudent(payload, tenantId) {
+  return request("/alunos", { method: "POST", body: payload, tenantId });
 }
 
-export async function listStudentPlans() {
-  return request("/aluno-plans");
+export async function listStudentPlans(tenantId) {
+  return request("/aluno-plans", { tenantId });
 }
 
-export async function createStudentPlan(payload) {
-  return request("/aluno-plans", { method: "POST", body: payload });
+export async function createStudentPlan(payload, tenantId) {
+  return request("/aluno-plans", { method: "POST", body: payload, tenantId });
 }
 
-export async function updateStudentPlan(planId, payload) {
-  return request(`/aluno-plans/${planId}`, { method: "PATCH", body: payload });
+export async function updateStudentPlan(planId, payload, tenantId) {
+  return request(`/aluno-plans/${planId}`, {
+    method: "PATCH",
+    body: payload,
+    tenantId,
+  });
 }
 
-export async function assignPlanToStudent(studentId, alunoPlanId) {
+export async function assignPlanToStudent(studentId, alunoPlanId, tenantId) {
   return request(`/aluno-plans/assign/${studentId}`, {
     method: "PATCH",
     body: { alunoPlanId },
+    tenantId,
   });
 }
 
-export async function assignPlanToMyAccount(alunoPlanId) {
+export async function assignPlanToMyAccount(alunoPlanId, tenantId) {
   return request("/aluno-plans/me/assign", {
     method: "POST",
     body: { alunoPlanId },
+    tenantId,
   });
 }
 
-export async function listWorkoutPlans(studentId) {
+export async function listWorkoutPlans(studentId, tenantId) {
   const query = studentId ? `?alunoId=${encodeURIComponent(studentId)}` : "";
-  return request(`/workout-plans${query}`);
+  return request(`/workout-plans${query}`, { tenantId });
 }
 
-export async function createWorkoutPlan(payload) {
-  return request("/workout-plans", { method: "POST", body: payload });
+export async function createWorkoutPlan(payload, tenantId) {
+  return request("/workout-plans", { method: "POST", body: payload, tenantId });
 }
 
 export async function updateWorkoutPlan(planId, payload) {

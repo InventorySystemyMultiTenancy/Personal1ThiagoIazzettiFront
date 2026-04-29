@@ -68,7 +68,7 @@ function SummaryCard({ label, value }) {
 }
 
 export default function DashboardPage() {
-  const { personalId } = useTenant();
+  const { tenantId } = useTenant();
   const [summary, setSummary] = useState(mockSummary);
   const [progress, setProgress] = useState(mockProgress);
   const [students, setStudents] = useState(mockStudents);
@@ -79,9 +79,9 @@ export default function DashboardPage() {
     async function loadData() {
       try {
         const [summaryRes, progressRes, studentsRes] = await Promise.all([
-          tenantFetch("/personal/dashboard/summary", personalId),
-          tenantFetch("/personal/dashboard/evolucao-cargas", personalId),
-          tenantFetch("/personal/alunos", personalId),
+          tenantFetch("/personal/dashboard/summary", tenantId),
+          tenantFetch("/personal/dashboard/evolucao-cargas", tenantId),
+          tenantFetch("/personal/alunos", tenantId),
         ]);
 
         if (!ignore) {
@@ -107,14 +107,14 @@ export default function DashboardPage() {
       }
     }
 
-    if (personalId) {
+    if (tenantId) {
       loadData();
     }
 
     return () => {
       ignore = true;
     };
-  }, [personalId]);
+  }, [tenantId]);
 
   const formattedRevenue = useMemo(
     () =>

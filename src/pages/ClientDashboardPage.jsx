@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Dumbbell, Loader2, Sparkles } from "lucide-react";
 import { formatDate, getMyStudentProfile } from "../lib/api.js";
+import { useTenant } from "../contexts/TenantContext.jsx";
 
 function WorkoutCard({ workout }) {
   return (
@@ -49,13 +50,15 @@ export default function ClientDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
+  const { tenantId } = useTenant();
+
   useEffect(() => {
     let cancelled = false;
 
     const loadProfile = async () => {
       setLoading(true);
       try {
-        const result = await getMyStudentProfile();
+        const result = await getMyStudentProfile(tenantId);
         if (!cancelled) {
           setProfile(result);
         }
@@ -70,12 +73,14 @@ export default function ClientDashboardPage() {
       }
     };
 
-    loadProfile();
+    if (tenantId) {
+      loadProfile();
+    }
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tenantId]);
 
   const workoutPlans = profile?.workoutPlans || [];
   const activePlan = profile?.alunoPlan || null;

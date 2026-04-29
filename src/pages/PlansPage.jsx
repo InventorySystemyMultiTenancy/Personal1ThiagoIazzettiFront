@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Check, Crown, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import {
   assignPlanToMyAccount,
@@ -7,6 +7,7 @@ import {
   getPublicPlans,
 } from "../lib/api.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { useTenant } from "../contexts/TenantContext.jsx";
 
 function PlanCard({ plan, onSelect, selected, actionLabel }) {
   return (
@@ -63,7 +64,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
 }
 
 export default function PlansPage({ mode = "public" }) {
-  const { tenantId } = useParams();
+  const { tenantId } = useTenant();
   const { user, isClient } = useAuth();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -120,7 +121,7 @@ export default function PlansPage({ mode = "public" }) {
     }
 
     try {
-      await assignPlanToMyAccount(plan.id);
+      await assignPlanToMyAccount(plan.id, tenantId);
       setMessage(`Plano ${plan.name} contratado com sucesso.`);
     } catch (error) {
       setMessage(error?.message || "Nao foi possivel contratar o plano");
@@ -143,26 +144,19 @@ export default function PlansPage({ mode = "public" }) {
               opcao ideal quando estiver logado como aluno.
             </p>
           </div>
-          <div className="rounded-2xl border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-3 text-sm text-[#f5d77a]">
-            <Sparkles size={16} className="mr-2 inline" />
-            Tenant: {tenantId || "indisponivel"}
-          </div>
+          {/* Tenant detected via subdomínio — não exibir campo editável */}
         </div>
 
         {tenantId ? (
           <div className="mt-5 flex flex-wrap gap-3 text-sm text-white/70">
             <Link
-              to={`/${tenantId}`}
+              to={`/`}
               className="rounded-full border border-white/10 px-4 py-2 transition hover:border-[#d4af37]/50 hover:text-white"
             >
-              Abrir pagina do tenant
+              Abrir página inicial
             </Link>
             <Link
-              to={
-                user?.role === "ALUNO"
-                  ? `/${tenantId}/cliente`
-                  : `/${tenantId}/login`
-              }
+              to={user?.role === "ALUNO" ? "/cliente" : "/login"}
               className="rounded-full bg-[#d4af37] px-4 py-2 font-semibold text-black transition hover:brightness-110"
             >
               Continuar

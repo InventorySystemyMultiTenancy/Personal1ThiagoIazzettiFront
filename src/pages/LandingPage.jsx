@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Crown, ShieldCheck, Sparkles } from "lucide-react";
+import { getTenantFromHost } from "../contexts/TenantContext.jsx";
 
 const highlights = [
   "Login para personal e clientes",
@@ -9,12 +10,13 @@ const highlights = [
 ];
 
 export default function LandingPage() {
-  const [tenantId, setTenantId] = useState("");
+  const tenantFromHost = getTenantFromHost();
   const navigate = useNavigate();
 
   const openTenant = () => {
-    if (!tenantId.trim()) return;
-    navigate(`/${tenantId.trim()}/planos`);
+    const t = tenantFromHost || "";
+    if (!t) return;
+    navigate(`/${t}/planos`);
   };
 
   return (
@@ -103,35 +105,55 @@ export default function LandingPage() {
               Ver planos do seu personal
             </h2>
             <p className="mt-3 text-sm leading-7 text-white/68">
-              Digite o identificador do tenant para visualizar planos públicos,
-              se cadastrar e seguir para sua área de aluno.
+              Use o subdomínio do seu personal (ex.:
+              thiagoiazzetti.selfmachine.com.br) para abrir diretamente os
+              planos públicos.
             </p>
 
-            <label className="mt-6 block text-sm text-white/70">
-              Tenant ID
-              <input
-                value={tenantId}
-                onChange={(event) => setTenantId(event.target.value)}
-                placeholder="UUID do personal"
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-white outline-none transition placeholder:text-white/30 focus:border-[#d4af37]/60"
-              />
-            </label>
-
-            <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={openTenant}
-                className="flex-1 rounded-2xl bg-[#d4af37] px-4 py-3 text-sm font-semibold text-black transition hover:brightness-110"
-              >
-                Ver planos
-              </button>
-              <Link
-                to="/cadastro"
-                className="flex-1 rounded-2xl border border-white/10 px-4 py-3 text-center text-sm text-white/80 transition hover:border-[#d4af37]/55 hover:text-white"
-              >
-                Cadastrar aluno
-              </Link>
-            </div>
+            {tenantFromHost ? (
+              <div className="mt-6 space-y-3">
+                <p className="text-sm text-white/70">
+                  Tenant detectado:{" "}
+                  <strong className="text-[#f5d77a]">{tenantFromHost}</strong>
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={openTenant}
+                    className="flex-1 rounded-2xl bg-[#d4af37] px-4 py-3 text-sm font-semibold text-black transition hover:brightness-110"
+                  >
+                    Ver planos do tenant
+                  </button>
+                  <Link
+                    to="/cadastro"
+                    className="flex-1 rounded-2xl border border-white/10 px-4 py-3 text-center text-sm text-white/80 transition hover:border-[#d4af37]/55 hover:text-white"
+                  >
+                    Cadastrar aluno
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-6 space-y-3">
+                <p className="text-sm text-white/70">
+                  Nenhum subdomínio detectado. Peça ao seu personal o link do
+                  tenant ou use a página de cadastro.
+                </p>
+                <div className="mt-4 flex gap-3">
+                  <Link
+                    to="/cadastro"
+                    className="flex-1 rounded-2xl bg-[#d4af37] px-4 py-3 text-sm font-semibold text-black transition hover:brightness-110"
+                  >
+                    Cadastrar aluno
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="flex-1 rounded-2xl border border-white/10 px-4 py-3 text-center text-sm text-white/80 transition hover:border-[#d4af37]/55 hover:text-white"
+                  >
+                    Entrar
+                  </Link>
+                </div>
+              </div>
+            )}
           </aside>
         </section>
       </div>

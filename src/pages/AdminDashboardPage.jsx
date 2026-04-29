@@ -8,6 +8,7 @@ import {
   listStudentPlans,
   listStudents,
 } from "../lib/api.js";
+import { useTenant } from "../contexts/TenantContext.jsx";
 
 function StatCard({ icon: Icon, label, value }) {
   return (
@@ -28,6 +29,7 @@ function StatCard({ icon: Icon, label, value }) {
 }
 
 export default function AdminDashboardPage() {
+  const { tenantId } = useTenant();
   const [students, setStudents] = useState([]);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,8 +42,8 @@ export default function AdminDashboardPage() {
       setLoading(true);
       try {
         const [studentsResult, plansResult] = await Promise.all([
-          listStudents(),
-          listStudentPlans(),
+          listStudents(tenantId),
+          listStudentPlans(tenantId),
         ]);
 
         if (!cancelled) {
@@ -59,12 +61,14 @@ export default function AdminDashboardPage() {
       }
     };
 
-    load();
+    if (tenantId) {
+      load();
+    }
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tenantId]);
 
   const stats = useMemo(() => {
     const activePlans = plans.filter((plan) => plan.isActive !== false).length;
@@ -83,7 +87,7 @@ export default function AdminDashboardPage() {
     };
 
     try {
-      const created = await createStudent(sample);
+      const created = await createStudent(sample, tenantId);
       setStudents((current) => [created, ...current]);
       setMessage(`Aluno criado: ${created.fullName}`);
     } catch (error) {
@@ -93,11 +97,14 @@ export default function AdminDashboardPage() {
 
   const handleCreateQuickPlan = async () => {
     try {
-      const created = await createStudentPlan({
-        name: `Plano ${plans.length + 1}`,
-        description: "Plano premium criado pelo painel.",
-        monthlyPriceCents: 14900,
-      });
+      const created = await createStudentPlan(
+        {
+          name: `Plano ${plans.length + 1}`,
+          description: "Plano premium criado pelo painel.",
+          monthlyPriceCents: 14900,
+        },
+        tenantId,
+      );
       setPlans((current) => [created, ...current]);
       setMessage(`Plano criado: ${created.name}`);
     } catch (error) {

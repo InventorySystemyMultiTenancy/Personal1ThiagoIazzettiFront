@@ -1,8 +1,18 @@
-import React, { Suspense } from "react";
-import { Navigate, Outlet, Route, Routes, useParams } from "react-router-dom";
+import React, { Suspense, useEffect } from "react";
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import { useAuth } from "./contexts/AuthContext.jsx";
-import { TenantProvider, useTenant } from "./contexts/TenantContext.jsx";
+import {
+  TenantProvider,
+  getTenantFromHost,
+} from "./contexts/TenantContext.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
@@ -18,26 +28,15 @@ function RouteFallback() {
   );
 }
 
-function TenantScope() {
-  const { tenantId } = useParams();
-
-  return (
-    <TenantProvider initialTenantId={tenantId}>
-      <Outlet />
-    </TenantProvider>
-  );
-}
-
 function RequireAuth() {
   const { user, loading } = useAuth();
-  const { tenantId } = useTenant();
 
   if (loading) {
     return <RouteFallback />;
   }
 
   if (!user) {
-    return <Navigate to={tenantId ? `/${tenantId}/login` : "/login"} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
@@ -53,7 +52,7 @@ function RequireRole({ role }) {
   if (user.role !== role) {
     return (
       <Navigate
-        to={`/${user.personalId}/${user.role === "PERSONAL" ? "admin" : "cliente"}`}
+        to={`/${user.role === "PERSONAL" ? "admin" : "cliente"}`}
         replace
       />
     );
@@ -66,65 +65,72 @@ function TenantHomeRedirect() {
   const { user } = useAuth();
 
   if (!user) {
-    return <Navigate to="planos" replace />;
+    return <Navigate to="/planos" replace />;
   }
 
   return (
     <Navigate
-      to={`/${user.personalId}/${user.role === "PERSONAL" ? "admin" : "cliente"}`}
+      to={`/${user.role === "PERSONAL" ? "admin" : "cliente"}`}
       replace
     />
   );
 }
 
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const hostTenant = getTenantFromHost();
+
+  useEffect(() => {
+    if (hostTenant && location.pathname === "/") {
+      navigate(`/planos`, { replace: true });
+    }
+  }, [hostTenant, location.pathname, navigate]);
+
   return (
     <Suspense fallback={<RouteFallback />}>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/cadastro" element={<RegisterPage />} />
+      <TenantProvider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/cadastro" element={<RegisterPage />} />
 
-        <Route path="/:tenantId" element={<TenantScope />}>
-          <Route index element={<TenantHomeRedirect />} />
-          <Route path="planos" element={<PlansPage />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="cadastro" element={<RegisterPage />} />
+          <Route path="/planos" element={<PlansPage />} />
 
           <Route element={<RequireAuth />}>
             <Route element={<AppLayout />}>
               <Route element={<RequireRole role="PERSONAL" />}>
-                <Route path="admin" element={<AdminDashboardPage />} />
-                <Route path="admin/alunos" element={<AdminDashboardPage />} />
+                <Route path="/admin" element={<AdminDashboardPage />} />
+                <Route path="/admin/alunos" element={<AdminDashboardPage />} />
                 <Route
-                  path="admin/planos"
+                  path="/admin/planos"
                   element={<PlansPage mode="admin" />}
                 />
-                <Route path="admin/treinos" element={<AdminDashboardPage />} />
-                <Route path="admin/agenda" element={<AdminDashboardPage />} />
+                <Route path="/admin/treinos" element={<AdminDashboardPage />} />
+                <Route path="/admin/agenda" element={<AdminDashboardPage />} />
               </Route>
 
               <Route element={<RequireRole role="ALUNO" />}>
-                <Route path="cliente" element={<ClientDashboardPage />} />
+                <Route path="/cliente" element={<ClientDashboardPage />} />
                 <Route
-                  path="cliente/planos"
+                  path="/cliente/planos"
                   element={<PlansPage mode="client" />}
                 />
                 <Route
-                  path="cliente/treinos"
+                  path="/cliente/treinos"
                   element={<ClientDashboardPage />}
                 />
                 <Route
-                  path="cliente/agenda"
+                  path="/cliente/agenda"
                   element={<ClientDashboardPage />}
                 />
               </Route>
             </Route>
           </Route>
-        </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </TenantProvider>
     </Suspense>
   );
 }

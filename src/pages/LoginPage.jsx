@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Crown, Lock, Mail } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { useTenant } from "../contexts/TenantContext.jsx";
 
 export default function LoginPage() {
-  const { tenantId } = useParams();
+  const { tenantId } = useTenant();
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
@@ -25,12 +26,9 @@ export default function LoginPage() {
 
     try {
       const session = await signIn(form);
-      const targetTenant = session.user.personalId || tenantId;
       const targetRoute =
-        session.user.role === "PERSONAL" ? "admin" : "cliente";
-      navigate(targetTenant ? `/${targetTenant}/${targetRoute}` : "/", {
-        replace: true,
-      });
+        session.user.role === "PERSONAL" ? "/admin" : "/cliente";
+      navigate(targetRoute, { replace: true });
     } catch (loginError) {
       setError(loginError?.message || "Nao foi possivel entrar");
     } finally {
@@ -147,11 +145,11 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {tenantId ? (
-            <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/60">
-              Tenant atual: {tenantId}
-            </p>
-          ) : null}
+          {tenantId
+            ? {
+                /* Tenant shown via header in AppLayout; no tenant input here anymore */
+              }
+            : null}
         </section>
       </div>
     </main>

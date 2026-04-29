@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Crown,
@@ -9,9 +9,10 @@ import {
   User,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { useTenant } from "../contexts/TenantContext.jsx";
 
 export default function RegisterPage() {
-  const { tenantId } = useParams();
+  const { tenantId } = useTenant();
   const navigate = useNavigate();
   const { signUp } = useAuth();
   const [form, setForm] = useState({
@@ -46,7 +47,9 @@ export default function RegisterPage() {
         ...form,
         personalId: resolvedTenant,
       });
-      navigate(`/${session.user.personalId}/cliente`, { replace: true });
+      navigate(session.user.role === "PERSONAL" ? "/admin" : "/cliente", {
+        replace: true,
+      });
     } catch (registerError) {
       setError(registerError?.message || "Nao foi possivel cadastrar");
     } finally {
@@ -162,17 +165,25 @@ export default function RegisterPage() {
               </div>
             </label>
 
-            <label className="block text-sm text-white/70">
-              Tenant ID do personal
-              <input
-                name="personalId"
-                value={form.personalId}
-                onChange={handleChange}
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-[#d4af37]/60"
-                placeholder="UUID do personal"
-                required
-              />
-            </label>
+            {/* personalId is auto-detected from subdomain when available */}
+            {!tenantId ? (
+              <label className="block text-sm text-white/70">
+                Tenant ID do personal
+                <input
+                  name="personalId"
+                  value={form.personalId}
+                  onChange={handleChange}
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-[#d4af37]/60"
+                  placeholder="UUID do personal"
+                  required
+                />
+              </label>
+            ) : (
+              <p className="mt-3 text-sm text-white/70">
+                Cadastro vinculado ao tenant detectado:{" "}
+                <strong className="text-[#f5d77a]">{tenantId}</strong>
+              </p>
+            )}
 
             {error ? (
               <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
