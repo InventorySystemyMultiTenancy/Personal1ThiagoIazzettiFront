@@ -7,35 +7,52 @@ import {
   Settings,
   Crown,
   Bell,
+  LogOut,
+  Sparkles,
+  CalendarDays,
 } from "lucide-react";
-import { Outlet, useParams } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import SidebarLink from "./SidebarLink.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
+import { useTenant } from "../contexts/TenantContext.jsx";
 
-const navItems = [
-  { label: "Dashboard", path: "dashboard", icon: BarChart3 },
-  { label: "Meus Alunos", path: "alunos", icon: Users },
-  { label: "Biblioteca de Treinos", path: "treinos", icon: Dumbbell },
-  { label: "Financeiro", path: "financeiro", icon: Wallet },
-  { label: "Configuracoes", path: "configuracoes", icon: Settings },
+const adminNavItems = [
+  { label: "Visao Geral", path: "admin", icon: BarChart3 },
+  { label: "Alunos", path: "admin/alunos", icon: Users },
+  { label: "Planos", path: "admin/planos", icon: Wallet },
+  { label: "Treinos", path: "admin/treinos", icon: Dumbbell },
+  { label: "Agenda", path: "admin/agenda", icon: CalendarDays },
+];
+
+const clientNavItems = [
+  { label: "Meu Painel", path: "cliente", icon: Sparkles },
+  { label: "Planos", path: "cliente/planos", icon: Wallet },
+  { label: "Treinos", path: "cliente/treinos", icon: Dumbbell },
+  { label: "Agenda", path: "cliente/agenda", icon: CalendarDays },
 ];
 
 export default function AppLayout() {
-  const { systemPersonalId } = useParams();
+  const { tenantId } = useTenant();
+  const { user, isPersonal, signOut } = useAuth();
+  const location = useLocation();
+
+  const navItems = isPersonal ? adminNavItems : clientNavItems;
+  const roleLabel = isPersonal ? "Personal Admin" : "Aluno";
 
   return (
-    <div className="min-h-screen bg-premium-pearl text-premium-anthracite">
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[280px_1fr]">
-        <aside className="border-r border-white/10 bg-premium-ink px-5 py-6">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#f4ead2]">
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[300px_1fr]">
+        <aside className="border-r border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.22),transparent_38%),linear-gradient(180deg,#090909_0%,#111111_100%)] px-5 py-6">
           <div className="mb-8 flex items-center gap-3 border-b border-white/10 pb-5">
-            <div className="rounded-premium border border-premium-gold/70 bg-premium-gold/10 p-2 text-premium-gold">
+            <div className="rounded-2xl border border-[#d4af37]/40 bg-[#d4af37]/10 p-2 text-[#d4af37] shadow-[0_0_24px_rgba(212,175,55,0.16)]">
               <Crown size={22} />
             </div>
             <div>
-              <p className="font-title text-xl text-premium-gold">
+              <p className="font-title text-xl text-[#f5d77a]">
                 Thiago Iazzetti
               </p>
               <p className="font-body text-xs text-white/60">
-                Personal SaaS Premium
+                {roleLabel} • {tenantId || "tenant"}
               </p>
             </div>
           </div>
@@ -44,31 +61,41 @@ export default function AppLayout() {
             {navItems.map((item) => (
               <SidebarLink
                 key={item.path}
-                to={`/${systemPersonalId}/${item.path}`}
+                to={`/${tenantId}/${item.path}`}
                 label={item.label}
                 icon={item.icon}
+                activeHint={location.pathname.includes(item.path)}
               />
             ))}
           </nav>
         </aside>
 
         <section className="flex min-h-screen flex-col">
-          <header className="flex items-center justify-between border-b border-black/5 bg-white px-5 py-4 shadow-soft">
+          <header className="flex flex-col gap-4 border-b border-white/10 bg-black/30 px-5 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="font-body text-xs uppercase tracking-[0.14em] text-premium-anthracite/60">
-                Tenant Ativo
+              <p className="font-body text-xs uppercase tracking-[0.24em] text-white/50">
+                Tenant ativo
               </p>
-              <p className="font-title text-lg text-premium-gold">
-                {systemPersonalId}
-              </p>
+              <p className="font-title text-lg text-[#f5d77a]">{tenantId}</p>
+              <p className="font-body text-sm text-white/55">{user?.email}</p>
             </div>
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-premium border border-premium-gold px-3 py-2 font-body text-sm font-semibold text-premium-gold hover:bg-premium-gold hover:text-premium-ink"
-            >
-              <Bell size={16} />
-              Avisos
-            </button>
+            <div className="flex items-center gap-3">
+              <Link
+                to={`/${tenantId}`}
+                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 font-body text-sm text-white/80 transition hover:border-[#d4af37]/50 hover:text-white"
+              >
+                <Bell size={16} />
+                Publico
+              </Link>
+              <button
+                type="button"
+                onClick={signOut}
+                className="flex items-center gap-2 rounded-2xl border border-[#d4af37]/60 bg-[#d4af37] px-3 py-2 font-body text-sm font-semibold text-black transition hover:brightness-110"
+              >
+                <LogOut size={16} />
+                Sair
+              </button>
+            </div>
           </header>
 
           <main className="flex-1 p-5 lg:p-7">

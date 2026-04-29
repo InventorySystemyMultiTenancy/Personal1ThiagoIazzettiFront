@@ -1,32 +1,108 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:3001"
+).replace(/\/$/, "");
 
-export async function tenantFetch(path, personalId, options = {}) {
-  const method = (options.method || "GET").toUpperCase();
-  const headers = {
-    "Content-Type": "application/json",
-    "x-personal-id": personalId,
-    ...(options.headers || {}),
-  };
+export const SESSION_TOKEN_KEY = "thiago_session_token";
+export const SESSION_USER_KEY = "thiago_session_user";
 
-  let body = options.body;
+export class ApiError extends Error {
+  constructor(message, status, code) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
 
-  if (body && typeof body === "object" && method !== "GET") {
-    body = JSON.stringify({
-      ...body,
-      personal_id: personalId,
-    });
+function buildUrl(path) {
+  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function readStoredUser() {
+  try {
+    const raw = localStorage.getItem(SESSION_USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getStoredSession() {
+  const token = localStorage.getItem(SESSION_TOKEN_KEY);
+  const user = readStoredUser();
+
+  if (!token || !user) {
+    return null;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
+  return { token, user };
+}
+
+export function setStoredSession(session) {
+  localStorage.setItem(SESSION_TOKEN_KEY, session.token);
+  localStorage.setItem(SESSION_USER_KEY, JSON.stringify(session.user));
+}
+
+export function clearStoredSession() {
+  localStorage.removeItem(SESSION_TOKEN_KEY);
+  localStorage.removeItem(SESSION_USER_KEY);
+}
+
+export function formatCurrency(value) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(value || 0));
+}
+
+export function formatDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "medium",
+  }).format(date);
+}
+
+async function request(path, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+  const headers = new Headers(options.headers || {});
+
+  if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const storedSession = getStoredSession();
+  if (storedSession?.token && options.auth !== false) {
+    headers.set("Authorization", `Bearer ${storedSession.token}`);
+  }
+
+  if (options.tenantId) {
+    headers.set("x-personal-id", options.tenantId);
+  }
+
+  let body = options.body;
+  if (
+    body &&
+    typeof body === "object" &&
+    !(body instanceof FormData) &&
+    method !== "GET"
+  ) {
+    body = JSON.stringify(body);
+  }
+
+  const response = await fetch(buildUrl(path), {
+    method,
     headers,
     body,
   });
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(
+    throw new ApiError(
       payload.error || payload.message || "Erro ao consultar API",
+      response.status,
+      payload.code,
     );
   }
 
@@ -35,4 +111,96 @@ export async function tenantFetch(path, personalId, options = {}) {
   }
 
   return response.json();
+}
+
+export async function login(payload) {
+  const response = await request("/auth/login", {
+    method: "POST",
+    body: payload,
+    auth: false,
+  });
+
+  return {
+    token: response.accessToken,
+    user: response.user,
+  };
+}
+
+export async function registerClient(payload) {
+  const response = await request("/auth/register", {
+    method: "POST",
+    body: payload,
+    auth: false,
+  });
+
+  return {
+    token: response.accessToken,
+    user: response.user,
+  };
+}
+
+export async function me() {
+  return request("/auth/me");
+}
+
+export async function getPublicPlans(personalId) {
+  return request("/aluno-plans/public", { tenantId: personalId, auth: false });
+}
+
+export async function listStudents() {
+  return request("/alunos");
+}
+
+export async function getMyStudentProfile() {
+  return request("/alunos/me");
+}
+
+export async function createStudent(payload) {
+  return request("/alunos", { method: "POST", body: payload });
+}
+
+export async function listStudentPlans() {
+  return request("/aluno-plans");
+}
+
+export async function createStudentPlan(payload) {
+  return request("/aluno-plans", { method: "POST", body: payload });
+}
+
+export async function updateStudentPlan(planId, payload) {
+  return request(`/aluno-plans/${planId}`, { method: "PATCH", body: payload });
+}
+
+export async function assignPlanToStudent(studentId, alunoPlanId) {
+  return request(`/aluno-plans/assign/${studentId}`, {
+    method: "PATCH",
+    body: { alunoPlanId },
+  });
+}
+
+export async function assignPlanToMyAccount(alunoPlanId) {
+  return request("/aluno-plans/me/assign", {
+    method: "POST",
+    body: { alunoPlanId },
+  });
+}
+
+export async function listWorkoutPlans(studentId) {
+  const query = studentId ? `?alunoId=${encodeURIComponent(studentId)}` : "";
+  return request(`/workout-plans${query}`);
+}
+
+export async function createWorkoutPlan(payload) {
+  return request("/workout-plans", { method: "POST", body: payload });
+}
+
+export async function updateWorkoutPlan(planId, payload) {
+  return request(`/workout-plans/${planId}`, {
+    method: "PATCH",
+    body: payload,
+  });
+}
+
+export async function tenantFetch(path, personalId, options = {}) {
+  return request(path, { ...options, tenantId: personalId });
 }

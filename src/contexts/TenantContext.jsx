@@ -8,19 +8,19 @@ import React, {
 
 const TenantContext = createContext(null);
 
-export function TenantProvider({ initialPersonalId, children }) {
-  const [personalId, setPersonalId] = useState(initialPersonalId || "");
+export function TenantProvider({ initialTenantId, children }) {
+  const [tenantId, setTenantId] = useState(initialTenantId || "");
 
   useEffect(() => {
-    setPersonalId(initialPersonalId || "");
-  }, [initialPersonalId]);
+    setTenantId(initialTenantId || "");
+  }, [initialTenantId]);
 
   const value = useMemo(
     () => ({
-      personalId,
-      setPersonalId,
+      tenantId,
+      setTenantId,
     }),
-    [personalId],
+    [tenantId],
   );
 
   return (
