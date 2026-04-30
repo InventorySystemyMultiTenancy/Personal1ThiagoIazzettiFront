@@ -63,7 +63,7 @@ export default function AppLayout() {
             {navItems.map((item) => (
               <SidebarLink
                 key={item.path}
-                to={`/${tenantId}/${item.path}`}
+                to={`/${item.path}`}
                 label={item.label}
                 icon={item.icon}
                 activeHint={location.pathname.includes(item.path)}
@@ -83,7 +83,7 @@ export default function AppLayout() {
             </div>
             <div className="flex items-center gap-3">
               <Link
-                to={`/${tenantId}`}
+                to="/"
                 className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 font-body text-sm text-white/80 transition hover:border-[#d9b341]/50 hover:text-white"
               >
                 <Bell size={16} />

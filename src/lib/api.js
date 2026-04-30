@@ -163,6 +163,14 @@ export async function createStudent(payload, tenantId) {
   return request("/alunos", { method: "POST", body: payload, tenantId });
 }
 
+export async function updateStudent(studentId, payload, tenantId) {
+  return request(`/alunos/${studentId}`, {
+    method: "PATCH",
+    body: payload,
+    tenantId,
+  });
+}
+
 export async function listStudentPlans(tenantId) {
   const response = await request("/aluno-plans", { tenantId });
   return Array.isArray(response?.plans) ? response.plans : [];

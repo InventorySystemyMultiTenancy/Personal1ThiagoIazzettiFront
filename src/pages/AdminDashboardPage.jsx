@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   BarChart3,
   Dumbbell,
@@ -21,6 +22,7 @@ import {
   formatDate,
   listStudentPlans,
   listStudents,
+  updateStudent,
 } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import WorkoutBuilderPage from "./WorkoutBuilderPage.jsx";
@@ -61,19 +63,85 @@ function TabButton({ active, icon: Icon, label, onClick }) {
   );
 }
 
+function toDateInputValue(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+function getDueStatus(planDueDate) {
+  if (!planDueDate) {
+    return {
+      key: "no-date",
+      label: "Sem vencimento",
+      detail: "Defina uma data para alertas",
+      badgeClass: "border-white/20 bg-white/10 text-white/70",
+      cardClass: "border-white/10",
+    };
+  }
+
+  const now = new Date();
+  const due = new Date(planDueDate);
+  const diffMs = due.getTime() - now.getTime();
+  const days = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+
+  if (days < 0) {
+    return {
+      key: "overdue",
+      label: "Vencido",
+      detail: `Atrasado ha ${Math.abs(days)} dia(s)`,
+      badgeClass: "border-red-500/45 bg-red-500/20 text-red-200",
+      cardClass: "border-red-500/35 bg-[rgba(127,29,29,0.24)]",
+    };
+  }
+
+  if (days <= 6) {
+    return {
+      key: "due-soon",
+      label: "Vence em breve",
+      detail: `Faltam ${days} dia(s)`,
+      badgeClass: "border-amber-400/45 bg-amber-400/15 text-amber-200",
+      cardClass: "border-amber-400/35 bg-[rgba(120,53,15,0.24)]",
+    };
+  }
+
+  return {
+    key: "ok",
+    label: "Em dia",
+    detail: `Faltam ${days} dia(s)`,
+    badgeClass: "border-emerald-400/45 bg-emerald-400/15 text-emerald-200",
+    cardClass: "border-emerald-400/30 bg-[rgba(6,78,59,0.2)]",
+  };
+}
+
 export default function AdminDashboardPage() {
+  const location = useLocation();
   const { tenantId } = useTenant();
   const [students, setStudents] = useState([]);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState("visao-geral");
+  const [editingStudentId, setEditingStudentId] = useState("");
+  const [editStudentForm, setEditStudentForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    birthDate: "",
+    alunoPlanId: "",
+    planDueDate: "",
+    isActive: true,
+  });
 
   // Form states for creating/editing
   const [newStudentForm, setNewStudentForm] = useState({
     fullName: "",
     email: "",
     phone: "",
+    birthDate: "",
+    alunoPlanId: "",
+    planDueDate: "",
   });
   const [newPlanForm, setNewPlanForm] = useState({
     name: "",
@@ -116,6 +184,26 @@ export default function AdminDashboardPage() {
     };
   }, [tenantId]);
 
+  useEffect(() => {
+    if (location.pathname.includes("/admin/alunos")) {
+      setActiveTab("alunos");
+      return;
+    }
+    if (location.pathname.includes("/admin/planos")) {
+      setActiveTab("planos");
+      return;
+    }
+    if (location.pathname.includes("/admin/treinos")) {
+      setActiveTab("treinos");
+      return;
+    }
+    if (location.pathname.includes("/admin/agenda")) {
+      setActiveTab("comunicacao");
+      return;
+    }
+    setActiveTab("visao-geral");
+  }, [location.pathname]);
+
   const stats = useMemo(() => {
     const activePlans = plans.filter((plan) => plan.isActive !== false).length;
     const inactiveStudents = students.filter((s) => {
@@ -150,12 +238,68 @@ export default function AdminDashboardPage() {
     }
 
     try {
-      const created = await createStudent(newStudentForm, tenantId);
+      const created = await createStudent(
+        {
+          fullName: newStudentForm.fullName,
+          email: newStudentForm.email,
+          phone: newStudentForm.phone,
+          birthDate: newStudentForm.birthDate || null,
+          alunoPlanId: newStudentForm.alunoPlanId || null,
+          planDueDate: newStudentForm.planDueDate || null,
+        },
+        tenantId,
+      );
       setStudents((current) => [created, ...current]);
-      setNewStudentForm({ fullName: "", email: "", phone: "" });
+      setNewStudentForm({
+        fullName: "",
+        email: "",
+        phone: "",
+        birthDate: "",
+        alunoPlanId: "",
+        planDueDate: "",
+      });
       setMessage(`Aluno criado com sucesso: ${created.fullName}`);
     } catch (error) {
       setMessage(error?.message || "Nao foi possivel criar o aluno");
+    }
+  };
+
+  const startEditStudent = (student) => {
+    setEditingStudentId(student.id);
+    setEditStudentForm({
+      fullName: student.fullName || "",
+      email: student.email || "",
+      phone: student.phone || "",
+      birthDate: toDateInputValue(student.birthDate),
+      alunoPlanId: student.alunoPlanId || "",
+      planDueDate: toDateInputValue(student.planDueDate),
+      isActive: student.isActive !== false,
+    });
+  };
+
+  const handleSaveStudent = async (studentId) => {
+    try {
+      const updated = await updateStudent(
+        studentId,
+        {
+          fullName: editStudentForm.fullName,
+          email: editStudentForm.email || null,
+          phone: editStudentForm.phone || null,
+          birthDate: editStudentForm.birthDate || null,
+          alunoPlanId: editStudentForm.alunoPlanId || null,
+          planDueDate: editStudentForm.planDueDate || null,
+          isActive: Boolean(editStudentForm.isActive),
+        },
+        tenantId,
+      );
+
+      setStudents((current) =>
+        current.map((item) => (item.id === studentId ? updated : item)),
+      );
+      setEditingStudentId("");
+      setMessage(`Aluno atualizado: ${updated.fullName}`);
+    } catch (error) {
+      setMessage(error?.message || "Nao foi possivel atualizar o aluno");
     }
   };
 
@@ -387,6 +531,63 @@ export default function AdminDashboardPage() {
                 />
               </label>
 
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block text-sm text-white/70">
+                  Data de nascimento
+                  <input
+                    type="date"
+                    name="birthDate"
+                    value={newStudentForm.birthDate}
+                    onChange={(e) =>
+                      setNewStudentForm((prev) => ({
+                        ...prev,
+                        birthDate: e.target.value,
+                      }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
+                  />
+                </label>
+
+                <label className="block text-sm text-white/70">
+                  Vencimento do plano
+                  <input
+                    type="date"
+                    name="planDueDate"
+                    value={newStudentForm.planDueDate}
+                    onChange={(e) =>
+                      setNewStudentForm((prev) => ({
+                        ...prev,
+                        planDueDate: e.target.value,
+                      }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
+                  />
+                </label>
+              </div>
+
+              <label className="block text-sm text-white/70">
+                Plano do aluno
+                <select
+                  name="alunoPlanId"
+                  value={newStudentForm.alunoPlanId}
+                  onChange={(e) =>
+                    setNewStudentForm((prev) => ({
+                      ...prev,
+                      alunoPlanId: e.target.value,
+                    }))
+                  }
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#d9b341]/50"
+                >
+                  <option value="">Sem plano</option>
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} -{" "}
+                      {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
               <button
                 type="submit"
                 className="mt-4 flex items-center gap-2 rounded-full bg-[#d9b341] px-6 py-3 font-semibold text-black transition hover:brightness-110"
@@ -402,6 +603,45 @@ export default function AdminDashboardPage() {
               Alunos cadastrados ({students.length})
             </h2>
 
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-red-500/35 bg-red-500/10 px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.14em] text-red-200/80">
+                  Vencidos
+                </p>
+                <p className="mt-2 font-title text-2xl text-red-200">
+                  {
+                    students.filter(
+                      (s) => getDueStatus(s.planDueDate).key === "overdue",
+                    ).length
+                  }
+                </p>
+              </div>
+              <div className="rounded-2xl border border-amber-400/35 bg-amber-400/10 px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.14em] text-amber-200/80">
+                  Vencem em ate 6 dias
+                </p>
+                <p className="mt-2 font-title text-2xl text-amber-100">
+                  {
+                    students.filter(
+                      (s) => getDueStatus(s.planDueDate).key === "due-soon",
+                    ).length
+                  }
+                </p>
+              </div>
+              <div className="rounded-2xl border border-emerald-400/35 bg-emerald-400/10 px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.14em] text-emerald-200/80">
+                  Em dia
+                </p>
+                <p className="mt-2 font-title text-2xl text-emerald-100">
+                  {
+                    students.filter(
+                      (s) => getDueStatus(s.planDueDate).key === "ok",
+                    ).length
+                  }
+                </p>
+              </div>
+            </div>
+
             <div className="mt-5 space-y-3">
               {students.length === 0 ? (
                 <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
@@ -412,33 +652,187 @@ export default function AdminDashboardPage() {
                 students.map((student) => (
                   <div
                     key={student.id}
-                    className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-4 md:flex-row md:items-center md:justify-between"
+                    className={`rounded-2xl border px-4 py-4 ${getDueStatus(student.planDueDate).cardClass}`}
                   >
-                    <div>
-                      <p className="font-semibold text-white">
-                        {student.fullName}
-                      </p>
-                      <p className="text-sm text-white/55">
-                        {student.email || "Sem email"}
-                      </p>
-                      <p className="mt-1 text-xs text-white/40">
-                        Cadastrado em {formatDate(student.createdAt)}
-                      </p>
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <p className="font-semibold text-white">
+                          {student.fullName}
+                        </p>
+                        <p className="text-sm text-white/55">
+                          {student.email || "Sem email"}
+                        </p>
+                        <p className="mt-1 text-xs text-white/40">
+                          Cadastrado em {formatDate(student.createdAt)}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`rounded-full border px-3 py-1 text-xs font-semibold ${getDueStatus(student.planDueDate).badgeClass}`}
+                        >
+                          {getDueStatus(student.planDueDate).label}
+                        </span>
+                        <span className="text-xs text-white/60">
+                          {getDueStatus(student.planDueDate).detail}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => startEditStudent(student)}
+                          className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-red-400"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+
+                    <div className="mt-4 grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-4">
+                      <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+                        <p className="text-xs text-white/45">Plano</p>
+                        <p className="mt-1 font-semibold text-white">
+                          {student.alunoPlan?.name || "Sem plano"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+                        <p className="text-xs text-white/45">Mensalidade</p>
+                        <p className="mt-1 font-semibold text-[#d9c179]">
+                          {student.alunoPlan
+                            ? formatCurrency(
+                                (student.alunoPlan.monthlyPriceCents || 0) /
+                                  100,
+                              )
+                            : "-"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+                        <p className="text-xs text-white/45">Vencimento</p>
+                        <p className="mt-1 font-semibold text-white">
+                          {student.planDueDate
+                            ? formatDate(student.planDueDate)
+                            : "Nao definido"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+                        <p className="text-xs text-white/45">Telefone</p>
+                        <p className="mt-1 font-semibold text-white">
+                          {student.phone || "Nao informado"}
+                        </p>
+                      </div>
                     </div>
+
+                    {editingStudentId === student.id ? (
+                      <div className="mt-4 rounded-2xl border border-white/10 bg-black/35 p-4">
+                        <p className="mb-3 text-sm font-semibold text-[#d9c179]">
+                          Editar aluno
+                        </p>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <input
+                            value={editStudentForm.fullName}
+                            onChange={(e) =>
+                              setEditStudentForm((prev) => ({
+                                ...prev,
+                                fullName: e.target.value,
+                              }))
+                            }
+                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                            placeholder="Nome completo"
+                          />
+                          <input
+                            type="email"
+                            value={editStudentForm.email}
+                            onChange={(e) =>
+                              setEditStudentForm((prev) => ({
+                                ...prev,
+                                email: e.target.value,
+                              }))
+                            }
+                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                            placeholder="Email"
+                          />
+                          <input
+                            value={editStudentForm.phone}
+                            onChange={(e) =>
+                              setEditStudentForm((prev) => ({
+                                ...prev,
+                                phone: e.target.value,
+                              }))
+                            }
+                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                            placeholder="Telefone"
+                          />
+                          <input
+                            type="date"
+                            value={editStudentForm.birthDate}
+                            onChange={(e) =>
+                              setEditStudentForm((prev) => ({
+                                ...prev,
+                                birthDate: e.target.value,
+                              }))
+                            }
+                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                          />
+                          <select
+                            value={editStudentForm.alunoPlanId}
+                            onChange={(e) =>
+                              setEditStudentForm((prev) => ({
+                                ...prev,
+                                alunoPlanId: e.target.value,
+                              }))
+                            }
+                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                          >
+                            <option value="">Sem plano</option>
+                            {plans.map((plan) => (
+                              <option key={plan.id} value={plan.id}>
+                                {plan.name}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="date"
+                            value={editStudentForm.planDueDate}
+                            onChange={(e) =>
+                              setEditStudentForm((prev) => ({
+                                ...prev,
+                                planDueDate: e.target.value,
+                              }))
+                            }
+                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                          />
+                        </div>
+
+                        <div className="mt-3 flex items-center gap-2">
+                          <label className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
+                            <input
+                              type="checkbox"
+                              checked={editStudentForm.isActive}
+                              onChange={(e) =>
+                                setEditStudentForm((prev) => ({
+                                  ...prev,
+                                  isActive: e.target.checked,
+                                }))
+                              }
+                            />
+                            Aluno ativo
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSaveStudent(student.id)}
+                            className="rounded-full bg-[#d9b341] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110"
+                          >
+                            Salvar alteracoes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingStudentId("")}
+                            className="rounded-full border border-white/15 px-4 py-2 text-sm text-white/70 transition hover:text-white"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 ))
               )}
