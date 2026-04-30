@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Star, Play, ChevronDown, X, Check } from "lucide-react";
-import { getTenantFromHost } from "../contexts/TenantContext.jsx";
-import { listStudentPlans, formatCurrency } from "../lib/api.js";
+import { getTenantFromHost, useTenant } from "../contexts/TenantContext.jsx";
+import { listPublicStudentPlans, formatCurrency } from "../lib/api.js";
 
 const WHATSAPP_NUMBER = "5511971174080";
 
@@ -25,16 +25,17 @@ const marqueeItems = [
 ];
 
 export default function LandingPage() {
-  const tenantFromHost = getTenantFromHost();
+  const { tenantId: contextTenantId } = useTenant();
+  const tenantFromHost = getTenantFromHost() || contextTenantId || "";
   const [showPlans, setShowPlans] = useState(false);
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const plansRef = useRef(null);
 
   useEffect(() => {
-    if (!showPlans || !tenantFromHost) return;
+    if (!showPlans) return;
     setPlansLoading(true);
-    listStudentPlans(tenantFromHost)
+    listPublicStudentPlans(tenantFromHost || undefined)
       .then((data) => setPlans(Array.isArray(data) ? data : []))
       .catch(() => setPlans([]))
       .finally(() => setPlansLoading(false));
@@ -193,10 +194,7 @@ export default function LandingPage() {
 
       {/* PLANS SECTION */}
       {showPlans && (
-        <section
-          ref={plansRef}
-          className="relative z-10 px-6 pb-20 lg:px-14"
-        >
+        <section ref={plansRef} className="relative z-10 px-6 pb-20 lg:px-14">
           <div className="mb-8 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.35em] text-white/30">
@@ -221,7 +219,9 @@ export default function LandingPage() {
             </div>
           ) : plans.length === 0 ? (
             <div className="rounded-3xl border border-white/10 bg-white/5 py-16 text-center">
-              <p className="text-white/40">Nenhum plano disponível no momento.</p>
+              <p className="text-white/40">
+                Nenhum plano disponível no momento.
+              </p>
               <a
                 href={whatsappLink()}
                 target="_blank"
@@ -252,7 +252,9 @@ export default function LandingPage() {
                   )}
                   <p className="mt-5 text-4xl font-black text-[#b5f03c] leading-none">
                     {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
-                    <span className="text-sm font-normal text-white/35">/mês</span>
+                    <span className="text-sm font-normal text-white/35">
+                      /mês
+                    </span>
                   </p>
                   <a
                     href={whatsappLink()}

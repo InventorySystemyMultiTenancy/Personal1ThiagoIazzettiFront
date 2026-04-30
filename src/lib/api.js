@@ -301,6 +301,14 @@ export async function listStudentPlans(tenantId) {
   return Array.isArray(response?.plans) ? response.plans : [];
 }
 
+export async function listPublicStudentPlans(tenantId) {
+  const path = tenantId
+    ? `/aluno-plans/public?personalId=${encodeURIComponent(tenantId)}`
+    : "/aluno-plans/public";
+  const response = await request(path, { auth: false });
+  return Array.isArray(response?.plans) ? response.plans : [];
+}
+
 export async function createStudentPlan(payload, tenantId) {
   const response = await request("/aluno-plans", {
     method: "POST",
