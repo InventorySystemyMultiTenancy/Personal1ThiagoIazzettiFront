@@ -4,9 +4,9 @@ import { ArrowRight, Crown, Sparkles, ShieldCheck } from "lucide-react";
 import { getTenantFromHost } from "../contexts/TenantContext.jsx";
 
 const benefits = [
-  "Acesso para personal e aluno",
-  "Cadastro com tenant detectado pelo subdomínio",
-  "Planos, treinos e agenda conectados ao backend",
+  "Acesso ao painel mais completo para o seu treino",
+  "Cadastro personalizado e feito exclusivamente para você!",
+  "Planos, treinos e agenda conectados à sua rotina",
 ];
 
 export default function LandingPage() {
@@ -37,7 +37,7 @@ export default function LandingPage() {
               to="/login"
               className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/75 transition hover:border-[#d9b341]/50 hover:text-white"
             >
-              Entrar
+              Login
             </Link>
             <Link
               to="/cadastro"
@@ -55,12 +55,10 @@ export default function LandingPage() {
               Primeiro passo: entrar ou criar conta
             </div>
             <h1 className="max-w-3xl font-title text-5xl leading-none text-[#f2e3b3] md:text-7xl">
-              Acesse sua área ou crie sua conta em poucos segundos.
+              Seu personal do jeito que você merece.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/68">
-              Essa é a tela inicial do sistema. Se você já tem acesso, faça
-              login. Se ainda não tem, cadastre-se e o tenant será aplicado pelo
-              subdomínio.
+              Faça login para ter acesso à plataforma do seu personal e começar a treinar do seu jeito" 
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -68,7 +66,7 @@ export default function LandingPage() {
                 to="/login"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[#d9b341] px-6 py-3 text-sm font-semibold text-black transition hover:brightness-110"
               >
-                Entrar
+                AGENDAR
                 <ArrowRight size={16} />
               </Link>
               <Link
@@ -100,17 +98,14 @@ export default function LandingPage() {
               Login ou cadastro
             </h2>
             <p className="mt-3 text-sm leading-7 text-white/68">
-              O sistema foi pensado para começar nesta tela. Não entramos direto
-              em agenda ou plano: primeiro o usuário escolhe entre entrar ou
-              criar conta.
+              Esse é o seu painel personalizado, faça login e veja seus horários e treinos planejados com seu personal.
             </p>
 
             {tenantFromHost ? (
               <div className="mt-6 rounded-2xl border border-[#d9b341]/20 bg-[#d9b341]/10 p-4 text-sm text-white/75">
-                <p className="font-semibold text-[#d9c179]">Tenant detectado</p>
+                <p className="font-semibold text-[#d9c179]">Seja bem vindo!</p>
                 <p className="mt-1">
-                  <strong>{tenantFromHost}</strong> será usado automaticamente
-                  no fluxo de cadastro e login.
+                  <strong>{tenantFromHost}</strong> aguarda seu agendamento para alavancar seus treinos! Clique em "AGENDAR"!
                 </p>
               </div>
             ) : (
