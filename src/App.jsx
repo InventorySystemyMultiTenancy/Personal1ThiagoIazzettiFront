@@ -95,6 +95,10 @@ export default function App() {
                   element={<ClientWorkoutsPage />}
                 />
                 <Route path="/cliente/agenda" element={<ClientAgendaPage />} />
+                <Route
+                  path="/cliente/comunicacao"
+                  element={<ClientDashboardPage />}
+                />
               </Route>
             </Route>
           </Route>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   CalendarDays,
   CircleDollarSign,
@@ -300,13 +301,19 @@ export default function ClientDashboardPage() {
 }
 
 function ClientChatPanel() {
+  const location = useLocation();
+  const isComunicacaoRoute = location.pathname.includes("/cliente/comunicacao");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(isComunicacaoRoute);
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
+
+  useEffect(() => {
+    if (isComunicacaoRoute) setOpen(true);
+  }, [isComunicacaoRoute]);
 
   const loadMessages = async () => {
     try {

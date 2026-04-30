@@ -33,6 +33,7 @@ const clientNavItems = [
   { label: "Planos", path: "cliente/planos", icon: Wallet },
   { label: "Treinos", path: "cliente/treinos", icon: Dumbbell },
   { label: "Agenda", path: "cliente/agenda", icon: CalendarDays },
+  { label: "Comunicação", path: "cliente/comunicacao", icon: MessageSquare },
 ];
 
 export default function AppLayout() {
