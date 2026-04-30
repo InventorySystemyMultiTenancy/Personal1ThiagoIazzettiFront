@@ -146,12 +146,6 @@ export default function LoginPage() {
               Voltar para a pagina inicial
             </Link>
           </div>
-
-          {tenantId
-            ? {
-                /* Tenant shown via header in AppLayout; no tenant input here anymore */
-              }
-            : null}
         </section>
       </div>
     </main>
