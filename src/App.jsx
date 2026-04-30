@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from "react";
+import { Suspense } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import { useAuth } from "./contexts/AuthContext.jsx";
@@ -9,6 +9,7 @@ import RegisterPage from "./pages/RegisterPage.jsx";
 import PlansPage from "./pages/PlansPage.jsx";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
 import ClientDashboardPage from "./pages/ClientDashboardPage.jsx";
+import ClientWorkoutsPage from "./pages/ClientWorkoutsPage.jsx";
 import AdminAgendaPage from "./pages/AdminAgendaPage.jsx";
 import ClientAgendaPage from "./pages/ClientAgendaPage.jsx";
 import AdminDietPage from "./pages/AdminDietPage.jsx";
@@ -54,21 +55,6 @@ function RequireRole({ role }) {
   return <Outlet />;
 }
 
-function TenantHomeRedirect() {
-  const { user } = useAuth();
-
-  if (!user) {
-    return <Navigate to="/planos" replace />;
-  }
-
-  return (
-    <Navigate
-      to={`/${user.role === "PERSONAL" ? "admin" : "cliente"}`}
-      replace
-    />
-  );
-}
-
 export default function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
@@ -102,7 +88,7 @@ export default function App() {
                 />
                 <Route
                   path="/cliente/treinos"
-                  element={<ClientDashboardPage />}
+                  element={<ClientWorkoutsPage />}
                 />
                 <Route path="/cliente/agenda" element={<ClientAgendaPage />} />
               </Route>

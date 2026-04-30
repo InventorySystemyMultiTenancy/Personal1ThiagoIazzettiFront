@@ -357,6 +357,20 @@ export async function createWorkoutPlan(payload, tenantId) {
   return response?.plan || response;
 }
 
+export async function scheduleWorkoutPlan(planId, payload, tenantId) {
+  const response = await request(`/workout-plans/${planId}/schedule`, {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.plan || response?.schedule || response?.data || response;
+}
+
+export async function listMyWorkoutPlans(tenantId) {
+  const response = await request("/workout-plans/me", { tenantId });
+  return Array.isArray(response?.plans) ? response.plans : [];
+}
+
 export async function updateWorkoutPlan(planId, payload) {
   return request(`/workout-plans/${planId}`, {
     method: "PATCH",

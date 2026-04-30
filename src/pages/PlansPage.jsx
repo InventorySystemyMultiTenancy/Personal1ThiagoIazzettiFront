@@ -182,6 +182,9 @@ export default function PlansPage({ mode = "public" }) {
       setMessage("Crie uma conta ou faca login como aluno para contratar.");
       return;
     }
+
+    setSelectedPlanId(plan.id);
+    setMessage(`Plano ${plan.name} selecionado. Preencha os dados do cartao para concluir a assinatura.`);
   };
 
   const handleAdminSave = async (event) => {
