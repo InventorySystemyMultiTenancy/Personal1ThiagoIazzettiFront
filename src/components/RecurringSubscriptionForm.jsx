@@ -60,11 +60,12 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   const formPrefix = `mp-card-form-${String(plan?.id || "plano").replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const recurringPersonalId =
     personalId || user?.personalId || import.meta.env.VITE_PERSONAL_ID || tenantId;
-  const blockingError = !plan?.isRecurringEnabled
-    ? "Este plano ainda nao possui identificador recorrente configurado no backend."
-    : !MP_PUBLIC_KEY
-      ? "Configure VITE_MERCADO_PAGO_PUBLIC_KEY para habilitar o checkout recorrente."
-      : "";
+  const sdkConfigError = !MP_PUBLIC_KEY
+    ? "Configure VITE_MERCADO_PAGO_PUBLIC_KEY para habilitar o checkout recorrente."
+    : "";
+  const missingRecurringPlanWarning = !plan?.recurringPlanId
+    ? "Este plano nao trouxe preapproval_plan_id. Vamos tentar criar a assinatura usando o identificador interno do plano."
+    : "";
 
   useEffect(() => {
     studentIdRef.current = resolvedStudentId;
@@ -123,7 +124,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   }, [tenantId, user?.role]);
 
   useEffect(() => {
-    if (blockingError) {
+    if (sdkConfigError) {
       return undefined;
     }
 
@@ -226,11 +227,19 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                 }
 
                 const payload = {
-                  preapproval_plan_id: plan.recurringPlanId,
                   card_token_id: token,
                   payer_email: payerEmail,
                   reason: `Assinatura - ${plan.name}`,
                 };
+
+                if (plan?.recurringPlanId) {
+                  payload.preapproval_plan_id = plan.recurringPlanId;
+                }
+
+                if (plan?.id) {
+                  payload.aluno_plan_id = plan.id;
+                  payload.plan_id = plan.id;
+                }
 
                 if (studentIdRef.current) {
                   payload.aluno_id = studentIdRef.current;
@@ -293,10 +302,10 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
         redirectTimeoutRef.current = null;
       }
     };
-  }, [blockingError, formPrefix, navigate, plan, recurringPersonalId, user?.email]);
+  }, [sdkConfigError, formPrefix, navigate, plan, recurringPersonalId, user?.email]);
 
-  const effectiveState = blockingError ? "error" : sdkState;
-  const effectiveFeedback = blockingError || feedback;
+  const effectiveState = sdkConfigError ? "error" : sdkState;
+  const effectiveFeedback = sdkConfigError || feedback;
   const isBusy = effectiveState === "loading" || effectiveState === "submitting";
   const isReady = effectiveState === "ready" || effectiveState === "success";
 
@@ -419,7 +428,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
 
           <button
             type="submit"
-            disabled={isBusy || !plan?.isRecurringEnabled}
+            disabled={isBusy || Boolean(sdkConfigError)}
             className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d9b341] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isBusy ? (
@@ -457,6 +466,12 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
           {!resolvedStudentId ? (
             <div className="rounded-2xl border border-amber-400/25 bg-amber-500/10 p-4 text-sm text-amber-100">
               Nao foi possivel resolver automaticamente o identificador do aluno. O backend pode rejeitar a assinatura se exigir aluno_id.
+            </div>
+          ) : null}
+
+          {missingRecurringPlanWarning ? (
+            <div className="rounded-2xl border border-amber-400/25 bg-amber-500/10 p-4 text-sm text-amber-100">
+              {missingRecurringPlanWarning}
             </div>
           ) : null}
 
