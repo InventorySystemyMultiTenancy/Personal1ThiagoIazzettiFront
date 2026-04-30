@@ -22,8 +22,10 @@ import {
   createStudentPlan,
   formatCurrency,
   formatDate,
+  listDiets,
   listStudentPlans,
   listStudents,
+  listWorkoutPlans,
   updateStudent,
   listMessages,
   sendMessage,
@@ -93,6 +95,32 @@ function toDateInputValue(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toISOString().slice(0, 10);
+}
+
+function buildForwardMessage(kind, item) {
+  const payload = {
+    kind,
+    id: item?.id,
+    title: item?.title || item?.name || "Item",
+    description: item?.objective || item?.description || "",
+  };
+  return `__FORWARD__:${JSON.stringify(payload)}`;
+}
+
+function parseForwardMessage(content) {
+  if (typeof content !== "string" || !content.startsWith("__FORWARD__:")) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(content.slice("__FORWARD__:".length));
+    if (!parsed || (parsed.kind !== "workout" && parsed.kind !== "diet")) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 export default function AdminDashboardPage() {
@@ -997,6 +1025,11 @@ function ChatPanel({ students }) {
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [workouts, setWorkouts] = useState([]);
+  const [diets, setDiets] = useState([]);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState("");
+  const [selectedDietId, setSelectedDietId] = useState("");
+  const [sendingForward, setSendingForward] = useState(false);
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
 
@@ -1014,12 +1047,28 @@ function ChatPanel({ students }) {
     }
   };
 
+  const loadForwardOptions = async (alunoId) => {
+    try {
+      const [workoutsResult, dietsResult] = await Promise.all([
+        listWorkoutPlans(alunoId),
+        listDiets(undefined, { alunoId }),
+      ]);
+      setWorkouts(Array.isArray(workoutsResult) ? workoutsResult : []);
+      setDiets(Array.isArray(dietsResult) ? dietsResult : []);
+    } catch {
+      setWorkouts([]);
+      setDiets([]);
+    }
+  };
+
   const selectAluno = async (aluno) => {
     setSelectedAluno(aluno);
     setMessages([]);
     setText("");
+    setSelectedWorkoutId("");
+    setSelectedDietId("");
     clearInterval(pollRef.current);
-    await loadMessages(aluno.id);
+    await Promise.all([loadMessages(aluno.id), loadForwardOptions(aluno.id)]);
     // Poll every 5s
     pollRef.current = setInterval(() => loadMessages(aluno.id), 5000);
   };
@@ -1052,6 +1101,40 @@ function ChatPanel({ students }) {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleForward = async (kind) => {
+    if (!selectedAluno || sendingForward) return;
+
+    const sourceList = kind === "workout" ? workouts : diets;
+    const selectedId = kind === "workout" ? selectedWorkoutId : selectedDietId;
+    const item = sourceList.find((entry) => entry.id === selectedId);
+    if (!item) return;
+
+    setSendingForward(true);
+    const optimistic = {
+      id: `opt-fwd-${Date.now()}`,
+      senderRole: "PERSONAL",
+      content: buildForwardMessage(kind, item),
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    try {
+      const msg = await sendMessage(selectedAluno.id, optimistic.content);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === optimistic.id ? msg : m)),
+      );
+      if (kind === "workout") {
+        setSelectedWorkoutId("");
+      } else {
+        setSelectedDietId("");
+      }
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+    } finally {
+      setSendingForward(false);
     }
   };
 
@@ -1151,6 +1234,7 @@ function ChatPanel({ students }) {
               ) : (
                 messages.map((msg) => {
                   const isMe = msg.senderRole === "PERSONAL";
+                  const forwarded = parseForwardMessage(msg.content);
                   return (
                     <div
                       key={msg.id}
@@ -1163,7 +1247,29 @@ function ChatPanel({ students }) {
                             : "bg-white/[0.07] text-white/85 rounded-bl-sm"
                         }`}
                       >
-                        <p>{msg.content}</p>
+                        {forwarded ? (
+                          <div>
+                            <p
+                              className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isMe ? "text-black/60" : "text-[#b5f03c]"}`}
+                            >
+                              {forwarded.kind === "workout"
+                                ? "Treino encaminhado"
+                                : "Dieta encaminhada"}
+                            </p>
+                            <p className="mt-1 font-semibold">
+                              {forwarded.title || "Item"}
+                            </p>
+                            {forwarded.description ? (
+                              <p
+                                className={`mt-1 text-xs ${isMe ? "text-black/70" : "text-white/60"}`}
+                              >
+                                {forwarded.description}
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <p>{msg.content}</p>
+                        )}
                         <p
                           className={`mt-1 text-[10px] ${isMe ? "text-black/50" : "text-white/30"}`}
                         >
@@ -1181,33 +1287,83 @@ function ChatPanel({ students }) {
             </div>
 
             {/* Input */}
-            <div className="border-t border-white/[0.07] px-4 py-3 flex items-end gap-3">
-              <textarea
-                rows={1}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder="Digite uma mensagem..."
-                className="flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/25 focus:border-[#b5f03c]/40 focus:outline-none"
-                style={{ maxHeight: 120 }}
-              />
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={!text.trim() || sending}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#b5f03c] text-black transition hover:brightness-110 disabled:opacity-40"
-              >
-                {sending ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Send size={16} />
-                )}
-              </button>
+            <div className="border-t border-white/[0.07] px-4 py-3 space-y-3">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedWorkoutId}
+                    onChange={(e) => setSelectedWorkoutId(e.target.value)}
+                    className="flex-1 rounded-lg border border-white/[0.08] bg-[#111] px-3 py-2 text-xs text-white/70 outline-none focus:border-[#b5f03c]/40"
+                  >
+                    <option value="">Encaminhar treino...</option>
+                    {workouts.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.title}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleForward("workout")}
+                    disabled={!selectedWorkoutId || sendingForward}
+                    className="rounded-lg border border-[#b5f03c]/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#b5f03c] transition hover:bg-[#b5f03c]/10 disabled:opacity-40"
+                  >
+                    Enviar
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedDietId}
+                    onChange={(e) => setSelectedDietId(e.target.value)}
+                    className="flex-1 rounded-lg border border-white/[0.08] bg-[#111] px-3 py-2 text-xs text-white/70 outline-none focus:border-[#b5f03c]/40"
+                  >
+                    <option value="">Encaminhar dieta...</option>
+                    {diets.map((diet) => (
+                      <option key={diet.id} value={diet.id}>
+                        {diet.title}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleForward("diet")}
+                    disabled={!selectedDietId || sendingForward}
+                    className="rounded-lg border border-[#b5f03c]/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#b5f03c] transition hover:bg-[#b5f03c]/10 disabled:opacity-40"
+                  >
+                    Enviar
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-end gap-3">
+                <textarea
+                  rows={1}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Digite uma mensagem..."
+                  className="flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/25 focus:border-[#b5f03c]/40 focus:outline-none"
+                  style={{ maxHeight: 120 }}
+                />
+                <button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={!text.trim() || sending}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#b5f03c] text-black transition hover:brightness-110 disabled:opacity-40"
+                >
+                  {sending ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                </button>
+              </div>
             </div>
           </>
         )}

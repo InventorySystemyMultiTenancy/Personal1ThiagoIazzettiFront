@@ -17,6 +17,22 @@ import {
 import { getBillingStatus } from "../lib/billingStatus.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 
+function parseForwardMessage(content) {
+  if (typeof content !== "string" || !content.startsWith("__FORWARD__:")) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(content.slice("__FORWARD__:".length));
+    if (!parsed || (parsed.kind !== "workout" && parsed.kind !== "diet")) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 function WorkoutCard({ workout }) {
   return (
     <article className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-5">
@@ -373,6 +389,7 @@ function ClientChatPanel() {
             ) : (
               messages.map((msg) => {
                 const isMe = msg.senderRole === "ALUNO";
+                const forwarded = parseForwardMessage(msg.content);
                 return (
                   <div
                     key={msg.id}
@@ -385,7 +402,29 @@ function ClientChatPanel() {
                           : "bg-white/[0.07] text-white/85 rounded-bl-sm"
                       }`}
                     >
-                      <p>{msg.content}</p>
+                      {forwarded ? (
+                        <div>
+                          <p
+                            className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isMe ? "text-black/60" : "text-[#b5f03c]"}`}
+                          >
+                            {forwarded.kind === "workout"
+                              ? "Treino encaminhado"
+                              : "Dieta encaminhada"}
+                          </p>
+                          <p className="mt-1 font-semibold">
+                            {forwarded.title || "Item"}
+                          </p>
+                          {forwarded.description ? (
+                            <p
+                              className={`mt-1 text-xs ${isMe ? "text-black/70" : "text-white/60"}`}
+                            >
+                              {forwarded.description}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <p>{msg.content}</p>
+                      )}
                       <p
                         className={`mt-1 text-[10px] ${isMe ? "text-black/50" : "text-white/30"}`}
                       >
