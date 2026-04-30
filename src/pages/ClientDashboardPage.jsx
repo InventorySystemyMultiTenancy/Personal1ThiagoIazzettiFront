@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Dumbbell, Loader2, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, CircleDollarSign, Dumbbell, Loader2, Sparkles } from "lucide-react";
 import { formatDate, getMyStudentProfile } from "../lib/api.js";
+import { getBillingStatus } from "../lib/billingStatus.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 
 function WorkoutCard({ workout }) {
@@ -82,8 +83,9 @@ export default function ClientDashboardPage() {
     };
   }, [tenantId]);
 
-  const workoutPlans = profile?.workoutPlans || [];
+  const workoutPlans = useMemo(() => profile?.workoutPlans || [], [profile]);
   const activePlan = profile?.alunoPlan || null;
+  const billingStatus = useMemo(() => getBillingStatus(profile), [profile]);
 
   const scheduleEntries = useMemo(() => {
     return workoutPlans.slice(0, 5).map((workout, index) => ({
@@ -141,6 +143,25 @@ export default function ClientDashboardPage() {
                 </div>
                 <Sparkles className="text-[#d9b341]" />
               </div>
+
+              <div className={`mt-5 rounded-2xl border px-4 py-4 ${billingStatus.cardClass}`}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-white/45">
+                      Mensalidade
+                    </p>
+                    <p className={`mt-2 text-lg font-semibold ${billingStatus.accentClass}`}>
+                      {billingStatus.label}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-white/68">
+                      {billingStatus.detail}
+                    </p>
+                  </div>
+                  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${billingStatus.badgeClass}`}>
+                    {billingStatus.shortLabel}
+                  </span>
+                </div>
+              </div>
             </article>
 
             <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
@@ -180,6 +201,40 @@ export default function ClientDashboardPage() {
                   ))
                 )}
               </div>
+            </article>
+          </section>
+
+          <section className="grid gap-4 md:grid-cols-3">
+            <article className={`rounded-[1.5rem] border p-5 ${billingStatus.cardClass}`}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+                    Status atual
+                  </p>
+                  <p className={`mt-2 font-title text-2xl ${billingStatus.accentClass}`}>
+                    {billingStatus.shortLabel}
+                  </p>
+                </div>
+                <CircleDollarSign className={billingStatus.accentClass} />
+              </div>
+            </article>
+
+            <article className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+                Plano
+              </p>
+              <p className="mt-2 font-title text-2xl text-[#d9c179]">
+                {activePlan?.name || "Sem plano"}
+              </p>
+            </article>
+
+            <article className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+                Vencimento de referencia
+              </p>
+              <p className="mt-2 font-title text-2xl text-white">
+                {profile?.planDueDate ? formatDate(profile.planDueDate) : "Nao informado"}
+              </p>
             </article>
           </section>
 

@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Crown, Loader2, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, Crown, Loader2, ShieldCheck } from "lucide-react";
+import RecurringSubscriptionForm from "../components/RecurringSubscriptionForm.jsx";
 import {
   createStudentPlan,
-  assignPlanToMyAccount,
   deleteStudentPlan,
   formatCurrency,
-  getPublicPlans,
+  listRecurringSubscriptionPlans,
   listStudentPlans,
   updateStudentPlan,
 } from "../lib/api.js";
@@ -14,8 +14,18 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { useTenant } from "../contexts/TenantContext.jsx";
 
 function PlanCard({ plan, onSelect, selected, actionLabel }) {
+  const price = Number(plan.transactionAmount ?? Number(plan.monthlyPriceCents || 0) / 100);
+  const frequencyType = plan.frequencyType || "months";
+  const frequency = Number(plan.frequency || 1);
+
   return (
-    <article className="flex h-full flex-col rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+    <article
+      className={`flex h-full flex-col rounded-[1.75rem] border bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)] transition ${
+        selected
+          ? "border-[#d9b341]/70 ring-1 ring-[#d9b341]/45"
+          : "border-white/10"
+      }`}
+    >
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-white/40">
@@ -36,9 +46,17 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
 
       <div className="mt-6 flex items-end gap-2">
         <span className="font-title text-4xl text-white">
-          {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
+          {formatCurrency(price)}
         </span>
-        <span className="pb-1 text-sm text-white/50">/mês</span>
+        <span className="pb-1 text-sm text-white/50">
+          {frequencyType === "months"
+            ? frequency === 1
+              ? "/mes"
+              : `/ ${frequency} meses`
+            : frequency === 1
+              ? "/dia"
+              : `/ ${frequency} dias`}
+        </span>
       </div>
 
       <div className="mt-6 space-y-3 text-sm text-white/70">
@@ -48,7 +66,9 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
         </div>
         <div className="flex items-center gap-2">
           <Check size={16} className="text-[#d9b341]" />
-          Acesso ao plano e orientacoes do personal
+          {plan.isRecurringEnabled === false
+            ? "Checkout online pendente de configuracao"
+            : "Cobranca recorrente automatica no cartao"}
         </div>
       </div>
 
@@ -71,6 +91,7 @@ export default function PlansPage({ mode = "public" }) {
   const { tenantId } = useTenant();
   const { user, isClient } = useAuth();
   const [plans, setPlans] = useState([]);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -94,7 +115,7 @@ export default function PlansPage({ mode = "public" }) {
       try {
         const items = isAdminMode
           ? await listStudentPlans(tenantId)
-          : await getPublicPlans(tenantId);
+          : await listRecurringSubscriptionPlans(tenantId);
         if (!cancelled) {
           setPlans(Array.isArray(items) ? items : []);
         }
@@ -121,9 +142,14 @@ export default function PlansPage({ mode = "public" }) {
 
   const actionLabel = useMemo(() => {
     if (isAdminMode) return "Gerenciar plano";
-    if (isClient && user?.role === "ALUNO") return "Contratar este plano";
+    if (isClient && user?.role === "ALUNO") return "Selecionar plano";
     return "Criar conta para contratar";
   }, [isAdminMode, isClient, user?.role]);
+
+  const selectedPlan = useMemo(
+    () => plans.find((plan) => plan.id === selectedPlanId) || null,
+    [plans, selectedPlanId],
+  );
 
   const resetForm = () => {
     setEditingPlanId("");
@@ -135,7 +161,7 @@ export default function PlansPage({ mode = "public" }) {
     });
   };
 
-  const handleSelect = async (plan) => {
+  const handleSelect = (plan) => {
     if (isAdminMode) {
       setEditingPlanId(plan.id);
       setForm({
@@ -153,12 +179,12 @@ export default function PlansPage({ mode = "public" }) {
       return;
     }
 
-    try {
-      await assignPlanToMyAccount(plan.id, tenantId);
-      setMessage(`Plano ${plan.name} contratado com sucesso.`);
-    } catch (error) {
-      setMessage(error?.message || "Nao foi possivel contratar o plano");
-    }
+    setSelectedPlanId(plan.id);
+    setMessage(
+      plan.isRecurringEnabled === false
+        ? "Plano selecionado, mas o checkout recorrente ainda nao foi configurado para ele."
+        : `Plano ${plan.name} selecionado. Preencha os dados do cartao para concluir a assinatura.`,
+    );
   };
 
   const handleAdminSave = async (event) => {
@@ -385,7 +411,7 @@ export default function PlansPage({ mode = "public" }) {
 
       {!loading && plans.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-8 text-sm text-white/65">
-          Nenhum plano publico encontrado para esse tenant.
+          Nenhum plano de assinatura encontrado para esse tenant.
         </div>
       ) : null}
 
@@ -395,11 +421,27 @@ export default function PlansPage({ mode = "public" }) {
             key={plan.id}
             plan={plan}
             onSelect={handleSelect}
-            selected={false}
+            selected={selectedPlanId === plan.id}
             actionLabel={actionLabel}
           />
         ))}
       </section>
+
+      {!isAdminMode && user?.role === "ALUNO" && selectedPlan ? (
+        <RecurringSubscriptionForm
+          key={selectedPlan.id}
+          plan={selectedPlan}
+          onSuccess={() => {
+            setMessage(`Assinatura do plano ${selectedPlan.name} criada com sucesso.`);
+          }}
+        />
+      ) : null}
+
+      {!isAdminMode && (!user || user.role !== "ALUNO") ? (
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-white/70">
+          O checkout recorrente fica disponivel apos o login do aluno. Se ainda nao tiver conta, faca seu cadastro vinculado ao tenant e volte para escolher o plano.
+        </section>
+      ) : null}
     </main>
   );
 }

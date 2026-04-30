@@ -64,6 +64,49 @@ export function formatDate(value) {
   }).format(date);
 }
 
+function extractListPayload(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.plans)) return payload.plans;
+  if (Array.isArray(payload?.subscriptions)) return payload.subscriptions;
+  return [];
+}
+
+function normalizeRecurringPlan(plan) {
+  if (!plan || typeof plan !== "object") {
+    return null;
+  }
+
+  const transactionAmount = Number(
+    plan.transaction_amount ??
+      plan.transactionAmount ??
+      Number(plan.monthlyPriceCents || 0) / 100,
+  );
+  const frequency = Number(plan.frequency ?? plan.repetition ?? 1);
+  const recurringPlanId =
+    plan.preapproval_plan_id || plan.preapprovalPlanId || null;
+  const id =
+    plan.id ||
+    recurringPlanId ||
+    `${plan.name || "plano"}-${transactionAmount || 0}-${frequency || 1}`;
+
+  return {
+    ...plan,
+    id: String(id),
+    name: plan.name || plan.title || "Plano mensal",
+    description: plan.description || "",
+    recurringPlanId,
+    transactionAmount: Number.isFinite(transactionAmount)
+      ? transactionAmount
+      : 0,
+    frequency: Number.isFinite(frequency) && frequency > 0 ? frequency : 1,
+    frequencyType: plan.frequency_type || plan.frequencyType || "months",
+    monthlyPriceCents:
+      plan.monthlyPriceCents || Math.round((transactionAmount || 0) * 100),
+    isRecurringEnabled: Boolean(recurringPlanId),
+  };
+}
+
 async function request(path, options = {}) {
   const method = (options.method || "GET").toUpperCase();
   const headers = new Headers(options.headers || {});
@@ -149,6 +192,39 @@ export async function getPublicPlans(personalId) {
     auth: false,
   });
   return Array.isArray(response?.plans) ? response.plans : [];
+}
+
+export async function listRecurringSubscriptionPlans(tenantId) {
+  try {
+    const response = await request(
+      "/payments/recurring/subscriptions/plans/public",
+      {
+        tenantId,
+        auth: false,
+      },
+    );
+
+    return extractListPayload(response)
+      .map(normalizeRecurringPlan)
+      .filter(Boolean);
+  } catch (error) {
+    if (error instanceof ApiError && error.status !== 404) {
+      throw error;
+    }
+
+    const fallbackPlans = await getPublicPlans(tenantId);
+    return fallbackPlans.map(normalizeRecurringPlan).filter(Boolean);
+  }
+}
+
+export async function createRecurringSubscription(payload, tenantId) {
+  const response = await request("/payments/recurring/subscriptions", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+
+  return response?.subscription || response?.data || response;
 }
 
 export async function listStudents(tenantId) {
