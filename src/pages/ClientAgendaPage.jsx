@@ -100,30 +100,7 @@ export default function ClientAgendaPage() {
         const data = await listMyAgendaEvents(tenantId);
         if (!cancelled) {
           const list = Array.isArray(data) ? data : [];
-          const filtered = list.filter((event) => {
-            const date = new Date(event.startsAt);
-            return (
-              date >=
-                new Date(
-                  monthRange.first.getFullYear(),
-                  monthRange.first.getMonth(),
-                  1,
-                  0,
-                  0,
-                  0,
-                ) &&
-              date <=
-                new Date(
-                  monthRange.first.getFullYear(),
-                  monthRange.first.getMonth() + 1,
-                  31,
-                  23,
-                  59,
-                  59,
-                )
-            );
-          });
-          setEvents(filtered);
+          setEvents(list);
         }
       } catch (error) {
         if (!cancelled) {
@@ -141,7 +118,7 @@ export default function ClientAgendaPage() {
     return () => {
       cancelled = true;
     };
-  }, [monthRange.first]);
+  }, []);
 
   const eventsByDay = useMemo(() => {
     const map = new Map();
