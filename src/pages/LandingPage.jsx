@@ -106,11 +106,11 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO */}
-      <section className="relative z-10 flex min-h-[calc(100vh-80px)] flex-col justify-center px-6 pb-24 pt-8 lg:px-14">
-        <div className="grid items-center gap-10 lg:grid-cols-[1fr_380px]">
+      <section className="relative z-10 flex flex-col justify-center px-6 py-10 lg:px-14 lg:py-0 lg:min-h-[calc(100vh-80px)]">
+        <div className="grid items-center gap-8 lg:grid-cols-[1fr_360px]">
           {/* LEFT */}
           <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#b5f03c]/30 bg-[#b5f03c]/10 px-4 py-1.5 text-sm text-[#b5f03c]">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#b5f03c]/30 bg-[#b5f03c]/10 px-4 py-1.5 text-sm text-[#b5f03c]">
               <Star size={14} fill="#b5f03c" className="text-[#b5f03c]" />
               <span className="font-semibold">4.8/5.0</span>
               <span className="text-white/50">reviews verificados</span>
@@ -118,7 +118,7 @@ export default function LandingPage() {
 
             <h1
               className="max-w-2xl font-black uppercase leading-[0.92] tracking-tight text-[#b5f03c]"
-              style={{ fontSize: "clamp(3rem, 8vw, 6.5rem)" }}
+              style={{ fontSize: "clamp(2.4rem, 6vw, 5.5rem)" }}
             >
               Transforme
               <br />
@@ -127,12 +127,12 @@ export default function LandingPage() {
               <span className="text-white">hoje</span>
             </h1>
 
-            <p className="mt-6 max-w-lg text-base leading-7 text-white/60">
+            <p className="mt-4 max-w-lg text-sm leading-6 text-white/60">
               Libere seu potencial com planos de treino personalizados,
               especialmente para você.
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+            <div className="mt-6 flex flex-wrap items-center gap-4">
               <Link
                 to="/login"
                 className="inline-flex items-center gap-2 rounded-full bg-[#b5f03c] px-7 py-3.5 text-sm font-bold text-black transition hover:brightness-110"
