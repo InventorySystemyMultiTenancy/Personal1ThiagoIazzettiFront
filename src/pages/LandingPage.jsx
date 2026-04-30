@@ -1,123 +1,195 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Crown, Sparkles, ShieldCheck } from "lucide-react";
+import { ArrowRight, Star, Play, ChevronDown } from "lucide-react";
 import { getTenantFromHost } from "../contexts/TenantContext.jsx";
 
-const benefits = [
-  "Acesso ao painel mais completo para o seu treino",
-  "Cadastro personalizado e feito exclusivamente para você!",
-  "Planos, treinos e agenda conectados à sua rotina",
+const marqueeItems = [
+  "Musculação",
+  "Emagrecimento",
+  "Ganho de Massa",
+  "Hipertrofia",
+  "Condicionamento",
+  "Treino Funcional",
+  "HIIT",
+  "Mobilidade",
+  "Força",
+  "Resistência",
 ];
 
 export default function LandingPage() {
   const tenantFromHost = getTenantFromHost();
 
   return (
-    <main className="min-h-screen bg-[#090909] text-[#f2f2f2]">
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-8 lg:px-10">
-        <header className="flex items-center justify-between border-b border-white/10 pb-6">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.svg"
-              alt="Thiago Iazzetti Personal Premium"
-              className="h-12 w-12 rounded-2xl bg-white object-cover p-1"
-            />
-            <div>
-              <p className="font-title text-xl text-[#d9c179]">
-                Thiago Iazzetti
-              </p>
-              <p className="text-xs uppercase tracking-[0.22em] text-white/45">
-                Personal training premium
-              </p>
-            </div>
-          </div>
+    <main className="relative min-h-screen overflow-hidden bg-[#0a0a0a] text-white">
+      {/* Background */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 60% 40%, rgba(60,80,40,0.45) 0%, rgba(10,10,10,0.0) 70%), radial-gradient(ellipse 50% 80% at 80% 60%, rgba(30,50,20,0.3) 0%, transparent 60%), linear-gradient(180deg,#0a0a0a 0%,#111810 40%,#0a0a0a 100%)",
+        }}
+      />
+      {/* Noise/grain overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")",
+        }}
+      />
 
-          <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/75 transition hover:border-[#d9b341]/50 hover:text-white"
-            >
-              Login
-            </Link>
-            <Link
-              to="/cadastro"
-              className="rounded-full bg-[#d9b341] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110"
-            >
-              Cadastrar
-            </Link>
-          </div>
-        </header>
+      {/* NAV */}
+      <nav className="relative z-10 flex items-center justify-between px-6 py-5 lg:px-14">
+        <div className="flex items-center gap-3">
+          <img
+            src="/logo.svg"
+            alt="Thiago Iazzetti"
+            className="h-11 w-11 rounded-full bg-white/10 object-contain p-1"
+          />
+          <span className="hidden font-bold tracking-wide text-[#d9c179] sm:block">
+            THIAGO IAZZETTI
+          </span>
+        </div>
 
-        <section className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:py-16">
+        <div className="hidden items-center gap-8 text-sm font-medium text-white/70 md:flex">
+          <a href="#" className="transition hover:text-white">
+            Home
+          </a>
+          <a
+            href="#"
+            className="flex items-center gap-1 transition hover:text-white"
+          >
+            Treinos <ChevronDown size={14} />
+          </a>
+          <a href="#" className="transition hover:text-white">
+            Depoimentos
+          </a>
+          <a
+            href="#"
+            className="flex items-center gap-1 transition hover:text-white"
+          >
+            Planos <ChevronDown size={14} />
+          </a>
+        </div>
+
+        <Link
+          to="/login"
+          className="rounded-full bg-[#b5f03c] px-5 py-2 text-sm font-bold text-black transition hover:brightness-110"
+        >
+          Entre em contato
+        </Link>
+      </nav>
+
+      {/* HERO */}
+      <section className="relative z-10 flex min-h-[calc(100vh-80px)] flex-col justify-center px-6 pb-24 pt-8 lg:px-14">
+        <div className="grid items-center gap-10 lg:grid-cols-[1fr_380px]">
+          {/* LEFT */}
           <div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d9b341]/35 bg-[#d9b341]/10 px-4 py-2 text-sm text-[#d9c179]">
-              <Sparkles size={16} />
-              Primeiro passo: entrar ou criar conta
+            {/* Rating badge */}
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#d9b341]/30 bg-[#d9b341]/10 px-4 py-1.5 text-sm text-[#d9c179]">
+              <Star size={14} fill="#d9b341" className="text-[#d9b341]" />
+              <span className="font-semibold">4.8/5.0</span>
+              <span className="text-white/50">reviews verificados</span>
             </div>
-            <h1 className="max-w-3xl font-title text-5xl leading-none text-[#f2e3b3] md:text-7xl">
-              Seu personal do jeito que você merece.
+
+            <h1
+              className="max-w-2xl font-black uppercase leading-[0.92] tracking-tight text-[#b5f03c]"
+              style={{ fontSize: "clamp(3rem, 8vw, 6.5rem)" }}
+            >
+              Transforme
+              <br />
+              sua jornada
+              <br />
+              <span className="text-white">hoje</span>
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/68">
-              Faça login para ter acesso à plataforma do seu personal e começar a treinar do seu jeito" 
+
+            <p className="mt-6 max-w-lg text-base leading-7 text-white/60">
+              Libere seu potencial com planos de treino personalizados,
+              especialmente para você.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#d9b341] px-6 py-3 text-sm font-semibold text-black transition hover:brightness-110"
+                className="inline-flex items-center gap-2 rounded-full bg-[#b5f03c] px-7 py-3.5 text-sm font-bold text-black transition hover:brightness-110"
               >
-                AGENDAR
+                Junte-se a nós
                 <ArrowRight size={16} />
               </Link>
               <Link
-                to="/cadastro"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/12 px-6 py-3 text-sm font-medium text-white/80 transition hover:border-[#d9b341]/55 hover:text-white"
+                to="/login"
+                className="group inline-flex items-center gap-3 text-sm text-white/70 transition hover:text-white"
               >
-                Criar conta
+                <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/5 transition group-hover:border-[#b5f03c]/50 group-hover:bg-[#b5f03c]/10">
+                  <Play size={14} fill="currentColor" />
+                </span>
+                Ver como funciona
               </Link>
-            </div>
-
-            <div className="mt-10 grid gap-3 sm:grid-cols-3">
-              {benefits.map((item) => (
-                <div
-                  key={item}
-                  className="rounded-3xl border border-white/10 bg-white/4 p-4 text-sm text-white/72 backdrop-blur"
-                >
-                  <ShieldCheck className="mb-3 text-[#d9b341]" size={18} />
-                  {item}
-                </div>
-              ))}
             </div>
           </div>
 
-          <aside className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.4)] backdrop-blur">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/45">
-              Entrada inicial
-            </p>
-            <h2 className="mt-3 font-title text-3xl text-[#d9c179]">
-              Login ou cadastro
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-white/68">
-              Esse é o seu painel personalizado, faça login e veja seus horários e treinos planejados com seu personal.
+          {/* RIGHT — stats card */}
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-gradient-to-br from-[#d9b341] to-[#b5f03c]"
+                  />
+                ))}
+              </div>
+              <span className="text-sm text-white/60">
+                <strong className="text-white">4k+</strong> membros
+              </span>
+            </div>
+
+            <p className="text-sm leading-6 text-white/60">
+              Libere seu potencial com planos de treino personalizados,
+              especialmente para você.
             </p>
 
-            {tenantFromHost ? (
-              <div className="mt-6 rounded-2xl border border-[#d9b341]/20 bg-[#d9b341]/10 p-4 text-sm text-white/75">
-                <p className="font-semibold text-[#d9c179]">Seja bem vindo!</p>
-                <p className="mt-1">
-                  <strong>{tenantFromHost}</strong> aguarda seu agendamento para alavancar seus treinos! Clique em "AGENDAR"!
-                </p>
-              </div>
-            ) : (
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
-                Nenhum subdomínio detectado no momento. O cadastro ainda
-                funciona, mas o tenant precisa estar disponível pela URL do
-                personal.
-              </div>
+            <Link
+              to={tenantFromHost ? "/login" : "/cadastro"}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b5f03c] py-3 text-sm font-bold text-black transition hover:brightness-110"
+            >
+              Junte-se a nós
+              <ArrowRight size={15} />
+            </Link>
+
+            {tenantFromHost && (
+              <p className="mt-3 text-center text-xs text-white/40">
+                Bem-vindo! Acesse a plataforma de{" "}
+                <span className="text-[#d9c179]">{tenantFromHost}</span>
+              </p>
             )}
-          </aside>
-        </section>
+          </div>
+        </div>
+      </section>
+
+      {/* MARQUEE */}
+      <div className="relative z-10 border-y border-white/10 bg-[#b5f03c] py-4 overflow-hidden">
+        <div
+          className="flex gap-0 whitespace-nowrap"
+          style={{ animation: "marquee 28s linear infinite" }}
+        >
+          {[...marqueeItems, ...marqueeItems].map((item, i) => (
+            <span
+              key={i}
+              className="mx-6 text-sm font-bold uppercase tracking-widest text-black"
+            >
+              {item} <span className="mx-4 opacity-40">—</span>
+            </span>
+          ))}
+        </div>
       </div>
+
+      <style>{`
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+      `}</style>
     </main>
   );
 }
