@@ -245,7 +245,7 @@ export default function AdminDietPage() {
         </h1>
         <p className="mt-3 max-w-3xl text-white/65">
           Crie um plano de dieta, vincule a um aluno e selecione um ou varios
-          dias da semana. Cada plano fica isolado no tenant atual.
+          dias da semana. Cada plano fica isolado.
         </p>
       </header>
 

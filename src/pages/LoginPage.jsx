@@ -60,8 +60,7 @@ export default function LoginPage() {
             Entrar na plataforma real.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-8 text-white/70">
-            Use sua conta para acessar o painel do personal ou a area do aluno.
-            O tenant correto vem do proprio backend, entao nao ha contrato demo.
+            Use sua conta para acessar seus treinos, o painel do personal ou a área do aluno.
           </p>
 
           <div className="mt-8 space-y-4 text-sm text-white/72">

@@ -80,7 +80,7 @@ export default function RegisterPage() {
             <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
               <p className="font-semibold text-[#d9c179]">Plano contratado</p>
               <p className="mt-1">
-                Escolha o plano publico do tenant e confirme a adesao.
+                Escolha o plano e confirme a adesao.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
@@ -163,7 +163,7 @@ export default function RegisterPage() {
             {/* personalId is auto-detected from subdomain when available */}
             {!tenantId ? (
               <label className="block text-sm text-white/70">
-                Tenant ID do personal
+                ID do personal
                 <input
                   name="personalId"
                   value={form.personalId}
@@ -175,7 +175,7 @@ export default function RegisterPage() {
               </label>
             ) : (
               <p className="mt-3 text-sm text-white/70">
-                Cadastro vinculado ao tenant detectado:{" "}
+                Cadastro vinculado detectado:{" "}
                 <strong className="text-[#d9c179]">{tenantId}</strong>
               </p>
             )}
@@ -210,7 +210,7 @@ export default function RegisterPage() {
 
           {resolvedTenant ? (
             <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/60">
-              Cadastro vinculado ao tenant: {resolvedTenant}
+              Cadastro vinculado detectado: {resolvedTenant}
             </p>
           ) : null}
         </section>
