@@ -288,10 +288,6 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
               }
             },
             onFetching: () => {
-              if (!cancelled) {
-                setSdkState("submitting");
-              }
-
               return () => undefined;
             },
             onError: (error) => {
