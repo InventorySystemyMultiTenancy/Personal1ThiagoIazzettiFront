@@ -209,6 +209,10 @@ export default function AdminDashboardPage() {
       setActiveTab("comunicacao");
       return;
     }
+    if (location.pathname.includes("/admin/comunicacao")) {
+      setActiveTab("comunicacao");
+      return;
+    }
     setActiveTab("visao-geral");
   }, [location.pathname]);
 

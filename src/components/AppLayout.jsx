@@ -11,6 +11,7 @@ import {
   Sparkles,
   CalendarDays,
   Salad,
+  MessageSquare,
 } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import SidebarLink from "./SidebarLink.jsx";
@@ -24,6 +25,7 @@ const adminNavItems = [
   { label: "Treinos", path: "admin/treinos", icon: Dumbbell },
   { label: "Agenda", path: "admin/agenda", icon: CalendarDays },
   { label: "Dietas", path: "admin/dietas", icon: Salad },
+  { label: "Comunicação", path: "admin/comunicacao", icon: MessageSquare },
 ];
 
 const clientNavItems = [
