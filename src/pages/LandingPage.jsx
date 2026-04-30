@@ -106,7 +106,7 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO */}
-      <section className="relative z-10 flex flex-col justify-center px-6 py-16 lg:px-14 lg:py-20">
+      <section className="relative z-10 flex flex-col justify-center px-6 py-16 lg:px-14 lg:min-h-screen lg:py-0">
         <div className="grid items-center gap-8 lg:grid-cols-[1fr_360px]">
           {/* LEFT */}
           <div>
