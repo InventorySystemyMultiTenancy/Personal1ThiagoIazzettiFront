@@ -44,6 +44,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   const { tenantId } = useTenant();
   const { user } = useAuth();
   const cardFormRef = useRef(null);
+  const mountTimeoutRef = useRef(null);
   const onSuccessRef = useRef(onSuccess);
   const studentIdRef = useRef("");
   const sdkStateRef = useRef("idle");
@@ -66,6 +67,8 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   const missingRecurringPlanWarning = !plan?.recurringPlanId
     ? "Este plano nao trouxe preapproval_plan_id. Vamos tentar criar a assinatura usando o identificador interno do plano."
     : "";
+  const shouldShowRecurringPlanWarning =
+    MP_DEBUG_ENABLED && Boolean(missingRecurringPlanWarning);
 
   useEffect(() => {
     studentIdRef.current = resolvedStudentId;
@@ -150,6 +153,15 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
           locale: "pt-BR",
         });
 
+        mountTimeoutRef.current = window.setTimeout(() => {
+          if (!cancelled && sdkStateRef.current === "loading") {
+            setSdkState("error");
+            setFeedback(
+              "Nao foi possivel inicializar o formulario de pagamento. Tente recarregar a pagina.",
+            );
+          }
+        }, 12000);
+
         const nextCardForm = mp.cardForm({
           amount: String(plan.transactionAmount || 0),
           iframe: true,
@@ -193,6 +205,11 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             onFormMounted: (error) => {
               if (cancelled) {
                 return;
+              }
+
+              if (mountTimeoutRef.current) {
+                window.clearTimeout(mountTimeoutRef.current);
+                mountTimeoutRef.current = null;
               }
 
               if (error) {
@@ -277,6 +294,22 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
 
               return () => undefined;
             },
+            onError: (error) => {
+              if (cancelled) {
+                return;
+              }
+
+              if (mountTimeoutRef.current) {
+                window.clearTimeout(mountTimeoutRef.current);
+                mountTimeoutRef.current = null;
+              }
+
+              setSdkState("error");
+              setFeedback(
+                error?.message ||
+                  "Erro no formulario do Mercado Pago. Verifique os dados e tente novamente.",
+              );
+            },
           },
         });
 
@@ -297,6 +330,10 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
     return () => {
       cancelled = true;
       cardFormRef.current = null;
+      if (mountTimeoutRef.current) {
+        window.clearTimeout(mountTimeoutRef.current);
+        mountTimeoutRef.current = null;
+      }
       if (redirectTimeoutRef.current) {
         window.clearTimeout(redirectTimeoutRef.current);
         redirectTimeoutRef.current = null;
@@ -468,7 +505,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             </div>
           ) : null}
 
-          {missingRecurringPlanWarning ? (
+          {shouldShowRecurringPlanWarning ? (
             <div className="rounded-2xl border border-amber-400/25 bg-amber-500/10 p-4 text-sm text-amber-100">
               {missingRecurringPlanWarning}
             </div>
