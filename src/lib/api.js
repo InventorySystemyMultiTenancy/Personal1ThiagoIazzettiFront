@@ -194,6 +194,13 @@ export async function updateStudentPlan(planId, payload, tenantId) {
   return response?.plan || response;
 }
 
+export async function deleteStudentPlan(planId, tenantId) {
+  return request(`/aluno-plans/${planId}`, {
+    method: "DELETE",
+    tenantId,
+  });
+}
+
 export async function assignPlanToStudent(studentId, alunoPlanId, tenantId) {
   return request(`/aluno-plans/assign/${studentId}`, {
     method: "PATCH",

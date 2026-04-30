@@ -4,6 +4,7 @@ import { Check, Crown, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import {
   createStudentPlan,
   assignPlanToMyAccount,
+  deleteStudentPlan,
   formatCurrency,
   getPublicPlans,
   listStudentPlans,
@@ -208,6 +209,28 @@ export default function PlansPage({ mode = "public" }) {
     }
   };
 
+  const handleAdminDelete = async () => {
+    if (!editingPlanId) return;
+
+    const confirmed = window.confirm(
+      "Tem certeza que deseja excluir este plano? Esta acao nao pode ser desfeita.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setSaving(true);
+      await deleteStudentPlan(editingPlanId, tenantId);
+      setPlans((prev) => prev.filter((plan) => plan.id !== editingPlanId));
+      setMessage("Plano excluido com sucesso");
+      resetForm();
+    } catch (error) {
+      setMessage(error?.message || "Nao foi possivel excluir o plano");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <main className="space-y-6">
       <section className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(217,179,65,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
@@ -324,17 +347,30 @@ export default function PlansPage({ mode = "public" }) {
             </label>
 
             <div className="md:col-span-2">
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-2xl bg-[#d9b341] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
-              >
-                {saving
-                  ? "Salvando..."
-                  : editingPlanId
-                    ? "Salvar alteracoes"
-                    : "Criar plano"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-2xl bg-[#d9b341] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
+                >
+                  {saving
+                    ? "Salvando..."
+                    : editingPlanId
+                      ? "Salvar alteracoes"
+                      : "Criar plano"}
+                </button>
+
+                {editingPlanId ? (
+                  <button
+                    type="button"
+                    onClick={handleAdminDelete}
+                    disabled={saving}
+                    className="rounded-2xl border border-red-400/45 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-200 transition hover:bg-red-500/20 disabled:opacity-60"
+                  >
+                    Excluir plano
+                  </button>
+                ) : null}
+              </div>
             </div>
           </form>
         </section>
