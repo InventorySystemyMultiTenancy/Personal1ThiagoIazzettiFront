@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Star, Play, ChevronDown, X, Check } from "lucide-react";
 import { getTenantFromHost, useTenant } from "../contexts/TenantContext.jsx";
 import { listPublicStudentPlans, formatCurrency } from "../lib/api.js";
+import LanguageSwitcher from "../components/LanguageSwitcher.jsx";
+import { useI18n } from "../contexts/I18nContext.jsx";
 
 const WHATSAPP_NUMBER = "5511971174080";
 
@@ -25,6 +27,7 @@ const marqueeItems = [
 ];
 
 export default function LandingPage() {
+  const { t } = useI18n();
   const { tenantId: contextTenantId } = useTenant();
   const tenantFromHost = getTenantFromHost() || contextTenantId || "";
   const [showPlans, setShowPlans] = useState(false);
@@ -81,14 +84,14 @@ export default function LandingPage() {
 
           <div className="hidden items-center gap-8 text-sm font-medium text-white/70 md:flex">
             <a href="#" className="transition hover:text-white">
-              Home
+              {t("NAV_HOME_THIAGOIAZZETTI", "Home")}
             </a>
             <button
               type="button"
               onClick={() => setShowPlans((v) => !v)}
               className="flex items-center gap-1 transition hover:text-white"
             >
-              Planos
+              {t("NAV_PLANS_THIAGOIAZZETTI", "Planos")}
               <ChevronDown
                 size={14}
                 className={`transition-transform duration-200 ${showPlans ? "rotate-180" : ""}`}
@@ -96,14 +99,17 @@ export default function LandingPage() {
             </button>
           </div>
 
-          <a
-            href={whatsappLink()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full bg-[#b5f03c] px-5 py-2 text-sm font-bold text-black transition hover:brightness-110"
-          >
-            Entre em contato
-          </a>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <a
+              href={whatsappLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full bg-[#b5f03c] px-5 py-2 text-sm font-bold text-black transition hover:brightness-110"
+            >
+              {t("NAV_CONTACT_THIAGOIAZZETTI", "Entre em contato")}
+            </a>
+          </div>
         </nav>
 
         {/* HERO */}

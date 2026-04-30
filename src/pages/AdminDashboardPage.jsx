@@ -1036,18 +1036,31 @@ function ChatPanel({ students }) {
   const [sendingForward, setSendingForward] = useState(false);
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
+  const selectedAlunoIdRef = useRef(null);
+  const loadRequestSeqRef = useRef(0);
 
   const activeStudents = students.filter((s) => s.isActive !== false);
 
   const loadMessages = async (alunoId) => {
+    const requestSeq = ++loadRequestSeqRef.current;
     setLoadingMsgs(true);
     try {
       const msgs = await listMessages(alunoId);
-      setMessages(msgs);
+      if (
+        selectedAlunoIdRef.current === alunoId &&
+        requestSeq === loadRequestSeqRef.current
+      ) {
+        setMessages(msgs);
+      }
     } catch {
       // keep existing
     } finally {
-      setLoadingMsgs(false);
+      if (
+        selectedAlunoIdRef.current === alunoId &&
+        requestSeq === loadRequestSeqRef.current
+      ) {
+        setLoadingMsgs(false);
+      }
     }
   };
 
@@ -1067,6 +1080,7 @@ function ChatPanel({ students }) {
 
   const selectAluno = async (aluno) => {
     setSelectedAluno(aluno);
+    selectedAlunoIdRef.current = aluno.id;
     setMessages([]);
     setText("");
     setSelectedWorkoutId("");
@@ -1205,6 +1219,7 @@ function ChatPanel({ students }) {
               <button
                 type="button"
                 onClick={() => {
+                  selectedAlunoIdRef.current = null;
                   setSelectedAluno(null);
                   clearInterval(pollRef.current);
                 }}

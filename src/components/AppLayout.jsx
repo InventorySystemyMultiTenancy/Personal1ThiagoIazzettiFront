@@ -13,36 +13,88 @@ import {
   Salad,
   MessageSquare,
 } from "lucide-react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import SidebarLink from "./SidebarLink.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useTenant } from "../contexts/TenantContext.jsx";
-
-const adminNavItems = [
-  { label: "Visao Geral", path: "admin", icon: BarChart3 },
-  { label: "Alunos", path: "admin/alunos", icon: Users },
-  { label: "Planos", path: "admin/planos", icon: Wallet },
-  { label: "Treinos", path: "admin/treinos", icon: Dumbbell },
-  { label: "Agenda", path: "admin/agenda", icon: CalendarDays },
-  { label: "Dietas", path: "admin/dietas", icon: Salad },
-  { label: "Comunicação", path: "admin/comunicacao", icon: MessageSquare },
-];
-
-const clientNavItems = [
-  { label: "Meu Painel", path: "cliente", icon: Sparkles },
-  { label: "Planos", path: "cliente/planos", icon: Wallet },
-  { label: "Treinos", path: "cliente/treinos", icon: Dumbbell },
-  { label: "Agenda", path: "cliente/agenda", icon: CalendarDays },
-  { label: "Comunicação", path: "cliente/comunicacao", icon: MessageSquare },
-];
+import { useI18n } from "../contexts/I18nContext.jsx";
+import LanguageSwitcher from "./LanguageSwitcher.jsx";
 
 export default function AppLayout() {
   const { tenantId } = useTenant();
   const { user, isPersonal, signOut } = useAuth();
-  const location = useLocation();
+  const { t } = useI18n();
+
+  const adminNavItems = [
+    {
+      label: t("NAV_OVERVIEW_THIAGOIAZZETTI", "Visao Geral"),
+      path: "admin",
+      icon: BarChart3,
+    },
+    {
+      label: t("NAV_STUDENTS_THIAGOIAZZETTI", "Alunos"),
+      path: "admin/alunos",
+      icon: Users,
+    },
+    {
+      label: t("NAV_PLANS_THIAGOIAZZETTI", "Planos"),
+      path: "admin/planos",
+      icon: Wallet,
+    },
+    {
+      label: t("NAV_WORKOUTS_THIAGOIAZZETTI", "Treinos"),
+      path: "admin/treinos",
+      icon: Dumbbell,
+    },
+    {
+      label: t("NAV_SCHEDULE_THIAGOIAZZETTI", "Agenda"),
+      path: "admin/agenda",
+      icon: CalendarDays,
+    },
+    {
+      label: t("NAV_DIETS_THIAGOIAZZETTI", "Dietas"),
+      path: "admin/dietas",
+      icon: Salad,
+    },
+    {
+      label: t("NAV_COMMUNICATION_THIAGOIAZZETTI", "Comunicacao"),
+      path: "admin/comunicacao",
+      icon: MessageSquare,
+    },
+  ];
+
+  const clientNavItems = [
+    {
+      label: t("NAV_MY_PANEL_THIAGOIAZZETTI", "Meu Painel"),
+      path: "cliente",
+      icon: Sparkles,
+    },
+    {
+      label: t("NAV_PLANS_THIAGOIAZZETTI", "Planos"),
+      path: "cliente/planos",
+      icon: Wallet,
+    },
+    {
+      label: t("NAV_WORKOUTS_THIAGOIAZZETTI", "Treinos"),
+      path: "cliente/treinos",
+      icon: Dumbbell,
+    },
+    {
+      label: t("NAV_SCHEDULE_THIAGOIAZZETTI", "Agenda"),
+      path: "cliente/agenda",
+      icon: CalendarDays,
+    },
+    {
+      label: t("NAV_COMMUNICATION_THIAGOIAZZETTI", "Comunicacao"),
+      path: "cliente/comunicacao",
+      icon: MessageSquare,
+    },
+  ];
 
   const navItems = isPersonal ? adminNavItems : clientNavItems;
-  const roleLabel = isPersonal ? "Personal Admin" : "Aluno";
+  const roleLabel = isPersonal
+    ? t("ROLE_PERSONAL_ADMIN_THIAGOIAZZETTI", "Personal Admin")
+    : t("ROLE_STUDENT_THIAGOIAZZETTI", "Aluno");
 
   return (
     <div className="min-h-screen bg-[#080808] text-[#f4ead2]">
@@ -72,7 +124,7 @@ export default function AppLayout() {
           {/* Nav */}
           <nav className="flex-1 space-y-0.5">
             <p className="mb-3 px-3 text-[9px] font-bold uppercase tracking-[0.4em] text-white/20">
-              Navegação
+              {t("NAV_SECTION_TITLE_THIAGOIAZZETTI", "Navegacao")}
             </p>
             {navItems.map((item) => (
               <SidebarLink
@@ -105,16 +157,22 @@ export default function AppLayout() {
             <div className="flex items-center gap-2.5">
               <div className="h-2 w-2 rounded-full bg-[#b5f03c] shadow-[0_0_8px_rgba(181,240,60,0.6)]" />
               <p className="text-sm font-semibold text-white/70">
-                {isPersonal ? "Painel do Personal" : "Minha Área"}
+                {isPersonal
+                  ? t(
+                      "HEADER_PERSONAL_PANEL_THIAGOIAZZETTI",
+                      "Painel do Personal",
+                    )
+                  : t("HEADER_MY_AREA_THIAGOIAZZETTI", "Minha Area")}
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <LanguageSwitcher compact />
               <Link
                 to="/"
                 className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-1.5 text-xs text-white/50 transition hover:border-white/15 hover:text-white/80"
               >
                 <Bell size={12} />
-                Página pública
+                {t("HEADER_PUBLIC_PAGE_THIAGOIAZZETTI", "Pagina publica")}
               </Link>
               <button
                 type="button"
@@ -122,7 +180,7 @@ export default function AppLayout() {
                 className="flex items-center gap-1.5 rounded-lg bg-white/[0.06] border border-white/[0.07] px-3 py-1.5 text-xs text-white/60 transition hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400"
               >
                 <LogOut size={12} />
-                Sair
+                {t("NAV_SIGN_OUT_THIAGOIAZZETTI", "Sair")}
               </button>
             </div>
           </header>
