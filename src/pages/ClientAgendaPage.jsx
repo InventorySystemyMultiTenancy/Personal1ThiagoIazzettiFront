@@ -13,7 +13,7 @@ import { useTenant } from "../contexts/TenantContext.jsx";
 
 function eventTone(type) {
   if (type === "TREINO")
-    return "border-[#d9b341]/45 bg-[#d9b341]/12 text-[#f2e3b3]";
+    return "border-[#b5f03c]/45 bg-[#b5f03c]/12 text-[#d4f7a0]";
   if (type === "DIETA")
     return "border-emerald-400/45 bg-emerald-500/12 text-emerald-200";
   if (type === "CONSULTA")
@@ -191,7 +191,7 @@ export default function ClientAgendaPage() {
             <p className="text-xs uppercase tracking-[0.28em] text-white/40">
               Agenda do aluno
             </p>
-            <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
+            <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
               Seus horarios e orientacoes
             </h1>
             <p className="mt-3 text-sm text-white/68">
@@ -199,7 +199,7 @@ export default function ClientAgendaPage() {
               voce, incluindo treino e dieta.
             </p>
           </div>
-          <CalendarDays className="text-[#d9b341]" size={28} />
+          <CalendarDays className="text-[#b5f03c]" size={28} />
         </div>
       </section>
 
@@ -233,7 +233,7 @@ export default function ClientAgendaPage() {
               >
                 <ChevronLeft size={16} />
               </button>
-              <h2 className="font-title text-2xl capitalize text-[#d9c179]">
+              <h2 className="font-title text-2xl capitalize text-[#b5f03c]">
                 {monthLabel}
               </h2>
               <button
@@ -299,7 +299,7 @@ export default function ClientAgendaPage() {
               key={group.dayLabel}
               className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6"
             >
-              <h2 className="font-title text-2xl capitalize text-[#d9c179]">
+              <h2 className="font-title text-2xl capitalize text-[#b5f03c]">
                 {group.dayLabel}
               </h2>
               <div className="mt-4 space-y-3">

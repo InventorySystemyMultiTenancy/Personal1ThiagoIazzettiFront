@@ -46,7 +46,7 @@ export default function LandingPage() {
             alt="Thiago Iazzetti"
             className="h-11 w-11 rounded-full bg-white/10 object-contain p-1"
           />
-          <span className="hidden font-bold tracking-wide text-[#d9c179] sm:block">
+          <span className="hidden font-bold tracking-wide text-[#b5f03c] sm:block">
             THIAGO IAZZETTI
           </span>
         </div>
@@ -86,8 +86,8 @@ export default function LandingPage() {
           {/* LEFT */}
           <div>
             {/* Rating badge */}
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#d9b341]/30 bg-[#d9b341]/10 px-4 py-1.5 text-sm text-[#d9c179]">
-              <Star size={14} fill="#d9b341" className="text-[#d9b341]" />
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#b5f03c]/30 bg-[#b5f03c]/10 px-4 py-1.5 text-sm text-[#b5f03c]">
+              <Star size={14} fill="#b5f03c" className="text-[#b5f03c]" />
               <span className="font-semibold">4.8/5.0</span>
               <span className="text-white/50">reviews verificados</span>
             </div>
@@ -135,7 +135,7 @@ export default function LandingPage() {
                 {[...Array(4)].map((_, i) => (
                   <div
                     key={i}
-                    className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-gradient-to-br from-[#d9b341] to-[#b5f03c]"
+                    className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-gradient-to-br from-[#b5f03c] to-[#b5f03c]"
                   />
                 ))}
               </div>
@@ -160,7 +160,7 @@ export default function LandingPage() {
             {tenantFromHost && (
               <p className="mt-3 text-center text-xs text-white/40">
                 Bem-vindo! Acesse a plataforma de{" "}
-                <span className="text-[#d9c179]">{tenantFromHost}</span>
+                <span className="text-[#b5f03c]">{tenantFromHost}</span>
               </p>
             )}
           </div>

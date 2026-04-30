@@ -50,7 +50,7 @@ function WorkoutScheduleList({ schedule, referenceNow }) {
 
   return (
     <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-[#d9c179]">
+      <div className="flex items-center gap-2 text-sm font-semibold text-[#b5f03c]">
         <CalendarDays size={16} />
         Proximas sessoes
       </div>
@@ -68,7 +68,7 @@ function WorkoutScheduleList({ schedule, referenceNow }) {
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="font-semibold text-white">{session.title}</p>
-                <span className="rounded-full border border-[#d9b341]/30 bg-[#d9b341]/10 px-3 py-1 text-xs font-semibold text-[#d9c179]">
+                <span className="rounded-full border border-[#b5f03c]/30 bg-[#b5f03c]/10 px-3 py-1 text-xs font-semibold text-[#b5f03c]">
                   {session.type || "TREINO"}
                 </span>
               </div>
@@ -137,7 +137,7 @@ export default function ClientWorkoutsPage() {
         <p className="text-xs uppercase tracking-[0.28em] text-white/40">
           Area do aluno
         </p>
-        <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
+        <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
           Seus planos e sessoes de treino
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
@@ -153,7 +153,7 @@ export default function ClientWorkoutsPage() {
 
       {loading ? (
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-white/65">
-          <Loader2 className="animate-spin text-[#d9b341]" size={18} />
+          <Loader2 className="animate-spin text-[#b5f03c]" size={18} />
           Carregando treinos e agenda...
         </div>
       ) : null}
@@ -179,14 +179,14 @@ export default function ClientWorkoutsPage() {
                   <p className="text-xs uppercase tracking-[0.24em] text-white/40">
                     Plano de treino
                   </p>
-                  <h2 className="mt-2 font-title text-3xl text-[#d9c179]">
+                  <h2 className="mt-2 font-title text-3xl text-[#b5f03c]">
                     {plan.title}
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-white/68">
                     {plan.objective || "Objetivo definido pelo personal."}
                   </p>
                 </div>
-                <Dumbbell className="text-[#d9b341]" />
+                <Dumbbell className="text-[#b5f03c]" />
               </div>
 
               <div className="mt-4 flex flex-wrap gap-3 text-xs text-white/55">

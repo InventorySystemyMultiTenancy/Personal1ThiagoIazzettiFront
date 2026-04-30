@@ -84,7 +84,7 @@ export default function AppLayout() {
           {/* Bottom user info */}
           <div className="mt-6 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3">
             <div className="flex items-center gap-2 mb-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#d9b341]/20 text-[10px] font-bold text-[#d9c179]">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#b5f03c]/20 text-[10px] font-bold text-[#b5f03c]">
                 {user?.email?.[0]?.toUpperCase() ?? "U"}
               </div>
               <p className="text-xs font-medium text-white/60 truncate flex-1">

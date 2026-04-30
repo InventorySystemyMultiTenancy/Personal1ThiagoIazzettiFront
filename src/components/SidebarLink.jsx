@@ -16,12 +16,12 @@ export default function SidebarLink({ to, icon: Icon, label }) {
       {({ isActive }) => (
         <>
           {isActive && (
-            <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-[#d9b341]" />
+            <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-[#b5f03c]" />
           )}
           <span
             className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg transition-all duration-200 ${
               isActive
-                ? "bg-[#d9b341]/15 text-[#d9c179]"
+                ? "bg-[#b5f03c]/15 text-[#b5f03c]"
                 : "text-white/35 group-hover:text-white/70"
             }`}
           >

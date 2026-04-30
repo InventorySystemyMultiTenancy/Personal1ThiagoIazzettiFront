@@ -126,7 +126,7 @@ function ScheduleSessionModal({
             <p className="text-xs uppercase tracking-[0.24em] text-white/45">
               Agendar treinos
             </p>
-            <h2 className="mt-2 font-title text-3xl text-[#d9c179]">
+            <h2 className="mt-2 font-title text-3xl text-[#b5f03c]">
               {workout.title}
             </h2>
             <p className="mt-2 text-sm text-white/65">
@@ -287,7 +287,7 @@ function ScheduleSessionModal({
                     type="button"
                     onClick={() => onUpdateExistingSession(session)}
                     disabled={saving || loading || updatingSessionId === session.id}
-                    className="rounded-xl border border-[#d9b341]/50 bg-[#d9b341]/10 px-4 py-2 text-sm font-semibold text-[#d9c179] transition hover:bg-[#d9b341]/20 disabled:opacity-50"
+                    className="rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-2 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20 disabled:opacity-50"
                   >
                     {updatingSessionId === session.id
                       ? "Salvando sessao..."
@@ -315,7 +315,7 @@ function ScheduleSessionModal({
             type="button"
             onClick={onAddSession}
             disabled={saving || loading}
-            className="rounded-xl border border-[#d9b341]/50 bg-[#d9b341]/10 px-4 py-3 text-sm font-semibold text-[#d9c179] transition hover:bg-[#d9b341]/20 disabled:opacity-50"
+            className="rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-3 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20 disabled:opacity-50"
           >
             <Plus size={16} className="mr-2 inline-block" />
             Adicionar sessao
@@ -325,7 +325,7 @@ function ScheduleSessionModal({
             type="button"
             onClick={onSubmit}
             disabled={saving || loading}
-            className="rounded-xl bg-[#d9b341] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
+            className="rounded-xl bg-[#b5f03c] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
           >
             {saving ? "Agendando..." : "Salvar agenda"}
           </button>
@@ -439,7 +439,7 @@ function ExerciseSelector({ onAdd, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur">
       <div className="w-full max-w-2xl rounded-4xl border border-white/10 bg-[#0a0a0a] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="font-title text-2xl text-[#d9c179]">
+          <h2 className="font-title text-2xl text-[#b5f03c]">
             Adicionar Exercício
           </h2>
           <button
@@ -462,7 +462,7 @@ function ExerciseSelector({ onAdd, onClose }) {
                   onClick={() => setSelectedGroup(group)}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                     selectedGroup === group
-                      ? "border border-[#d9b341]/50 bg-[#d9b341]/15 text-[#d9c179]"
+                      ? "border border-[#b5f03c]/50 bg-[#b5f03c]/15 text-[#b5f03c]"
                       : "border border-white/10 text-white/60 hover:border-white/20"
                   }`}
                 >
@@ -482,7 +482,7 @@ function ExerciseSelector({ onAdd, onClose }) {
                   exerciseName: e.target.value,
                 }))
               }
-              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#d9b341]/50"
+              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
             >
               <option value="">Selecione um exercício</option>
               {filteredExercises.map((ex) => (
@@ -507,7 +507,7 @@ function ExerciseSelector({ onAdd, onClose }) {
                     sets: parseInt(e.target.value),
                   }))
                 }
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#d9b341]/50"
+                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
               />
             </label>
 
@@ -524,7 +524,7 @@ function ExerciseSelector({ onAdd, onClose }) {
                     reps: parseInt(e.target.value),
                   }))
                 }
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#d9b341]/50"
+                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
               />
             </label>
 
@@ -541,7 +541,7 @@ function ExerciseSelector({ onAdd, onClose }) {
                     restSeconds: parseInt(e.target.value),
                   }))
                 }
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#d9b341]/50"
+                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
               />
             </label>
           </div>
@@ -549,7 +549,7 @@ function ExerciseSelector({ onAdd, onClose }) {
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-[#d9b341] px-4 py-3 font-semibold text-black transition hover:brightness-110"
+              className="flex-1 rounded-xl bg-[#b5f03c] px-4 py-3 font-semibold text-black transition hover:brightness-110"
             >
               Adicionar exercício
             </button>
@@ -580,7 +580,7 @@ function WorkoutItem({ exercise, onRemove }) {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
+          className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#b5f03c]"
         >
           <Edit2 size={16} />
         </button>
@@ -1100,7 +1100,7 @@ export default function WorkoutBuilderPage() {
   return (
     <main className="space-y-6 pb-10">
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-        <h2 className="font-title text-2xl text-[#d9c179]">
+        <h2 className="font-title text-2xl text-[#b5f03c]">
           {editingWorkoutId ? "Editar Treino" : "Criar Novo Treino"}
         </h2>
 
@@ -1110,7 +1110,7 @@ export default function WorkoutBuilderPage() {
             <select
               value={selectedStudentId}
               onChange={(e) => setSelectedStudentId(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#d9b341]/50"
+              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
             >
               <option value="">Selecione um aluno</option>
               {students.map((student) => (
@@ -1123,7 +1123,7 @@ export default function WorkoutBuilderPage() {
 
           <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm">
             <p className="text-white/50">Treino sera vinculado a</p>
-            <p className="mt-1 font-semibold text-[#d9c179]">
+            <p className="mt-1 font-semibold text-[#b5f03c]">
               {selectedStudent?.fullName || "Nenhum aluno selecionado"}
             </p>
           </div>
@@ -1145,7 +1145,7 @@ export default function WorkoutBuilderPage() {
                 onChange={(e) =>
                   setWorkoutForm((prev) => ({ ...prev, title: e.target.value }))
                 }
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
+                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#b5f03c]/50"
                 placeholder="Ex: Peito e Costas"
               />
             </label>
@@ -1161,7 +1161,7 @@ export default function WorkoutBuilderPage() {
                     objective: e.target.value,
                   }))
                 }
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
+                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#b5f03c]/50"
                 placeholder="Ex: Força e Hipertrofia"
               />
             </label>
@@ -1173,7 +1173,7 @@ export default function WorkoutBuilderPage() {
                 onChange={(e) =>
                   setWorkoutForm((prev) => ({ ...prev, phase: e.target.value }))
                 }
-                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#d9b341]/50"
+                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
               >
                 <option>Hipertrofia</option>
                 <option>Força</option>
@@ -1214,7 +1214,7 @@ export default function WorkoutBuilderPage() {
             <button
               type="button"
               onClick={() => setShowExerciseModal(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#d9b341]/50 bg-[#d9b341]/10 px-6 py-3 font-semibold text-[#d9c179] transition hover:bg-[#d9b341]/20"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-6 py-3 font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
             >
               <Plus size={16} />
               Adicionar Exercício
@@ -1223,7 +1223,7 @@ export default function WorkoutBuilderPage() {
             <button
               type="submit"
               disabled={saving || !selectedStudentId}
-              className="flex-1 rounded-xl bg-[#d9b341] px-6 py-3 font-semibold text-black transition hover:brightness-110 md:flex-none"
+              className="flex-1 rounded-xl bg-[#b5f03c] px-6 py-3 font-semibold text-black transition hover:brightness-110 md:flex-none"
             >
               {saving
                 ? "Salvando..."
@@ -1246,7 +1246,7 @@ export default function WorkoutBuilderPage() {
       </article>
 
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-        <h2 className="font-title text-2xl text-[#d9c179]">
+        <h2 className="font-title text-2xl text-[#b5f03c]">
           Templates de Treino
         </h2>
         <p className="mt-2 text-sm text-white/60">
@@ -1269,7 +1269,7 @@ export default function WorkoutBuilderPage() {
               <button
                 type="button"
                 onClick={() => handleApplyTemplate(template)}
-                className="rounded-lg border border-[#d9b341]/50 bg-[#d9b341]/10 px-4 py-2 text-sm font-medium text-[#d9c179] transition hover:bg-[#d9b341]/20"
+                className="rounded-lg border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-2 text-sm font-medium text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
               >
                 Usar Template
               </button>
@@ -1279,7 +1279,7 @@ export default function WorkoutBuilderPage() {
       </article>
 
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-        <h2 className="font-title text-2xl text-[#d9c179]">
+        <h2 className="font-title text-2xl text-[#b5f03c]">
           Treinos do Aluno ({workouts.length})
         </h2>
 
@@ -1312,7 +1312,7 @@ export default function WorkoutBuilderPage() {
                     <button
                       type="button"
                       onClick={() => handleEditWorkout(workout)}
-                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
+                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#b5f03c]"
                       title="Editar treino"
                     >
                       <Edit2 size={16} />
@@ -1320,7 +1320,7 @@ export default function WorkoutBuilderPage() {
                     <button
                       type="button"
                       onClick={() => openScheduleModal(workout)}
-                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
+                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#b5f03c]"
                       title="Agendar treinos"
                     >
                       <CalendarDays size={16} />
@@ -1328,7 +1328,7 @@ export default function WorkoutBuilderPage() {
                     <button
                       type="button"
                       onClick={() => handleCloneWorkout(workout)}
-                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
+                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#b5f03c]"
                       title="Clonar treino"
                     >
                       <Copy size={16} />
@@ -1355,7 +1355,7 @@ export default function WorkoutBuilderPage() {
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-[#d9c179]">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-[#b5f03c]">
                     <Clock3 size={16} />
                     Proximas sessoes
                   </div>

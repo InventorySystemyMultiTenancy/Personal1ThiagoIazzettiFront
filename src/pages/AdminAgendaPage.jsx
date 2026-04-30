@@ -21,7 +21,7 @@ import { useTenant } from "../contexts/TenantContext.jsx";
 
 function eventTone(type) {
   if (type === "TREINO")
-    return "border-[#d9b341]/45 bg-[#d9b341]/12 text-[#f2e3b3]";
+    return "border-[#b5f03c]/45 bg-[#b5f03c]/12 text-[#d4f7a0]";
   if (type === "DIETA")
     return "border-emerald-400/45 bg-emerald-500/12 text-emerald-200";
   if (type === "CONSULTA")
@@ -374,14 +374,14 @@ export default function AdminAgendaPage() {
             <p className="text-xs uppercase tracking-[0.28em] text-white/40">
               Agenda
             </p>
-            <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
+            <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
               Agenda do Personal
             </h1>
             <p className="mt-3 text-sm text-white/68">
               Calendario mensal, recorrencia semanal/mensal e presenca do aluno.
             </p>
           </div>
-          <CalendarDays className="text-[#d9b341]" size={28} />
+          <CalendarDays className="text-[#b5f03c]" size={28} />
         </div>
       </section>
 
@@ -404,7 +404,7 @@ export default function AdminAgendaPage() {
           >
             <ChevronLeft size={16} />
           </button>
-          <h2 className="font-title text-2xl capitalize text-[#d9c179]">
+          <h2 className="font-title text-2xl capitalize text-[#b5f03c]">
             {monthLabel}
           </h2>
           <button
@@ -466,7 +466,7 @@ export default function AdminAgendaPage() {
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
         <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-          <h2 className="font-title text-2xl text-[#d9c179]">
+          <h2 className="font-title text-2xl text-[#b5f03c]">
             {editingId ? "Editar evento" : "Novo evento"}
           </h2>
           <form className="mt-5 space-y-4" onSubmit={handleSave}>
@@ -632,7 +632,7 @@ export default function AdminAgendaPage() {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 rounded-xl bg-[#d9b341] px-5 py-3 font-semibold text-black"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#b5f03c] px-5 py-3 font-semibold text-black"
               >
                 <Save size={16} />
                 {editingId ? "Salvar alteracoes" : "Criar evento"}
@@ -651,7 +651,7 @@ export default function AdminAgendaPage() {
         </article>
 
         <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-          <h2 className="font-title text-2xl text-[#d9c179]">
+          <h2 className="font-title text-2xl text-[#b5f03c]">
             Eventos ({events.length})
           </h2>
           <p className="mt-2 text-sm text-white/60">

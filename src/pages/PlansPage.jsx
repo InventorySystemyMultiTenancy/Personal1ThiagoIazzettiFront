@@ -22,7 +22,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
     <article
       className={`flex h-full flex-col rounded-[1.75rem] border bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)] transition ${
         selected
-          ? "border-[#d9b341]/70 ring-1 ring-[#d9b341]/45"
+          ? "border-[#b5f03c]/70 ring-1 ring-[#b5f03c]/45"
           : "border-white/10"
       }`}
     >
@@ -31,11 +31,11 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
           <p className="text-xs uppercase tracking-[0.28em] text-white/40">
             Plano
           </p>
-          <h3 className="mt-2 font-title text-2xl text-[#d9c179]">
+          <h3 className="mt-2 font-title text-2xl text-[#b5f03c]">
             {plan.name}
           </h3>
         </div>
-        <div className="rounded-2xl border border-[#d9b341]/30 bg-[#d9b341]/10 p-3 text-[#d9b341]">
+        <div className="rounded-2xl border border-[#b5f03c]/30 bg-[#b5f03c]/10 p-3 text-[#b5f03c]">
           <Crown size={18} />
         </div>
       </div>
@@ -61,11 +61,11 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
 
       <div className="mt-6 space-y-3 text-sm text-white/70">
         <div className="flex items-center gap-2">
-          <ShieldCheck size={16} className="text-[#d9b341]" />
+          <ShieldCheck size={16} className="text-[#b5f03c]" />
           Contrato protegido
         </div>
         <div className="flex items-center gap-2">
-          <Check size={16} className="text-[#d9b341]" />
+          <Check size={16} className="text-[#b5f03c]" />
           {plan.isRecurringEnabled === false
             ? "Checkout online pendente de configuracao"
             : "Cobranca recorrente automatica no cartao"}
@@ -78,7 +78,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
         className={`mt-6 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
           selected
             ? "bg-white text-black"
-            : "bg-[#d9b341] text-black hover:brightness-110"
+            : "bg-[#b5f03c] text-black hover:brightness-110"
         }`}
       >
         {actionLabel}
@@ -259,10 +259,10 @@ export default function PlansPage({ mode = "public" }) {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(217,179,65,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+      <section className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(181,240,60,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
+            <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
               Planos publicos
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
@@ -277,13 +277,13 @@ export default function PlansPage({ mode = "public" }) {
           <div className="mt-5 flex flex-wrap gap-3 text-sm text-white/70">
             <Link
               to={`/`}
-              className="rounded-full border border-white/10 px-4 py-2 transition hover:border-[#d9b341]/50 hover:text-white"
+              className="rounded-full border border-white/10 px-4 py-2 transition hover:border-[#b5f03c]/50 hover:text-white"
             >
               Abrir página inicial
             </Link>
             <Link
               to={user?.role === "ALUNO" ? "/cliente" : "/login"}
-              className="rounded-full bg-[#d9b341] px-4 py-2 font-semibold text-black transition hover:brightness-110"
+              className="rounded-full bg-[#b5f03c] px-4 py-2 font-semibold text-black transition hover:brightness-110"
             >
               Continuar
             </Link>
@@ -300,7 +300,7 @@ export default function PlansPage({ mode = "public" }) {
       {isAdminMode ? (
         <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-title text-2xl text-[#f2e3b3]">
+            <h2 className="font-title text-2xl text-[#d4f7a0]">
               {editingPlanId ? "Editar plano" : "Novo plano"}
             </h2>
             {editingPlanId ? (
@@ -374,7 +374,7 @@ export default function PlansPage({ mode = "public" }) {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-2xl bg-[#d9b341] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
+                  className="rounded-2xl bg-[#b5f03c] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
                 >
                   {saving
                     ? "Salvando..."
@@ -401,7 +401,7 @@ export default function PlansPage({ mode = "public" }) {
 
       {loading ? (
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-white/65">
-          <Loader2 className="animate-spin text-[#d9b341]" size={18} />
+          <Loader2 className="animate-spin text-[#b5f03c]" size={18} />
           Carregando planos...
         </div>
       ) : null}

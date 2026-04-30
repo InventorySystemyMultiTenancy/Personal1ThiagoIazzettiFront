@@ -12,14 +12,14 @@ function WorkoutCard({ workout }) {
           <p className="text-xs uppercase tracking-[0.24em] text-white/40">
             Treino
           </p>
-          <h3 className="mt-2 font-title text-2xl text-[#d9c179]">
+          <h3 className="mt-2 font-title text-2xl text-[#b5f03c]">
             {workout.title}
           </h3>
           <p className="mt-2 text-sm text-white/62">
             {workout.objective || "Objetivo definido pelo personal."}
           </p>
         </div>
-        <Dumbbell className="text-[#d9b341]" />
+        <Dumbbell className="text-[#b5f03c]" />
       </div>
 
       <div className="mt-5 space-y-3">
@@ -102,7 +102,7 @@ export default function ClientDashboardPage() {
         <p className="text-xs uppercase tracking-[0.28em] text-white/40">
           Area do aluno
         </p>
-        <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
+        <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
           Seu plano, seus treinos e sua rotina
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
@@ -119,7 +119,7 @@ export default function ClientDashboardPage() {
 
       {loading ? (
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-white/65">
-          <Loader2 className="animate-spin text-[#d9b341]" size={18} />
+          <Loader2 className="animate-spin text-[#b5f03c]" size={18} />
           Carregando seu perfil...
         </div>
       ) : null}
@@ -133,7 +133,7 @@ export default function ClientDashboardPage() {
                   <p className="text-xs uppercase tracking-[0.24em] text-white/40">
                     Plano contratado
                   </p>
-                  <h2 className="mt-2 font-title text-3xl text-[#d9c179]">
+                  <h2 className="mt-2 font-title text-3xl text-[#b5f03c]">
                     {activePlan?.name || "Sem plano ativo"}
                   </h2>
                   <p className="mt-3 max-w-xl text-sm leading-7 text-white/68">
@@ -141,7 +141,7 @@ export default function ClientDashboardPage() {
                       "Selecione um plano publico para iniciar."}
                   </p>
                 </div>
-                <Sparkles className="text-[#d9b341]" />
+                <Sparkles className="text-[#b5f03c]" />
               </div>
 
               <div className={`mt-5 rounded-2xl border px-4 py-4 ${billingStatus.cardClass}`}>
@@ -170,11 +170,11 @@ export default function ClientDashboardPage() {
                   <p className="text-xs uppercase tracking-[0.24em] text-white/40">
                     Agenda
                   </p>
-                  <h2 className="mt-2 font-title text-2xl text-[#d9c179]">
+                  <h2 className="mt-2 font-title text-2xl text-[#b5f03c]">
                     Proximas rotinas
                   </h2>
                 </div>
-                <CalendarDays className="text-[#d9b341]" />
+                <CalendarDays className="text-[#b5f03c]" />
               </div>
 
               <div className="mt-5 space-y-3">
@@ -223,7 +223,7 @@ export default function ClientDashboardPage() {
               <p className="text-xs uppercase tracking-[0.2em] text-white/45">
                 Plano
               </p>
-              <p className="mt-2 font-title text-2xl text-[#d9c179]">
+              <p className="mt-2 font-title text-2xl text-[#b5f03c]">
                 {activePlan?.name || "Sem plano"}
               </p>
             </article>

@@ -28,7 +28,7 @@ import { getBillingStatus } from "../lib/billingStatus.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import WorkoutBuilderPage from "./WorkoutBuilderPage.jsx";
 
-function StatCard({ icon: Icon, label, value, sub, color = "#d9b341" }) {
+function StatCard({ icon: Icon, label, value, sub, color = "#b5f03c" }) {
   return (
     <article
       className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0f0f0f] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-white/12 hover:shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
@@ -71,14 +71,14 @@ function TabButton({ active, icon: Icon, label, onClick }) {
       onClick={onClick}
       className={`relative flex items-center gap-2 rounded-xl px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-200 ${
         active
-          ? "bg-[#d9b341]/10 text-[#d9c179] shadow-[inset_0_0_0_1px_rgba(217,179,65,0.25)]"
+          ? "bg-[#b5f03c]/10 text-[#b5f03c] shadow-[inset_0_0_0_1px_rgba(181,240,60,0.25)]"
           : "text-white/30 hover:bg-white/[0.04] hover:text-white/60"
       }`}
     >
       {Icon && <Icon size={13} strokeWidth={2.5} />}
       <span className="hidden sm:inline">{label}</span>
       {active && (
-        <span className="absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-[#d9b341]" />
+        <span className="absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-[#b5f03c]" />
       )}
     </button>
   );
@@ -193,7 +193,7 @@ export default function AdminDashboardPage() {
         icon: Users,
         label: "Alunos ativos",
         value: students.length,
-        color: "#d9b341",
+        color: "#b5f03c",
       },
       { icon: Wallet, label: "Planos", value: activePlans, color: "#60a5fa" },
       {
@@ -317,15 +317,15 @@ export default function AdminDashboardPage() {
         </div>
         {loading && (
           <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5">
-            <Loader2 className="animate-spin text-[#d9b341]/60" size={13} />
+            <Loader2 className="animate-spin text-[#b5f03c]/60" size={13} />
             <span className="text-[10px] text-white/30">Carregando...</span>
           </div>
         )}
       </section>
 
       {message ? (
-        <div className="flex items-center gap-3 rounded-xl border border-[#d9b341]/15 bg-[#d9b341]/5 px-4 py-3 text-xs text-white/60">
-          <AlertCircle size={14} className="flex-shrink-0 text-[#d9b341]" />
+        <div className="flex items-center gap-3 rounded-xl border border-[#b5f03c]/15 bg-[#b5f03c]/5 px-4 py-3 text-xs text-white/60">
+          <AlertCircle size={14} className="flex-shrink-0 text-[#b5f03c]" />
           {message}
         </div>
       ) : null}
@@ -475,7 +475,7 @@ export default function AdminDashboardPage() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/30">
                   Aniversariantes
                 </p>
-                <Calendar className="text-[#d9b341]/50" size={15} />
+                <Calendar className="text-[#b5f03c]/50" size={15} />
               </div>
               <p className="text-xs text-white/40">
                 Nenhum aniversário próximo nos próximos 7 dias.
@@ -506,7 +506,7 @@ export default function AdminDashboardPage() {
                         fullName: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
                     placeholder="Ex: João Silva"
                   />
                 </label>
@@ -522,7 +522,7 @@ export default function AdminDashboardPage() {
                         email: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
                     placeholder="joao@email.com"
                   />
                 </label>
@@ -538,7 +538,7 @@ export default function AdminDashboardPage() {
                         phone: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
                     placeholder="(11) 99999-9999"
                   />
                 </label>
@@ -554,7 +554,7 @@ export default function AdminDashboardPage() {
                         birthDate: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#d9b341]/40"
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40"
                   />
                 </label>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
@@ -569,7 +569,7 @@ export default function AdminDashboardPage() {
                         planDueDate: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#d9b341]/40"
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40"
                   />
                 </label>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
@@ -583,7 +583,7 @@ export default function AdminDashboardPage() {
                         alunoPlanId: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#d9b341]/40"
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40"
                   >
                     <option value="">Sem plano</option>
                     {plans.map((plan) => (
@@ -597,7 +597,7 @@ export default function AdminDashboardPage() {
               </div>
               <button
                 type="submit"
-                className="flex items-center gap-2 rounded-lg bg-[#d9b341] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
+                className="flex items-center gap-2 rounded-lg bg-[#b5f03c] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
               >
                 <Plus size={14} />
                 Criar aluno
@@ -677,7 +677,7 @@ export default function AdminDashboardPage() {
                           <button
                             type="button"
                             onClick={() => startEditStudent(student)}
-                            className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-[#d9b341]/30 hover:text-[#d9b341]"
+                            className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-[#b5f03c]/30 hover:text-[#b5f03c]"
                           >
                             <Edit2 size={13} />
                           </button>
@@ -695,7 +695,7 @@ export default function AdminDashboardPage() {
                           <p className="text-white/25 text-[10px]">
                             Mensalidade
                           </p>
-                          <p className="mt-0.5 font-semibold text-[#d9c179]">
+                          <p className="mt-0.5 font-semibold text-[#b5f03c]">
                             {student.alunoPlan
                               ? formatCurrency(
                                   (student.alunoPlan.monthlyPriceCents || 0) /
@@ -732,7 +732,7 @@ export default function AdminDashboardPage() {
 
                       {editingStudentId === student.id ? (
                         <div className="mt-4 rounded-xl border border-white/[0.07] bg-black/30 p-4">
-                          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[#d9b341]/60">
+                          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[#b5f03c]/60">
                             Editar aluno
                           </p>
                           <div className="grid gap-3 md:grid-cols-2">
@@ -744,7 +744,7 @@ export default function AdminDashboardPage() {
                                   fullName: e.target.value,
                                 }))
                               }
-                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
                               placeholder="Nome completo"
                             />
                             <input
@@ -756,7 +756,7 @@ export default function AdminDashboardPage() {
                                   email: e.target.value,
                                 }))
                               }
-                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
                               placeholder="Email"
                             />
                             <input
@@ -767,7 +767,7 @@ export default function AdminDashboardPage() {
                                   phone: e.target.value,
                                 }))
                               }
-                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
                               placeholder="Telefone"
                             />
                             <input
@@ -779,7 +779,7 @@ export default function AdminDashboardPage() {
                                   birthDate: e.target.value,
                                 }))
                               }
-                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
                             />
                             <select
                               value={editStudentForm.alunoPlanId}
@@ -789,7 +789,7 @@ export default function AdminDashboardPage() {
                                   alunoPlanId: e.target.value,
                                 }))
                               }
-                              className="rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
+                              className="rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
                             >
                               <option value="">Sem plano</option>
                               {plans.map((plan) => (
@@ -807,7 +807,7 @@ export default function AdminDashboardPage() {
                                   planDueDate: e.target.value,
                                 }))
                               }
-                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
                             />
                           </div>
                           <div className="mt-3 flex items-center gap-2">
@@ -827,7 +827,7 @@ export default function AdminDashboardPage() {
                             <button
                               type="button"
                               onClick={() => handleSaveStudent(student.id)}
-                              className="rounded-lg bg-[#d9b341] px-4 py-2 text-xs font-bold text-black transition hover:brightness-110"
+                              className="rounded-lg bg-[#b5f03c] px-4 py-2 text-xs font-bold text-black transition hover:brightness-110"
                             >
                               Salvar
                             </button>
@@ -871,7 +871,7 @@ export default function AdminDashboardPage() {
                         name: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
                     placeholder="Ex: Plano Premium"
                   />
                 </label>
@@ -889,7 +889,7 @@ export default function AdminDashboardPage() {
                         ),
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
                     placeholder="149.90"
                     step="0.01"
                     min="0"
@@ -907,14 +907,14 @@ export default function AdminDashboardPage() {
                       description: e.target.value,
                     }))
                   }
-                  className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                  className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
                   placeholder="Descreva o plano..."
                   rows={3}
                 />
               </label>
               <button
                 type="submit"
-                className="flex items-center gap-2 rounded-lg bg-[#d9b341] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
+                className="flex items-center gap-2 rounded-lg bg-[#b5f03c] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
               >
                 <Plus size={14} />
                 Criar plano
@@ -949,7 +949,7 @@ export default function AdminDashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <p className="text-lg font-black text-[#d9c179]">
+                      <p className="text-lg font-black text-[#b5f03c]">
                         {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
                         <span className="text-xs font-normal text-white/35">
                           /mês
@@ -958,7 +958,7 @@ export default function AdminDashboardPage() {
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-[#d9b341]/30 hover:text-[#d9b341]"
+                          className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-[#b5f03c]/30 hover:text-[#b5f03c]"
                         >
                           <Edit2 size={13} />
                         </button>
@@ -986,7 +986,7 @@ export default function AdminDashboardPage() {
         <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-bold text-white/60">Comunicação</h2>
-            <MessageSquare className="text-[#d9b341]/40" size={16} />
+            <MessageSquare className="text-[#b5f03c]/40" size={16} />
           </div>
           <p className="text-xs text-white/35 leading-6">
             Chat interno, repositório de arquivos e notificações para alunos.

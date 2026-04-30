@@ -240,7 +240,7 @@ export default function AdminDietPage() {
           <Salad size={12} />
           Dietas Semanais
         </p>
-        <h1 className="mt-4 font-title text-4xl text-[#d9c179]">
+        <h1 className="mt-4 font-title text-4xl text-[#b5f03c]">
           Cadastro de dietas por dia da semana
         </h1>
         <p className="mt-3 max-w-3xl text-white/65">
@@ -257,7 +257,7 @@ export default function AdminDietPage() {
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_1.2fr]">
         <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6">
-          <h2 className="font-title text-2xl text-[#d9c179]">
+          <h2 className="font-title text-2xl text-[#b5f03c]">
             {editingId ? "Editar dieta" : "Nova dieta"}
           </h2>
 
@@ -314,7 +314,7 @@ export default function AdminDietPage() {
                       key={weekday.value}
                       type="button"
                       onClick={() => toggleWeekday(weekday.value)}
-                      className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition ${active ? "border-[#d9b341]/50 bg-[#d9b341]/20 text-[#f2e3b3]" : "border-white/15 bg-white/5 text-white/60"}`}
+                      className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition ${active ? "border-[#b5f03c]/50 bg-[#b5f03c]/20 text-[#d4f7a0]" : "border-white/15 bg-white/5 text-white/60"}`}
                     >
                       {weekday.label}
                     </button>
@@ -340,7 +340,7 @@ export default function AdminDietPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#d9b341] px-5 py-2.5 font-semibold text-black disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#b5f03c] px-5 py-2.5 font-semibold text-black disabled:opacity-60"
               >
                 <Save size={16} />
                 {saving
@@ -370,7 +370,7 @@ export default function AdminDietPage() {
         </article>
 
         <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6">
-          <h2 className="font-title text-2xl text-[#d9c179]">
+          <h2 className="font-title text-2xl text-[#b5f03c]">
             Dietas cadastradas ({diets.length})
           </h2>
 
@@ -429,7 +429,7 @@ export default function AdminDietPage() {
                     {(diet.days || []).map((day) => (
                       <span
                         key={`${diet.id}-${day.weekday}`}
-                        className="rounded-full border border-[#d9b341]/45 bg-[#d9b341]/12 px-3 py-1 text-xs text-[#f2e3b3]"
+                        className="rounded-full border border-[#b5f03c]/45 bg-[#b5f03c]/12 px-3 py-1 text-xs text-[#d4f7a0]"
                       >
                         {weekdayLabel(day.weekday)}
                       </span>
