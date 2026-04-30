@@ -348,6 +348,11 @@ export async function listWorkoutPlans(studentId, tenantId) {
   return Array.isArray(response?.plans) ? response.plans : [];
 }
 
+export async function getWorkoutPlanDetails(planId, tenantId) {
+  const response = await request(`/workout-plans/${planId}`, { tenantId });
+  return response?.plan || response?.data || response;
+}
+
 export async function createWorkoutPlan(payload, tenantId) {
   const response = await request("/workout-plans", {
     method: "POST",
@@ -371,11 +376,14 @@ export async function listMyWorkoutPlans(tenantId) {
   return Array.isArray(response?.plans) ? response.plans : [];
 }
 
-export async function updateWorkoutPlan(planId, payload) {
-  return request(`/workout-plans/${planId}`, {
+export async function updateWorkoutPlan(planId, payload, tenantId) {
+  const response = await request(`/workout-plans/${planId}`, {
     method: "PATCH",
     body: payload,
+    tenantId,
   });
+
+  return response?.plan || response?.data || response;
 }
 
 export async function listAgendaEvents(tenantId, filters = {}) {

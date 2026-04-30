@@ -12,9 +12,13 @@ import {
 } from "lucide-react";
 import {
   createWorkoutPlan,
+  deleteAgendaEvent,
+  getWorkoutPlanDetails,
   listStudents,
   listWorkoutPlans,
   scheduleWorkoutPlan,
+  updateAgendaEvent,
+  updateWorkoutPlan,
 } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 
@@ -62,6 +66,7 @@ function toTimeFieldValue(value) {
 function createEmptySession(seed = Date.now()) {
   return {
     id: `session-${seed}-${Math.random().toString(36).slice(2, 7)}`,
+    agendaId: "",
     title: "",
     date: "",
     startsAtTime: "07:00",
@@ -69,6 +74,22 @@ function createEmptySession(seed = Date.now()) {
     recurrence: "WEEKLY",
     recurrenceUntilDate: "",
   };
+}
+
+function inferPhase(objective) {
+  const match = String(objective || "").match(/\[Fase:\s*([^\]]+)\]\s*$/i);
+  return match?.[1]?.trim() || "Hipertrofia";
+}
+
+function stripPhaseFromObjective(objective) {
+  return String(objective || "")
+    .replace(/\s*\[Fase:\s*[^\]]+\]\s*$/i, "")
+    .trim();
+}
+
+function buildWorkoutObjective(objective, phase) {
+  const cleanedObjective = String(objective || "").trim();
+  return `${cleanedObjective} [Fase: ${phase}]`.trim();
 }
 
 function normalizeWorkoutPlan(plan) {
@@ -81,8 +102,11 @@ function normalizeWorkoutPlan(plan) {
 
 function ScheduleSessionModal({
   workout,
+  loading,
   saving,
   error,
+  updatingSessionId,
+  deletingSessionId,
   replaceExisting,
   sessions,
   onClose,
@@ -90,6 +114,8 @@ function ScheduleSessionModal({
   onSessionChange,
   onAddSession,
   onRemoveSession,
+  onUpdateExistingSession,
+  onDeleteExistingSession,
   onSubmit,
 }) {
   return (
@@ -129,10 +155,16 @@ function ScheduleSessionModal({
             type="checkbox"
             checked={replaceExisting}
             onChange={(event) => onToggleReplaceExisting(event.target.checked)}
-            disabled={saving}
+            disabled={saving || loading}
           />
           Substituir agenda existente deste plano
         </label>
+
+        {loading ? (
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
+            Carregando agenda atual do plano...
+          </div>
+        ) : null}
 
         <div className="mt-5 space-y-4">
           {sessions.map((session, index) => (
@@ -144,11 +176,15 @@ function ScheduleSessionModal({
                 <p className="font-semibold text-white">
                   Sessao {index + 1}
                 </p>
-                {sessions.length > 1 ? (
+                {sessions.length > 1 || session.agendaId ? (
                   <button
                     type="button"
-                    onClick={() => onRemoveSession(session.id)}
-                    disabled={saving}
+                    onClick={() =>
+                      session.agendaId
+                        ? onDeleteExistingSession(session)
+                        : onRemoveSession(session.id)
+                    }
+                    disabled={saving || loading || deletingSessionId === session.id}
                     className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-red-400 disabled:opacity-50"
                   >
                     <Trash2 size={16} />
@@ -166,7 +202,7 @@ function ScheduleSessionModal({
                     }
                     className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
                     placeholder="Ex: Treino A"
-                    disabled={saving}
+                    disabled={saving || loading}
                   />
                 </label>
 
@@ -179,7 +215,7 @@ function ScheduleSessionModal({
                       onSessionChange(session.id, "date", event.target.value)
                     }
                     className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                    disabled={saving}
+                    disabled={saving || loading}
                   />
                 </label>
 
@@ -192,7 +228,7 @@ function ScheduleSessionModal({
                       onSessionChange(session.id, "startsAtTime", event.target.value)
                     }
                     className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                    disabled={saving}
+                    disabled={saving || loading}
                   />
                 </label>
 
@@ -205,7 +241,7 @@ function ScheduleSessionModal({
                       onSessionChange(session.id, "endsAtTime", event.target.value)
                     }
                     className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                    disabled={saving}
+                    disabled={saving || loading}
                   />
                 </label>
 
@@ -217,7 +253,7 @@ function ScheduleSessionModal({
                       onSessionChange(session.id, "recurrence", event.target.value)
                     }
                     className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                    disabled={saving}
+                    disabled={saving || loading}
                   >
                     {recurrenceOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -240,10 +276,36 @@ function ScheduleSessionModal({
                       )
                     }
                     className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                    disabled={saving || session.recurrence === "NONE"}
+                    disabled={saving || loading || session.recurrence === "NONE"}
                   />
                 </label>
               </div>
+
+              {session.agendaId ? (
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => onUpdateExistingSession(session)}
+                    disabled={saving || loading || updatingSessionId === session.id}
+                    className="rounded-xl border border-[#d9b341]/50 bg-[#d9b341]/10 px-4 py-2 text-sm font-semibold text-[#d9c179] transition hover:bg-[#d9b341]/20 disabled:opacity-50"
+                  >
+                    {updatingSessionId === session.id
+                      ? "Salvando sessao..."
+                      : "Salvar sessao"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onDeleteExistingSession(session)}
+                    disabled={saving || loading || deletingSessionId === session.id}
+                    className="rounded-xl border border-red-400/45 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-500/20 disabled:opacity-50"
+                  >
+                    {deletingSessionId === session.id
+                      ? "Excluindo..."
+                      : "Excluir sessao"}
+                  </button>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
@@ -252,7 +314,7 @@ function ScheduleSessionModal({
           <button
             type="button"
             onClick={onAddSession}
-            disabled={saving}
+            disabled={saving || loading}
             className="rounded-xl border border-[#d9b341]/50 bg-[#d9b341]/10 px-4 py-3 text-sm font-semibold text-[#d9c179] transition hover:bg-[#d9b341]/20 disabled:opacity-50"
           >
             <Plus size={16} className="mr-2 inline-block" />
@@ -262,7 +324,7 @@ function ScheduleSessionModal({
           <button
             type="button"
             onClick={onSubmit}
-            disabled={saving}
+            disabled={saving || loading}
             className="rounded-xl bg-[#d9b341] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
           >
             {saving ? "Agendando..." : "Salvar agenda"}
@@ -544,11 +606,15 @@ export default function WorkoutBuilderPage() {
   const [currentWorkoutExercises, setCurrentWorkoutExercises] = useState([]);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingWorkoutId, setEditingWorkoutId] = useState("");
   const [scheduling, setScheduling] = useState(false);
+  const [loadingScheduleDetails, setLoadingScheduleDetails] = useState(false);
   const [scheduleError, setScheduleError] = useState("");
   const [scheduleTarget, setScheduleTarget] = useState(null);
   const [replaceExistingSchedule, setReplaceExistingSchedule] = useState(true);
   const [scheduleSessions, setScheduleSessions] = useState([createEmptySession()]);
+  const [updatingSessionId, setUpdatingSessionId] = useState("");
+  const [deletingSessionId, setDeletingSessionId] = useState("");
   const [workoutForm, setWorkoutForm] = useState({
     title: "",
     objective: "",
@@ -560,30 +626,56 @@ export default function WorkoutBuilderPage() {
     [students, selectedStudentId],
   );
 
-  const openScheduleModal = (workout) => {
-    const sourceSessions = Array.isArray(workout?.schedule) ? workout.schedule : [];
-    const draftSessions = sourceSessions.length
-      ? sourceSessions.slice(0, 4).map((session, index) => ({
-          id: session.id || `existing-${index}`,
-          title: session.title || workout.title,
-          date: toDateFieldValue(session.startsAt),
-          startsAtTime: toTimeFieldValue(session.startsAt) || "07:00",
-          endsAtTime: toTimeFieldValue(session.endsAt) || "08:00",
-          recurrence: session.recurrence || "WEEKLY",
-          recurrenceUntilDate: toDateFieldValue(session.recurrenceUntil),
-        }))
-      : [
-          {
-            ...createEmptySession(),
-            title: workout.title,
-          },
-        ];
+  const toEditableSession = (session, fallbackTitle, index) => ({
+    id: session.id || `existing-${index}`,
+    agendaId: session.id || "",
+    title: session.title || fallbackTitle,
+    date: toDateFieldValue(session.startsAt),
+    startsAtTime: toTimeFieldValue(session.startsAt) || "07:00",
+    endsAtTime: toTimeFieldValue(session.endsAt) || "08:00",
+    recurrence: session.recurrence || "WEEKLY",
+    recurrenceUntilDate: toDateFieldValue(session.recurrenceUntil),
+  });
 
+  const openScheduleModal = async (workout) => {
     setScheduleTarget(workout);
     setReplaceExistingSchedule(true);
-    setScheduleSessions(draftSessions);
     setScheduleError("");
     setShowScheduleModal(true);
+    setLoadingScheduleDetails(true);
+
+    try {
+      const details = normalizeWorkoutPlan(
+        await getWorkoutPlanDetails(workout.id, tenantId),
+      );
+      const sourceSessions = Array.isArray(details.schedule) ? details.schedule : [];
+      const draftSessions = sourceSessions.length
+        ? sourceSessions.map((session, index) =>
+            toEditableSession(session, details.title, index),
+          )
+        : [
+            {
+              ...createEmptySession(),
+              title: details.title,
+            },
+          ];
+
+      setWorkouts((current) =>
+        current.map((item) => (item.id === details.id ? details : item)),
+      );
+      setScheduleTarget(details);
+      setScheduleSessions(draftSessions);
+    } catch (error) {
+      setScheduleError(error?.message || "Nao foi possivel carregar a agenda deste plano.");
+      setScheduleSessions([
+        {
+          ...createEmptySession(),
+          title: workout.title,
+        },
+      ]);
+    } finally {
+      setLoadingScheduleDetails(false);
+    }
   };
 
   const closeScheduleModal = () => {
@@ -592,6 +684,14 @@ export default function WorkoutBuilderPage() {
     setScheduleTarget(null);
     setScheduleSessions([createEmptySession()]);
     setScheduleError("");
+    setUpdatingSessionId("");
+    setDeletingSessionId("");
+  };
+
+  const resetWorkoutForm = () => {
+    setEditingWorkoutId("");
+    setWorkoutForm({ title: "", objective: "", phase: "Hipertrofia" });
+    setCurrentWorkoutExercises([]);
   };
 
   useEffect(() => {
@@ -664,6 +764,7 @@ export default function WorkoutBuilderPage() {
   };
 
   const handleApplyTemplate = (template) => {
+    setEditingWorkoutId("");
     setWorkoutForm({
       title: template.name,
       objective: template.description,
@@ -692,38 +793,74 @@ export default function WorkoutBuilderPage() {
 
     setSaving(true);
     try {
-      const created = await createWorkoutPlan(
-        {
-          alunoId: selectedStudentId,
-          title: workoutForm.title,
-          objective:
-            `${workoutForm.objective || ""} [Fase: ${workoutForm.phase}]`.trim(),
-          items: currentWorkoutExercises.map((exercise, index) => ({
-            exerciseName: exercise.exerciseName,
-            sets: Number(exercise.sets),
-            reps: String(exercise.reps),
-            restSeconds: exercise.restSeconds
-              ? Number(exercise.restSeconds)
-              : null,
-            orderIndex: index,
-          })),
-        },
-        tenantId,
+      const payload = {
+        alunoId: selectedStudentId,
+        title: workoutForm.title,
+        objective: buildWorkoutObjective(
+          workoutForm.objective,
+          workoutForm.phase,
+        ),
+        isActive: true,
+        items: currentWorkoutExercises.map((exercise, index) => ({
+          exerciseName: exercise.exerciseName,
+          sets: Number(exercise.sets),
+          reps: String(exercise.reps),
+          restSeconds: exercise.restSeconds
+            ? Number(exercise.restSeconds)
+            : null,
+          orderIndex: index,
+        })),
+      };
+
+      const persistWorkout = editingWorkoutId
+        ? await updateWorkoutPlan(
+            editingWorkoutId,
+            payload,
+            tenantId,
+          )
+        : await createWorkoutPlan(payload, tenantId);
+
+      const normalized = normalizeWorkoutPlan(persistWorkout);
+
+      setWorkouts((prev) =>
+        editingWorkoutId
+          ? prev.map((workout) =>
+              workout.id === editingWorkoutId ? normalized : workout,
+            )
+          : [normalized, ...prev],
       );
-
-      const normalized = normalizeWorkoutPlan(created);
-
-      setWorkouts((prev) => [normalized, ...prev]);
-      setWorkoutForm({ title: "", objective: "", phase: "Hipertrofia" });
-      setCurrentWorkoutExercises([]);
+      resetWorkoutForm();
       setMessage(
-        `Treino "${created.title}" salvo para ${selectedStudent?.fullName || "aluno"}`,
+        editingWorkoutId
+          ? `Treino "${persistWorkout.title}" atualizado com sucesso.`
+          : `Treino "${persistWorkout.title}" salvo para ${selectedStudent?.fullName || "aluno"}`,
       );
     } catch (error) {
       setMessage(error?.message || "Nao foi possivel salvar treino");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEditWorkout = (workout) => {
+    setEditingWorkoutId(workout.id);
+    setWorkoutForm({
+      title: workout.title || "",
+      objective: stripPhaseFromObjective(workout.objective),
+      phase: inferPhase(workout.objective),
+    });
+    const sourceExercises = Array.isArray(workout.exercises)
+      ? workout.exercises
+      : Array.isArray(workout.items)
+        ? workout.items
+        : [];
+    setCurrentWorkoutExercises(
+      sourceExercises.map((exercise, index) => ({
+        ...exercise,
+        id: exercise.id || `exercise-${workout.id}-${index}`,
+      })),
+    );
+    setMessage(`Editando treino: ${workout.title}`);
   };
 
   const handleCloneWorkout = (workout) => {
@@ -768,7 +905,9 @@ export default function WorkoutBuilderPage() {
       return;
     }
 
-    const normalizedSessions = scheduleSessions.map((session) => {
+    const normalizedSessions = scheduleSessions
+      .filter((session) => !session.agendaId)
+      .map((session) => {
       const startsAt = createLocalOffsetISOString(
         session.date,
         session.startsAtTime,
@@ -786,7 +925,12 @@ export default function WorkoutBuilderPage() {
         recurrence: session.recurrence,
         recurrenceUntil,
       };
-    });
+      });
+
+    if (normalizedSessions.length === 0) {
+      setScheduleError("Adicione pelo menos uma nova sessao para salvar a agenda.");
+      return;
+    }
 
     const invalidSession = normalizedSessions.find(
       (session) =>
@@ -832,9 +976,124 @@ export default function WorkoutBuilderPage() {
       setMessage(`Agenda atualizada para o treino "${scheduleTarget.title}".`);
       closeScheduleModal();
     } catch (error) {
-      setScheduleError(error?.message || "Nao foi possivel agendar as sessoes.");
+      setScheduleError(
+        error?.status === 409
+          ? "Ja existe treino agendado para outro aluno nesse horario. Escolha outro horario."
+          : error?.message || "Nao foi possivel agendar as sessoes.",
+      );
     } finally {
       setScheduling(false);
+    }
+  };
+
+  const handleUpdateExistingSession = async (sessionDraft) => {
+    if (!sessionDraft?.agendaId) {
+      return;
+    }
+
+    const startsAt = createLocalOffsetISOString(
+      sessionDraft.date,
+      sessionDraft.startsAtTime,
+    );
+    const endsAt = createLocalOffsetISOString(
+      sessionDraft.date,
+      sessionDraft.endsAtTime,
+    );
+
+    if (!sessionDraft.title.trim() || !startsAt || !endsAt) {
+      setScheduleError("Preencha titulo, data e horarios validos para editar a sessao.");
+      return;
+    }
+
+    setUpdatingSessionId(sessionDraft.id);
+    setScheduleError("");
+
+    try {
+      const updated = await updateAgendaEvent(
+        sessionDraft.agendaId,
+        {
+          title: sessionDraft.title.trim(),
+          startsAt,
+          endsAt,
+          recurrence:
+            sessionDraft.recurrence && sessionDraft.recurrence !== "NONE"
+              ? sessionDraft.recurrence
+              : null,
+          recurrenceUntil:
+            sessionDraft.recurrence !== "NONE" && sessionDraft.recurrenceUntilDate
+              ? createLocalOffsetISOString(
+                  sessionDraft.recurrenceUntilDate,
+                  "23:59",
+                  "59",
+                )
+              : null,
+        },
+        tenantId,
+      );
+
+      setScheduleSessions((current) =>
+        current.map((session) =>
+          session.id === sessionDraft.id
+            ? toEditableSession(updated, sessionDraft.title, 0)
+            : session,
+        ),
+      );
+      setWorkouts((current) =>
+        current.map((workout) =>
+          workout.id === scheduleTarget.id
+            ? {
+                ...workout,
+                schedule: workout.schedule.map((session) =>
+                  session.id === sessionDraft.agendaId ? updated : session,
+                ),
+              }
+            : workout,
+        ),
+      );
+      setMessage(`Sessao "${sessionDraft.title}" atualizada com sucesso.`);
+    } catch (error) {
+      setScheduleError(
+        error?.status === 409
+          ? "Ja existe treino agendado para outro aluno nesse horario. Escolha outro horario."
+          : error?.message || "Nao foi possivel editar a sessao.",
+      );
+    } finally {
+      setUpdatingSessionId("");
+    }
+  };
+
+  const handleDeleteExistingSession = async (sessionDraft) => {
+    const targetAgendaId = sessionDraft?.agendaId || sessionDraft?.id;
+    if (!targetAgendaId) {
+      handleRemoveScheduleSession(sessionDraft.id);
+      return;
+    }
+
+    setDeletingSessionId(sessionDraft.id);
+    setScheduleError("");
+
+    try {
+      await deleteAgendaEvent(targetAgendaId, tenantId);
+      setScheduleSessions((current) =>
+        current.filter((session) => session.id !== sessionDraft.id),
+      );
+      setWorkouts((current) =>
+        current.map((workout) =>
+          workout.id === scheduleTarget.id
+            ? {
+                ...workout,
+                schedule: workout.schedule.filter(
+                  (session) => session.id !== targetAgendaId,
+                ),
+              }
+            : workout,
+        ),
+      );
+      setMessage(`Sessao "${sessionDraft.title}" removida com sucesso.`);
+    } catch (error) {
+      setScheduleError(error?.message || "Nao foi possivel excluir a sessao.");
+    } finally {
+      setDeletingSessionId("");
     }
   };
 
@@ -842,7 +1101,7 @@ export default function WorkoutBuilderPage() {
     <main className="space-y-6 pb-10">
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
         <h2 className="font-title text-2xl text-[#d9c179]">
-          Criar Novo Treino
+          {editingWorkoutId ? "Editar Treino" : "Criar Novo Treino"}
         </h2>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -966,8 +1225,22 @@ export default function WorkoutBuilderPage() {
               disabled={saving || !selectedStudentId}
               className="flex-1 rounded-xl bg-[#d9b341] px-6 py-3 font-semibold text-black transition hover:brightness-110 md:flex-none"
             >
-              {saving ? "Salvando..." : "Salvar Treino"}
+              {saving
+                ? "Salvando..."
+                : editingWorkoutId
+                  ? "Atualizar Treino"
+                  : "Salvar Treino"}
             </button>
+
+            {editingWorkoutId ? (
+              <button
+                type="button"
+                onClick={resetWorkoutForm}
+                className="rounded-xl border border-white/10 px-6 py-3 font-semibold text-white/70 transition hover:border-white/20"
+              >
+                Cancelar edicao
+              </button>
+            ) : null}
           </div>
         </form>
       </article>
@@ -1036,6 +1309,14 @@ export default function WorkoutBuilderPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleEditWorkout(workout)}
+                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
+                      title="Editar treino"
+                    >
+                      <Edit2 size={16} />
+                    </button>
                     <button
                       type="button"
                       onClick={() => openScheduleModal(workout)}
@@ -1122,8 +1403,11 @@ export default function WorkoutBuilderPage() {
       {showScheduleModal && scheduleTarget ? (
         <ScheduleSessionModal
           workout={scheduleTarget}
+          loading={loadingScheduleDetails}
           saving={scheduling}
           error={scheduleError}
+          updatingSessionId={updatingSessionId}
+          deletingSessionId={deletingSessionId}
           replaceExisting={replaceExistingSchedule}
           sessions={scheduleSessions}
           onClose={closeScheduleModal}
@@ -1131,6 +1415,8 @@ export default function WorkoutBuilderPage() {
           onSessionChange={handleScheduleSessionChange}
           onAddSession={handleAddScheduleSession}
           onRemoveSession={handleRemoveScheduleSession}
+          onUpdateExistingSession={handleUpdateExistingSession}
+          onDeleteExistingSession={handleDeleteExistingSession}
           onSubmit={handleSubmitSchedule}
         />
       ) : null}
