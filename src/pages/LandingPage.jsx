@@ -72,12 +72,14 @@ export default function LandingPage() {
           </a>
         </div>
 
-        <Link
-          to="/login"
+        <a
+          href="https://wa.me/5511971174080"
+          target="_blank"
+          rel="noopener noreferrer"
           className="rounded-full bg-[#b5f03c] px-5 py-2 text-sm font-bold text-black transition hover:brightness-110"
         >
           Entre em contato
-        </Link>
+        </a>
       </nav>
 
       {/* HERO */}
