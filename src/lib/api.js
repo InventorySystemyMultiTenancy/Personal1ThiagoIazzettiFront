@@ -77,16 +77,36 @@ function normalizeRecurringPlan(plan) {
     return null;
   }
 
+  const recurringPlanId =
+    plan.preapproval_plan_id ||
+    plan.preapprovalPlanId ||
+    plan.preapprovalPlanID ||
+    plan.preapproval_plan ||
+    plan.preapprovalPlan ||
+    plan.preapproval?.id ||
+    plan.preapprovalPlan?.id ||
+    plan.mercadoPagoPreapprovalPlanId ||
+    plan.mercado_pago_preapproval_plan_id ||
+    plan.recurringPlanId ||
+    plan.recurring_plan_id ||
+    null;
+
   const transactionAmount = Number(
     plan.transaction_amount ??
       plan.transactionAmount ??
+      plan.amount ??
+      plan.price ??
       Number(plan.monthlyPriceCents || 0) / 100,
   );
-  const frequency = Number(plan.frequency ?? plan.repetition ?? 1);
-  const recurringPlanId =
-    plan.preapproval_plan_id || plan.preapprovalPlanId || null;
+  const frequency = Number(
+    plan.frequency ?? plan.repetition ?? plan.interval_count ?? 1,
+  );
   const id =
     plan.id ||
+    plan.alunoPlanId ||
+    plan.aluno_plan_id ||
+    plan.planId ||
+    plan.plan_id ||
     recurringPlanId ||
     `${plan.name || "plano"}-${transactionAmount || 0}-${frequency || 1}`;
 
@@ -100,10 +120,18 @@ function normalizeRecurringPlan(plan) {
       ? transactionAmount
       : 0,
     frequency: Number.isFinite(frequency) && frequency > 0 ? frequency : 1,
-    frequencyType: plan.frequency_type || plan.frequencyType || "months",
+    frequencyType:
+      plan.frequency_type ||
+      plan.frequencyType ||
+      plan.interval ||
+      plan.interval_unit ||
+      "months",
     monthlyPriceCents:
       plan.monthlyPriceCents || Math.round((transactionAmount || 0) * 100),
-    isRecurringEnabled: Boolean(recurringPlanId),
+    isRecurringEnabled:
+      Boolean(recurringPlanId) ||
+      plan.isRecurringEnabled === true ||
+      plan.recurringEnabled === true,
   };
 }
 

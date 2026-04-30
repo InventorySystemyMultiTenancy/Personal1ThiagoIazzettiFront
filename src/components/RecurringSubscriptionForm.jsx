@@ -307,7 +307,6 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   const effectiveState = sdkConfigError ? "error" : sdkState;
   const effectiveFeedback = sdkConfigError || feedback;
   const isBusy = effectiveState === "loading" || effectiveState === "submitting";
-  const isReady = effectiveState === "ready" || effectiveState === "success";
 
   return (
     <section className="rounded-[1.75rem] border border-[#d9b341]/20 bg-[radial-gradient(circle_at_top,rgba(217,179,65,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
@@ -489,7 +488,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             </div>
           ) : null}
 
-          {!isReady ? (
+          {effectiveState === "loading" ? (
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/65">
               <Loader2 className="animate-spin text-[#d9b341]" size={16} />
               Carregando formulario seguro do Mercado Pago...
