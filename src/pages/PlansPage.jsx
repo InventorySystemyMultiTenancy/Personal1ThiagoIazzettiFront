@@ -104,6 +104,7 @@ export default function PlansPage({ mode = "public" }) {
   });
 
   const isAdminMode = mode === "admin";
+  const recurringPersonalId = user?.personalId || import.meta.env.VITE_PERSONAL_ID || tenantId;
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +116,7 @@ export default function PlansPage({ mode = "public" }) {
       try {
         const items = isAdminMode
           ? await listStudentPlans(tenantId)
-          : await listRecurringSubscriptionPlans(tenantId);
+          : await listRecurringSubscriptionPlans(recurringPersonalId);
         if (!cancelled) {
           setPlans(Array.isArray(items) ? items : []);
         }
@@ -138,7 +139,7 @@ export default function PlansPage({ mode = "public" }) {
     return () => {
       cancelled = true;
     };
-  }, [tenantId, isAdminMode]);
+  }, [tenantId, isAdminMode, recurringPersonalId]);
 
   const actionLabel = useMemo(() => {
     if (isAdminMode) return "Gerenciar plano";
@@ -431,6 +432,7 @@ export default function PlansPage({ mode = "public" }) {
         <RecurringSubscriptionForm
           key={selectedPlan.id}
           plan={selectedPlan}
+          personalId={recurringPersonalId}
           onSuccess={() => {
             setMessage(`Assinatura do plano ${selectedPlan.name} criada com sucesso.`);
           }}

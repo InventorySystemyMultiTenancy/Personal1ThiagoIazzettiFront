@@ -39,7 +39,7 @@ function buildFieldId(prefix, field) {
   return `${prefix}__${field}`;
 }
 
-export default function RecurringSubscriptionForm({ plan, onSuccess }) {
+export default function RecurringSubscriptionForm({ plan, personalId, onSuccess }) {
   const navigate = useNavigate();
   const { tenantId } = useTenant();
   const { user } = useAuth();
@@ -58,6 +58,8 @@ export default function RecurringSubscriptionForm({ plan, onSuccess }) {
   );
 
   const formPrefix = `mp-card-form-${String(plan?.id || "plano").replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const recurringPersonalId =
+    personalId || user?.personalId || import.meta.env.VITE_PERSONAL_ID || tenantId;
   const blockingError = !plan?.isRecurringEnabled
     ? "Este plano ainda nao possui identificador recorrente configurado no backend."
     : !MP_PUBLIC_KEY
@@ -234,7 +236,7 @@ export default function RecurringSubscriptionForm({ plan, onSuccess }) {
                   payload.aluno_id = studentIdRef.current;
                 }
 
-                const result = await createRecurringSubscription(payload, tenantId);
+                const result = await createRecurringSubscription(payload, recurringPersonalId);
 
                 if (cancelled) {
                   return;
@@ -291,7 +293,7 @@ export default function RecurringSubscriptionForm({ plan, onSuccess }) {
         redirectTimeoutRef.current = null;
       }
     };
-  }, [blockingError, formPrefix, navigate, plan, tenantId, user?.email]);
+  }, [blockingError, formPrefix, navigate, plan, recurringPersonalId, user?.email]);
 
   const effectiveState = blockingError ? "error" : sdkState;
   const effectiveFeedback = blockingError || feedback;
