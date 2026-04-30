@@ -28,21 +28,38 @@ import { getBillingStatus } from "../lib/billingStatus.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import WorkoutBuilderPage from "./WorkoutBuilderPage.jsx";
 
-function StatCard({ icon: Icon, label, value, trend }) {
+function StatCard({ icon: Icon, label, value, sub, color = "#d9b341" }) {
   return (
-    <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-5 transition hover:border-[#d9b341]/30">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-white/40">
-            {label}
-          </p>
-          <p className="mt-3 font-title text-3xl text-[#d9c179]">{value}</p>
-          {trend && <p className="mt-2 text-xs text-white/50">{trend}</p>}
-        </div>
-        <div className="rounded-2xl border border-[#d9b341]/25 bg-[#d9b341]/10 p-3 text-[#d9b341]">
-          <Icon size={18} />
-        </div>
+    <article
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0f0f0f] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-white/12 hover:shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
+      style={{ boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04)` }}
+    >
+      {/* Top row: icon */}
+      <div
+        className="mb-4 inline-flex rounded-xl p-2.5 transition-all duration-300 group-hover:scale-110"
+        style={{ background: `${color}15`, color }}
+      >
+        <Icon size={18} strokeWidth={2} />
       </div>
+      {/* Value */}
+      <p className="text-3xl font-black text-white leading-none tracking-tight">
+        {value}
+      </p>
+      {/* Label */}
+      <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-white/30">
+        {label}
+      </p>
+      {sub && <p className="mt-1.5 text-[11px] text-white/25">{sub}</p>}
+      {/* Bottom accent line */}
+      <div
+        className="absolute bottom-0 left-0 h-0.5 w-0 rounded-full transition-all duration-500 group-hover:w-full"
+        style={{ background: `linear-gradient(90deg, ${color}, transparent)` }}
+      />
+      {/* Glow blob */}
+      <div
+        className="pointer-events-none absolute -bottom-8 -right-8 h-24 w-24 rounded-full blur-3xl opacity-10 transition-opacity duration-300 group-hover:opacity-25"
+        style={{ background: color }}
+      />
     </article>
   );
 }
@@ -52,14 +69,17 @@ function TabButton({ active, icon: Icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+      className={`relative flex items-center gap-2 rounded-xl px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-200 ${
         active
-          ? "border border-[#d9b341]/50 bg-[#d9b341]/15 text-[#d9c179]"
-          : "border border-white/10 text-white/60 hover:border-white/20 hover:text-white/80"
+          ? "bg-[#d9b341]/10 text-[#d9c179] shadow-[inset_0_0_0_1px_rgba(217,179,65,0.25)]"
+          : "text-white/30 hover:bg-white/[0.04] hover:text-white/60"
       }`}
     >
-      {Icon && <Icon size={16} />}
-      {label}
+      {Icon && <Icon size={13} strokeWidth={2.5} />}
+      <span className="hidden sm:inline">{label}</span>
+      {active && (
+        <span className="absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-[#d9b341]" />
+      )}
     </button>
   );
 }
@@ -169,12 +189,18 @@ export default function AdminDashboardPage() {
     }).length;
 
     return [
-      { icon: Users, label: "Alunos ativos", value: students.length },
-      { icon: Wallet, label: "Planos", value: activePlans },
+      {
+        icon: Users,
+        label: "Alunos ativos",
+        value: students.length,
+        color: "#d9b341",
+      },
+      { icon: Wallet, label: "Planos", value: activePlans, color: "#60a5fa" },
       {
         icon: TrendingUp,
         label: "Inativos (5+ dias)",
         value: inactiveStudents,
+        color: "#f87171",
       },
       {
         icon: Dumbbell,
@@ -182,6 +208,7 @@ export default function AdminDashboardPage() {
         value: formatCurrency(
           plans.reduce((sum, p) => sum + (p.monthlyPriceCents || 0), 0) / 100,
         ),
+        color: "#4ade80",
       },
     ];
   }, [plans, students]);
@@ -277,42 +304,34 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <main className="space-y-6 pb-10">
+    <main className="space-y-6 pb-12">
       {/* Header */}
-      <section className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(217,179,65,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+      <section className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-            Dashboard do Personal
+          <p className="text-[9px] font-bold uppercase tracking-[0.45em] text-white/20">
+            Painel
           </p>
-          <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
-            Gerencie sua academia
+          <h1 className="mt-1 text-2xl font-black text-white leading-tight tracking-tight">
+            Visão Geral
           </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-white/68">
-            Acompanhe alunos, crie planos, construa treinos e gerencie toda a
-            sua operacao em um unico lugar. Tudo isolado no seu tenant.
-          </p>
         </div>
+        {loading && (
+          <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5">
+            <Loader2 className="animate-spin text-[#d9b341]/60" size={13} />
+            <span className="text-[10px] text-white/30">Carregando...</span>
+          </div>
+        )}
       </section>
 
       {message ? (
-        <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
-          <AlertCircle
-            size={18}
-            className="mt-0.5 flex-shrink-0 text-[#d9b341]"
-          />
-          <p>{message}</p>
-        </div>
-      ) : null}
-
-      {loading ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-white/65">
-          <Loader2 className="animate-spin text-[#d9b341]" size={18} />
-          Carregando dados do painel...
+        <div className="flex items-center gap-3 rounded-xl border border-[#d9b341]/15 bg-[#d9b341]/5 px-4 py-3 text-xs text-white/60">
+          <AlertCircle size={14} className="flex-shrink-0 text-[#d9b341]" />
+          {message}
         </div>
       ) : null}
 
       {/* Tab Navigation */}
-      <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
+      <div className="flex items-center gap-1 rounded-2xl border border-white/[0.06] bg-[#0d0d0d] p-1.5">
         <TabButton
           active={activeTab === "visao-geral"}
           icon={BarChart3}
@@ -348,28 +367,72 @@ export default function AdminDashboardPage() {
       {/* TAB: VISAO GERAL */}
       {activeTab === "visao-geral" && (
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat) => (
               <StatCard key={stat.label} {...stat} />
             ))}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Alertas de Inatividade */}
-            <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-                    Atencao
+          {/* Billing distribution bar */}
+          {students.length > 0 &&
+            (() => {
+              const paid = students.filter(
+                (s) => getBillingStatus(s).key === "paid",
+              ).length;
+              const pending = students.filter(
+                (s) => getBillingStatus(s).key === "pending",
+              ).length;
+              const overdue = students.filter(
+                (s) => getBillingStatus(s).key === "overdue",
+              ).length;
+              const total = students.length;
+              return (
+                <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/30 mb-4">
+                    Status de Pagamento
                   </p>
-                  <h2 className="mt-2 font-title text-2xl text-[#d9c179]">
-                    Alunos inativos
-                  </h2>
-                </div>
-                <AlertCircle className="text-[#d9b341]" size={24} />
-              </div>
+                  <div className="flex h-2 w-full overflow-hidden rounded-full gap-0.5">
+                    <div
+                      className="h-full rounded-l-full bg-emerald-400 transition-all"
+                      style={{ width: `${(paid / total) * 100}%` }}
+                    />
+                    <div
+                      className="h-full bg-amber-400 transition-all"
+                      style={{ width: `${(pending / total) * 100}%` }}
+                    />
+                    <div
+                      className="h-full rounded-r-full bg-red-400 transition-all"
+                      style={{ width: `${(overdue / total) * 100}%` }}
+                    />
+                  </div>
+                  <div className="mt-4 flex gap-5 text-xs text-white/50">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                      {paid} pagos
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-amber-400" />
+                      {pending} pendentes
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-red-400" />
+                      {overdue} atrasados
+                    </span>
+                  </div>
+                </article>
+              );
+            })()}
 
-              <div className="mt-5 space-y-2">
+          <div className="grid gap-4 lg:grid-cols-2">
+            {/* Alertas de Inatividade */}
+            <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/30">
+                  Alunos inativos
+                </p>
+                <AlertCircle className="text-red-400/60" size={15} />
+              </div>
+              <div className="space-y-2">
                 {students.filter((s) => {
                   const lastActivity = new Date(s.lastActivityAt || 0);
                   const fiveDaysAgo = new Date(
@@ -377,7 +440,7 @@ export default function AdminDashboardPage() {
                   );
                   return lastActivity < fiveDaysAgo;
                 }).length === 0 ? (
-                  <p className="text-sm text-white/60">
+                  <p className="text-xs text-white/40">
                     Nenhum aluno inativo. Perfeito!
                   </p>
                 ) : (
@@ -392,11 +455,13 @@ export default function AdminDashboardPage() {
                     .map((student) => (
                       <div
                         key={student.id}
-                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-sm"
+                        className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2"
                       >
-                        <span className="text-white">{student.fullName}</span>
-                        <span className="text-xs text-white/50">
-                          Inativo por dias
+                        <span className="text-sm text-white/80">
+                          {student.fullName}
+                        </span>
+                        <span className="text-[10px] text-white/35">
+                          Inativo
                         </span>
                       </div>
                     ))
@@ -404,25 +469,17 @@ export default function AdminDashboardPage() {
               </div>
             </article>
 
-            {/* Proximos Aniversarios */}
-            <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-                    Relacionamento
-                  </p>
-                  <h2 className="mt-2 font-title text-2xl text-[#d9c179]">
-                    Aniversariantes
-                  </h2>
-                </div>
-                <Calendar className="text-[#d9b341]" size={24} />
-              </div>
-
-              <div className="mt-5 space-y-2">
-                <p className="text-sm text-white/60">
-                  Nenhum aniversario proximos nos proximos 7 dias.
+            {/* Aniversariantes */}
+            <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/30">
+                  Aniversariantes
                 </p>
+                <Calendar className="text-[#d9b341]/50" size={15} />
               </div>
+              <p className="text-xs text-white/40">
+                Nenhum aniversário próximo nos próximos 7 dias.
+              </p>
             </article>
           </div>
         </div>
@@ -431,64 +488,61 @@ export default function AdminDashboardPage() {
       {/* TAB: ALUNOS */}
       {activeTab === "alunos" && (
         <div className="space-y-6">
-          <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-            <h2 className="font-title text-2xl text-[#d9c179]">
+          <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
+            <h2 className="mb-5 text-sm font-bold text-white/60">
               Cadastrar novo aluno
             </h2>
-            <form className="mt-6 space-y-4" onSubmit={handleCreateStudent}>
-              <label className="block text-sm text-white/70">
-                Nome completo
-                <input
-                  type="text"
-                  name="fullName"
-                  value={newStudentForm.fullName}
-                  onChange={(e) =>
-                    setNewStudentForm((prev) => ({
-                      ...prev,
-                      fullName: e.target.value,
-                    }))
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
-                  placeholder="Ex: João Silva"
-                />
-              </label>
-
-              <label className="block text-sm text-white/70">
-                Email
-                <input
-                  type="email"
-                  name="email"
-                  value={newStudentForm.email}
-                  onChange={(e) =>
-                    setNewStudentForm((prev) => ({
-                      ...prev,
-                      email: e.target.value,
-                    }))
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
-                  placeholder="joao@email.com"
-                />
-              </label>
-
-              <label className="block text-sm text-white/70">
-                Telefone (opcional)
-                <input
-                  type="tel"
-                  name="phone"
-                  value={newStudentForm.phone}
-                  onChange={(e) =>
-                    setNewStudentForm((prev) => ({
-                      ...prev,
-                      phone: e.target.value,
-                    }))
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
-                  placeholder="(11) 99999-9999"
-                />
-              </label>
-
+            <form className="space-y-4" onSubmit={handleCreateStudent}>
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="block text-sm text-white/70">
+                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                  Nome completo
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={newStudentForm.fullName}
+                    onChange={(e) =>
+                      setNewStudentForm((prev) => ({
+                        ...prev,
+                        fullName: e.target.value,
+                      }))
+                    }
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                    placeholder="Ex: João Silva"
+                  />
+                </label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                  Email
+                  <input
+                    type="email"
+                    name="email"
+                    value={newStudentForm.email}
+                    onChange={(e) =>
+                      setNewStudentForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                    placeholder="joao@email.com"
+                  />
+                </label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                  Telefone
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={newStudentForm.phone}
+                    onChange={(e) =>
+                      setNewStudentForm((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                    placeholder="(11) 99999-9999"
+                  />
+                </label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
                   Data de nascimento
                   <input
                     type="date"
@@ -500,11 +554,10 @@ export default function AdminDashboardPage() {
                         birthDate: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#d9b341]/40"
                   />
                 </label>
-
-                <label className="block text-sm text-white/70">
+                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
                   Vencimento do plano
                   <input
                     type="date"
@@ -516,178 +569,170 @@ export default function AdminDashboardPage() {
                         planDueDate: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#d9b341]/40"
                   />
                 </label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                  Plano do aluno
+                  <select
+                    name="alunoPlanId"
+                    value={newStudentForm.alunoPlanId}
+                    onChange={(e) =>
+                      setNewStudentForm((prev) => ({
+                        ...prev,
+                        alunoPlanId: e.target.value,
+                      }))
+                    }
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#d9b341]/40"
+                  >
+                    <option value="">Sem plano</option>
+                    {plans.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name} —{" "}
+                        {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
-
-              <label className="block text-sm text-white/70">
-                Plano do aluno
-                <select
-                  name="alunoPlanId"
-                  value={newStudentForm.alunoPlanId}
-                  onChange={(e) =>
-                    setNewStudentForm((prev) => ({
-                      ...prev,
-                      alunoPlanId: e.target.value,
-                    }))
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#d9b341]/50"
-                >
-                  <option value="">Sem plano</option>
-                  {plans.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name} -{" "}
-                      {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
               <button
                 type="submit"
-                className="mt-4 flex items-center gap-2 rounded-full bg-[#d9b341] px-6 py-3 font-semibold text-black transition hover:brightness-110"
+                className="flex items-center gap-2 rounded-lg bg-[#d9b341] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
               >
-                <Plus size={16} />
+                <Plus size={14} />
                 Criar aluno
               </button>
             </form>
           </article>
 
-          <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-            <h2 className="font-title text-2xl text-[#d9c179]">
-              Alunos cadastrados ({students.length})
-            </h2>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-red-500/35 bg-red-500/10 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.14em] text-red-200/80">
-                  Nao pagos
-                </p>
-                <p className="mt-2 font-title text-2xl text-red-200">
+          <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-white/60">
+                Alunos cadastrados
+                <span className="ml-2 rounded-md bg-white/[0.07] px-2 py-0.5 text-xs font-normal text-white/40">
+                  {students.length}
+                </span>
+              </h2>
+              <div className="flex gap-4 text-xs text-white/35">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
                   {
                     students.filter(
                       (s) => getBillingStatus(s).key === "overdue",
                     ).length
-                  }
-                </p>
-              </div>
-              <div className="rounded-2xl border border-amber-400/35 bg-amber-400/10 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.14em] text-amber-200/80">
-                  Pendentes
-                </p>
-                <p className="mt-2 font-title text-2xl text-amber-100">
+                  }{" "}
+                  atrasados
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                   {
                     students.filter(
                       (s) => getBillingStatus(s).key === "pending",
                     ).length
-                  }
-                </p>
-              </div>
-              <div className="rounded-2xl border border-emerald-400/35 bg-emerald-400/10 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.14em] text-emerald-200/80">
-                  Pagos
-                </p>
-                <p className="mt-2 font-title text-2xl text-emerald-100">
+                  }{" "}
+                  pendentes
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   {
-                    students.filter(
-                      (s) => getBillingStatus(s).key === "paid",
-                    ).length
-                  }
-                </p>
+                    students.filter((s) => getBillingStatus(s).key === "paid")
+                      .length
+                  }{" "}
+                  pagos
+                </span>
               </div>
             </div>
 
-            <div className="mt-5 space-y-3">
+            <div className="space-y-2">
               {students.length === 0 ? (
-                <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
-                  Nenhum aluno cadastrado ainda. Comece criando seu primeiro
-                  aluno!
+                <p className="rounded-lg border border-white/[0.07] px-4 py-6 text-center text-sm text-white/35">
+                  Nenhum aluno cadastrado ainda.
                 </p>
               ) : (
                 students.map((student) => {
                   const billingStatus = getBillingStatus(student);
-
                   return (
                     <div
                       key={student.id}
-                      className={`rounded-2xl border px-4 py-4 ${billingStatus.cardClass}`}
+                      className={`rounded-xl border px-4 py-4 transition-all duration-200 hover:bg-white/[0.02] ${billingStatus.cardClass}`}
                     >
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <p className="font-semibold text-white">
+                          <p className="text-sm font-semibold text-white">
                             {student.fullName}
                           </p>
-                          <p className="text-sm text-white/55">
+                          <p className="text-xs text-white/40 mt-0.5">
                             {student.email || "Sem email"}
                           </p>
-                          <p className="mt-1 text-xs text-white/40">
-                            Cadastrado em {formatDate(student.createdAt)}
-                          </p>
                         </div>
-
                         <div className="flex flex-wrap items-center gap-2">
                           <span
-                            className={`rounded-full border px-3 py-1 text-xs font-semibold ${billingStatus.badgeClass}`}
+                            className={`rounded-md border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] ${billingStatus.badgeClass}`}
                           >
                             {billingStatus.shortLabel}
                           </span>
-                          <span className="text-xs text-white/60">
+                          <span className="text-[10px] text-white/30">
                             {billingStatus.detail}
                           </span>
                           <button
                             type="button"
                             onClick={() => startEditStudent(student)}
-                            className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
+                            className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-[#d9b341]/30 hover:text-[#d9b341]"
                           >
-                            <Edit2 size={16} />
+                            <Edit2 size={13} />
                           </button>
                         </div>
                       </div>
 
-                      <div className="mt-4 grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-5">
-                        <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-                          <p className="text-xs text-white/45">Plano</p>
-                          <p className="mt-1 font-semibold text-white">
+                      <div className="mt-3 grid gap-2 text-xs md:grid-cols-2 xl:grid-cols-5">
+                        <div className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2">
+                          <p className="text-white/25 text-[10px]">Plano</p>
+                          <p className="mt-0.5 font-semibold text-white/75">
                             {student.alunoPlan?.name || "Sem plano"}
                           </p>
                         </div>
-                        <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-                          <p className="text-xs text-white/45">Mensalidade</p>
-                          <p className="mt-1 font-semibold text-[#d9c179]">
+                        <div className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2">
+                          <p className="text-white/25 text-[10px]">
+                            Mensalidade
+                          </p>
+                          <p className="mt-0.5 font-semibold text-[#d9c179]">
                             {student.alunoPlan
                               ? formatCurrency(
                                   (student.alunoPlan.monthlyPriceCents || 0) /
                                     100,
                                 )
-                              : "-"}
+                              : "—"}
                           </p>
                         </div>
-                        <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-                          <p className="text-xs text-white/45">Status do pagamento</p>
-                          <p className={`mt-1 font-semibold ${billingStatus.accentClass}`}>
+                        <div className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2">
+                          <p className="text-white/25 text-[10px]">Status</p>
+                          <p
+                            className={`mt-0.5 font-semibold ${billingStatus.accentClass}`}
+                          >
                             {billingStatus.label}
                           </p>
                         </div>
-                        <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-                          <p className="text-xs text-white/45">Vencimento</p>
-                          <p className="mt-1 font-semibold text-white">
+                        <div className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2">
+                          <p className="text-white/25 text-[10px]">
+                            Vencimento
+                          </p>
+                          <p className="mt-0.5 font-semibold text-white/65">
                             {student.planDueDate
                               ? formatDate(student.planDueDate)
-                              : "Nao definido"}
+                              : "—"}
                           </p>
                         </div>
-                        <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-                          <p className="text-xs text-white/45">Telefone</p>
-                          <p className="mt-1 font-semibold text-white">
-                            {student.phone || "Nao informado"}
+                        <div className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2">
+                          <p className="text-white/25 text-[10px]">Telefone</p>
+                          <p className="mt-0.5 font-semibold text-white/65">
+                            {student.phone || "—"}
                           </p>
                         </div>
                       </div>
 
                       {editingStudentId === student.id ? (
-                        <div className="mt-4 rounded-2xl border border-white/10 bg-black/35 p-4">
-                          <p className="mb-3 text-sm font-semibold text-[#d9c179]">
+                        <div className="mt-4 rounded-xl border border-white/[0.07] bg-black/30 p-4">
+                          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[#d9b341]/60">
                             Editar aluno
                           </p>
                           <div className="grid gap-3 md:grid-cols-2">
@@ -699,7 +744,7 @@ export default function AdminDashboardPage() {
                                   fullName: e.target.value,
                                 }))
                               }
-                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
                               placeholder="Nome completo"
                             />
                             <input
@@ -711,7 +756,7 @@ export default function AdminDashboardPage() {
                                   email: e.target.value,
                                 }))
                               }
-                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
                               placeholder="Email"
                             />
                             <input
@@ -722,7 +767,7 @@ export default function AdminDashboardPage() {
                                   phone: e.target.value,
                                 }))
                               }
-                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
                               placeholder="Telefone"
                             />
                             <input
@@ -734,7 +779,7 @@ export default function AdminDashboardPage() {
                                   birthDate: e.target.value,
                                 }))
                               }
-                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
                             />
                             <select
                               value={editStudentForm.alunoPlanId}
@@ -744,7 +789,7 @@ export default function AdminDashboardPage() {
                                   alunoPlanId: e.target.value,
                                 }))
                               }
-                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                              className="rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
                             >
                               <option value="">Sem plano</option>
                               {plans.map((plan) => (
@@ -762,12 +807,11 @@ export default function AdminDashboardPage() {
                                   planDueDate: e.target.value,
                                 }))
                               }
-                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/50"
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#d9b341]/40"
                             />
                           </div>
-
                           <div className="mt-3 flex items-center gap-2">
-                            <label className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
+                            <label className="inline-flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-xs text-white/60">
                               <input
                                 type="checkbox"
                                 checked={editStudentForm.isActive}
@@ -780,18 +824,17 @@ export default function AdminDashboardPage() {
                               />
                               Aluno ativo
                             </label>
-
                             <button
                               type="button"
                               onClick={() => handleSaveStudent(student.id)}
-                              className="rounded-full bg-[#d9b341] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110"
+                              className="rounded-lg bg-[#d9b341] px-4 py-2 text-xs font-bold text-black transition hover:brightness-110"
                             >
-                              Salvar alteracoes
+                              Salvar
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingStudentId("")}
-                              className="rounded-full border border-white/15 px-4 py-2 text-sm text-white/70 transition hover:text-white"
+                              className="rounded-lg border border-white/[0.07] px-4 py-2 text-xs text-white/45 transition hover:text-white"
                             >
                               Cancelar
                             </button>
@@ -810,30 +853,51 @@ export default function AdminDashboardPage() {
       {/* TAB: PLANOS */}
       {activeTab === "planos" && (
         <div className="space-y-6">
-          <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-            <h2 className="font-title text-2xl text-[#d9c179]">
-              Criar novo plano de assinatura
+          <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
+            <h2 className="mb-5 text-sm font-bold text-white/60">
+              Criar novo plano
             </h2>
-            <form className="mt-6 space-y-4" onSubmit={handleCreatePlan}>
-              <label className="block text-sm text-white/70">
-                Nome do plano
-                <input
-                  type="text"
-                  name="name"
-                  value={newPlanForm.name}
-                  onChange={(e) =>
-                    setNewPlanForm((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
-                  placeholder="Ex: Plano Premium"
-                />
-              </label>
-
-              <label className="block text-sm text-white/70">
-                Descricao
+            <form className="space-y-4" onSubmit={handleCreatePlan}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                  Nome do plano
+                  <input
+                    type="text"
+                    name="name"
+                    value={newPlanForm.name}
+                    onChange={(e) =>
+                      setNewPlanForm((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                    placeholder="Ex: Plano Premium"
+                  />
+                </label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                  Preço mensal (R$)
+                  <input
+                    type="number"
+                    name="monthlyPrice"
+                    value={newPlanForm.monthlyPriceCents / 100}
+                    onChange={(e) =>
+                      setNewPlanForm((prev) => ({
+                        ...prev,
+                        monthlyPriceCents: Math.round(
+                          parseFloat(e.target.value || 0) * 100,
+                        ),
+                      }))
+                    }
+                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
+                    placeholder="149.90"
+                    step="0.01"
+                    min="0"
+                  />
+                </label>
+              </div>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                Descrição
                 <textarea
                   name="description"
                   value={newPlanForm.description}
@@ -843,82 +907,66 @@ export default function AdminDashboardPage() {
                       description: e.target.value,
                     }))
                   }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
+                  className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#d9b341]/40"
                   placeholder="Descreva o plano..."
                   rows={3}
                 />
               </label>
-
-              <label className="block text-sm text-white/70">
-                Preco mensal (R$)
-                <input
-                  type="number"
-                  name="monthlyPrice"
-                  value={newPlanForm.monthlyPriceCents / 100}
-                  onChange={(e) =>
-                    setNewPlanForm((prev) => ({
-                      ...prev,
-                      monthlyPriceCents: Math.round(
-                        parseFloat(e.target.value || 0) * 100,
-                      ),
-                    }))
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#d9b341]/50"
-                  placeholder="149.90"
-                  step="0.01"
-                  min="0"
-                />
-              </label>
-
               <button
                 type="submit"
-                className="mt-4 flex items-center gap-2 rounded-full bg-[#d9b341] px-6 py-3 font-semibold text-black transition hover:brightness-110"
+                className="flex items-center gap-2 rounded-lg bg-[#d9b341] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
               >
-                <Plus size={16} />
+                <Plus size={14} />
                 Criar plano
               </button>
             </form>
           </article>
 
-          <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-            <h2 className="font-title text-2xl text-[#d9c179]">
-              Planos de assinatura ({plans.length})
+          <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
+            <h2 className="mb-5 text-sm font-bold text-white/60">
+              Planos de assinatura
+              <span className="ml-2 rounded-md bg-white/[0.07] px-2 py-0.5 text-xs font-normal text-white/40">
+                {plans.length}
+              </span>
             </h2>
-
-            <div className="mt-5 space-y-3">
+            <div className="space-y-2">
               {plans.length === 0 ? (
-                <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
-                  Nenhum plano criado ainda. Comece criando seu primeiro plano!
+                <p className="rounded-lg border border-white/[0.07] px-4 py-6 text-center text-sm text-white/35">
+                  Nenhum plano criado ainda.
                 </p>
               ) : (
                 plans.map((plan) => (
                   <div
                     key={plan.id}
-                    className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-4 md:flex-row md:items-center md:justify-between"
+                    className="flex flex-col gap-3 rounded-xl border border-white/[0.06] bg-black/20 px-4 py-4 transition hover:bg-black/30 md:flex-row md:items-center md:justify-between"
                   >
                     <div>
-                      <p className="font-semibold text-white">{plan.name}</p>
-                      <p className="mt-1 text-sm text-white/55">
+                      <p className="text-sm font-semibold text-white">
+                        {plan.name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-white/40">
                         {plan.description || "Plano premium"}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <p className="font-title text-xl text-[#d9c179]">
+                      <p className="text-lg font-black text-[#d9c179]">
                         {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
-                        /mês
+                        <span className="text-xs font-normal text-white/35">
+                          /mês
+                        </span>
                       </p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
+                          className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-[#d9b341]/30 hover:text-[#d9b341]"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={13} />
                         </button>
                         <button
                           type="button"
-                          className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-red-400"
+                          className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-red-400/30 hover:text-red-400"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
@@ -935,22 +983,18 @@ export default function AdminDashboardPage() {
 
       {/* TAB: COMUNICACAO */}
       {activeTab === "comunicacao" && (
-        <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-          <h2 className="font-title text-2xl text-[#d9c179]">
-            Area de Comunicacao
-          </h2>
-          <p className="mt-3 text-white/65">
-            Chat interno, repositorio de arquivos (PDFs de dietas, orientacoes)
-            e notificacoes para alunos.
+        <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-bold text-white/60">Comunicação</h2>
+            <MessageSquare className="text-[#d9b341]/40" size={16} />
+          </div>
+          <p className="text-xs text-white/35 leading-6">
+            Chat interno, repositório de arquivos e notificações para alunos.
           </p>
-
-          <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 px-6 py-8 text-center">
-            <MessageSquare
-              className="mx-auto mb-3 text-[#d9b341]/50"
-              size={32}
-            />
-            <p className="text-white/60">
-              A area de comunicacao sera ativada em breve. Fique atento!
+          <div className="mt-6 rounded-xl border border-white/[0.06] bg-black/20 px-6 py-10 text-center">
+            <MessageSquare className="mx-auto mb-3 text-white/15" size={28} />
+            <p className="text-xs text-white/35">
+              Área de comunicação em breve.
             </p>
           </div>
         </article>
