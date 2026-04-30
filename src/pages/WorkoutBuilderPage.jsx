@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -8,6 +8,12 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
+import {
+  createWorkoutPlan,
+  listStudents,
+  listWorkoutPlans,
+} from "../lib/api.js";
+import { useTenant } from "../contexts/TenantContext.jsx";
 
 // Biblioteca de exercícios por grupo muscular
 const exerciseLibrary = {
@@ -271,14 +277,86 @@ function WorkoutItem({ exercise, onRemove }) {
 }
 
 export default function WorkoutBuilderPage() {
+  const { tenantId } = useTenant();
+  const [students, setStudents] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
   const [workouts, setWorkouts] = useState([]);
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [currentWorkoutExercises, setCurrentWorkoutExercises] = useState([]);
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
   const [workoutForm, setWorkoutForm] = useState({
     title: "",
     objective: "",
     phase: "Hipertrofia",
   });
+
+  const selectedStudent = useMemo(
+    () => students.find((s) => s.id === selectedStudentId) || null,
+    [students, selectedStudentId],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadStudents = async () => {
+      try {
+        const data = await listStudents(tenantId);
+        if (!cancelled) {
+          const items = Array.isArray(data) ? data : [];
+          setStudents(items);
+          if (items.length > 0) {
+            setSelectedStudentId((prev) => prev || items[0].id);
+          }
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setMessage(error?.message || "Nao foi possivel carregar alunos");
+        }
+      }
+    };
+
+    if (tenantId) {
+      loadStudents();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tenantId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadWorkouts = async () => {
+      if (!selectedStudentId) {
+        setWorkouts([]);
+        return;
+      }
+
+      try {
+        const data = await listWorkoutPlans(selectedStudentId, tenantId);
+        if (!cancelled) {
+          const plans = Array.isArray(data) ? data : [];
+          const normalized = plans.map((plan) => ({
+            ...plan,
+            exercises: Array.isArray(plan.items) ? plan.items : [],
+          }));
+          setWorkouts(normalized);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setMessage(error?.message || "Nao foi possivel carregar treinos");
+        }
+      }
+    };
+
+    loadWorkouts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStudentId, tenantId]);
 
   const handleAddExerciseToWorkout = (exercise) => {
     const id = Math.random().toString(36).substr(2, 9);
@@ -303,24 +381,57 @@ export default function WorkoutBuilderPage() {
     setCurrentWorkoutExercises(exercisesWithIds);
   };
 
-  const handleSaveWorkout = (e) => {
+  const handleSaveWorkout = async (e) => {
     e.preventDefault();
-    if (!workoutForm.title.trim() || currentWorkoutExercises.length === 0) {
-      alert("Preencha o título e adicione exercícios");
+    setMessage("");
+
+    if (!selectedStudentId) {
+      setMessage("Selecione um aluno para vincular o treino");
       return;
     }
 
-    const newWorkout = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...workoutForm,
-      exercises: currentWorkoutExercises,
-      createdAt: new Date().toISOString(),
-    };
+    if (!workoutForm.title.trim() || currentWorkoutExercises.length === 0) {
+      setMessage("Preencha o titulo e adicione exercicios");
+      return;
+    }
 
-    setWorkouts((prev) => [newWorkout, ...prev]);
-    setWorkoutForm({ title: "", objective: "", phase: "Hipertrofia" });
-    setCurrentWorkoutExercises([]);
-    alert(`Treino "${newWorkout.title}" salvo com sucesso!`);
+    setSaving(true);
+    try {
+      const created = await createWorkoutPlan(
+        {
+          alunoId: selectedStudentId,
+          title: workoutForm.title,
+          objective:
+            `${workoutForm.objective || ""} [Fase: ${workoutForm.phase}]`.trim(),
+          items: currentWorkoutExercises.map((exercise, index) => ({
+            exerciseName: exercise.exerciseName,
+            sets: Number(exercise.sets),
+            reps: String(exercise.reps),
+            restSeconds: exercise.restSeconds
+              ? Number(exercise.restSeconds)
+              : null,
+            orderIndex: index,
+          })),
+        },
+        tenantId,
+      );
+
+      const normalized = {
+        ...created,
+        exercises: Array.isArray(created?.items) ? created.items : [],
+      };
+
+      setWorkouts((prev) => [normalized, ...prev]);
+      setWorkoutForm({ title: "", objective: "", phase: "Hipertrofia" });
+      setCurrentWorkoutExercises([]);
+      setMessage(
+        `Treino "${created.title}" salvo para ${selectedStudent?.fullName || "aluno"}`,
+      );
+    } catch (error) {
+      setMessage(error?.message || "Nao foi possivel salvar treino");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCloneWorkout = (workout) => {
@@ -329,7 +440,12 @@ export default function WorkoutBuilderPage() {
       objective: workout.objective,
       phase: workout.phase,
     });
-    const exercisesWithIds = workout.exercises.map((ex) => ({
+    const sourceExercises = Array.isArray(workout.exercises)
+      ? workout.exercises
+      : Array.isArray(workout.items)
+        ? workout.items
+        : [];
+    const exercisesWithIds = sourceExercises.map((ex) => ({
       ...ex,
       id: Math.random().toString(36).substr(2, 9),
     }));
@@ -342,6 +458,37 @@ export default function WorkoutBuilderPage() {
         <h2 className="font-title text-2xl text-[#d9c179]">
           Criar Novo Treino
         </h2>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="block text-sm text-white/70">
+            Aluno
+            <select
+              value={selectedStudentId}
+              onChange={(e) => setSelectedStudentId(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#d9b341]/50"
+            >
+              <option value="">Selecione um aluno</option>
+              {students.map((student) => (
+                <option key={student.id} value={student.id}>
+                  {student.fullName}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm">
+            <p className="text-white/50">Treino sera vinculado a</p>
+            <p className="mt-1 font-semibold text-[#d9c179]">
+              {selectedStudent?.fullName || "Nenhum aluno selecionado"}
+            </p>
+          </div>
+        </div>
+
+        {message ? (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/75">
+            {message}
+          </div>
+        ) : null}
 
         <form className="mt-6 space-y-5" onSubmit={handleSaveWorkout}>
           <div className="grid gap-4 md:grid-cols-3">
@@ -430,9 +577,10 @@ export default function WorkoutBuilderPage() {
 
             <button
               type="submit"
+              disabled={saving || !selectedStudentId}
               className="flex-1 rounded-xl bg-[#d9b341] px-6 py-3 font-semibold text-black transition hover:brightness-110 md:flex-none"
             >
-              Salvar Treino
+              {saving ? "Salvando..." : "Salvar Treino"}
             </button>
           </div>
         </form>
@@ -473,7 +621,7 @@ export default function WorkoutBuilderPage() {
 
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
         <h2 className="font-title text-2xl text-[#d9c179]">
-          Seus Treinos ({workouts.length})
+          Treinos do Aluno ({workouts.length})
         </h2>
 
         <div className="mt-5 space-y-3">

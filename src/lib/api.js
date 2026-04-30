@@ -212,11 +212,17 @@ export async function assignPlanToMyAccount(alunoPlanId, tenantId) {
 
 export async function listWorkoutPlans(studentId, tenantId) {
   const query = studentId ? `?alunoId=${encodeURIComponent(studentId)}` : "";
-  return request(`/workout-plans${query}`, { tenantId });
+  const response = await request(`/workout-plans${query}`, { tenantId });
+  return Array.isArray(response?.plans) ? response.plans : [];
 }
 
 export async function createWorkoutPlan(payload, tenantId) {
-  return request("/workout-plans", { method: "POST", body: payload, tenantId });
+  const response = await request("/workout-plans", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.plan || response;
 }
 
 export async function updateWorkoutPlan(planId, payload) {
