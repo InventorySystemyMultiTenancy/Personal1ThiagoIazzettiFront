@@ -9,6 +9,9 @@ import RegisterPage from "./pages/RegisterPage.jsx";
 import PlansPage from "./pages/PlansPage.jsx";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
 import ClientDashboardPage from "./pages/ClientDashboardPage.jsx";
+import AdminAgendaPage from "./pages/AdminAgendaPage.jsx";
+import ClientAgendaPage from "./pages/ClientAgendaPage.jsx";
+import AdminDietPage from "./pages/AdminDietPage.jsx";
 
 function RouteFallback() {
   return (
@@ -87,7 +90,8 @@ export default function App() {
                   element={<PlansPage mode="admin" />}
                 />
                 <Route path="/admin/treinos" element={<AdminDashboardPage />} />
-                <Route path="/admin/agenda" element={<AdminDashboardPage />} />
+                <Route path="/admin/agenda" element={<AdminAgendaPage />} />
+                <Route path="/admin/dietas" element={<AdminDietPage />} />
               </Route>
 
               <Route element={<RequireRole role="ALUNO" />}>
@@ -100,10 +104,7 @@ export default function App() {
                   path="/cliente/treinos"
                   element={<ClientDashboardPage />}
                 />
-                <Route
-                  path="/cliente/agenda"
-                  element={<ClientDashboardPage />}
-                />
+                <Route path="/cliente/agenda" element={<ClientAgendaPage />} />
               </Route>
             </Route>
           </Route>

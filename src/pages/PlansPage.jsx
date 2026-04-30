@@ -2,9 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, Crown, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import {
+  createStudentPlan,
   assignPlanToMyAccount,
   formatCurrency,
   getPublicPlans,
+  listStudentPlans,
+  updateStudentPlan,
 } from "../lib/api.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useTenant } from "../contexts/TenantContext.jsx";
@@ -69,6 +72,16 @@ export default function PlansPage({ mode = "public" }) {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    monthlyPrice: "",
+    isActive: true,
+  });
+
+  const isAdminMode = mode === "admin";
 
   useEffect(() => {
     let cancelled = false;
@@ -78,7 +91,9 @@ export default function PlansPage({ mode = "public" }) {
       setMessage("");
 
       try {
-        const items = await getPublicPlans(tenantId);
+        const items = isAdminMode
+          ? await listStudentPlans(tenantId)
+          : await getPublicPlans(tenantId);
         if (!cancelled) {
           setPlans(Array.isArray(items) ? items : []);
         }
@@ -101,17 +116,34 @@ export default function PlansPage({ mode = "public" }) {
     return () => {
       cancelled = true;
     };
-  }, [tenantId]);
+  }, [tenantId, isAdminMode]);
 
   const actionLabel = useMemo(() => {
-    if (mode === "admin") return "Gerenciar plano";
+    if (isAdminMode) return "Gerenciar plano";
     if (isClient && user?.role === "ALUNO") return "Contratar este plano";
     return "Criar conta para contratar";
-  }, [isClient, mode, user?.role]);
+  }, [isAdminMode, isClient, user?.role]);
+
+  const resetForm = () => {
+    setEditingPlanId("");
+    setForm({
+      name: "",
+      description: "",
+      monthlyPrice: "",
+      isActive: true,
+    });
+  };
 
   const handleSelect = async (plan) => {
-    if (mode === "admin") {
-      setMessage(`Plano selecionado: ${plan.name}`);
+    if (isAdminMode) {
+      setEditingPlanId(plan.id);
+      setForm({
+        name: plan.name || "",
+        description: plan.description || "",
+        monthlyPrice: String(Number(plan.monthlyPriceCents || 0) / 100),
+        isActive: plan.isActive !== false,
+      });
+      setMessage(`Editando plano: ${plan.name}`);
       return;
     }
 
@@ -125,6 +157,54 @@ export default function PlansPage({ mode = "public" }) {
       setMessage(`Plano ${plan.name} contratado com sucesso.`);
     } catch (error) {
       setMessage(error?.message || "Nao foi possivel contratar o plano");
+    }
+  };
+
+  const handleAdminSave = async (event) => {
+    event.preventDefault();
+
+    if (!form.name.trim() || !form.monthlyPrice) {
+      setMessage("Nome e preco mensal sao obrigatorios");
+      return;
+    }
+
+    const monthlyPriceNumber = Number(form.monthlyPrice);
+    if (!Number.isFinite(monthlyPriceNumber) || monthlyPriceNumber <= 0) {
+      setMessage("Preco mensal invalido");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const payload = {
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        monthlyPriceCents: Math.round(monthlyPriceNumber * 100),
+        isActive: form.isActive,
+      };
+
+      if (editingPlanId) {
+        const updated = await updateStudentPlan(
+          editingPlanId,
+          payload,
+          tenantId,
+        );
+        setPlans((prev) =>
+          prev.map((plan) => (plan.id === editingPlanId ? updated : plan)),
+        );
+        setMessage("Plano atualizado com sucesso");
+      } else {
+        const created = await createStudentPlan(payload, tenantId);
+        setPlans((prev) => [created, ...prev]);
+        setMessage("Plano criado com sucesso");
+      }
+
+      resetForm();
+    } catch (error) {
+      setMessage(error?.message || "Nao foi possivel salvar o plano");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -169,6 +249,95 @@ export default function PlansPage({ mode = "public" }) {
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
           {message}
         </div>
+      ) : null}
+
+      {isAdminMode ? (
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-title text-2xl text-[#f2e3b3]">
+              {editingPlanId ? "Editar plano" : "Novo plano"}
+            </h2>
+            {editingPlanId ? (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/70"
+              >
+                Cancelar edicao
+              </button>
+            ) : null}
+          </div>
+
+          <form
+            className="mt-4 grid gap-3 md:grid-cols-2"
+            onSubmit={handleAdminSave}
+          >
+            <label className="text-sm text-white/70 md:col-span-1">
+              Nome do plano
+              <input
+                value={form.name}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-2 text-white outline-none"
+                placeholder="Ex: Plano Premium"
+              />
+            </label>
+
+            <label className="text-sm text-white/70 md:col-span-1">
+              Preco mensal (R$)
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.monthlyPrice}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, monthlyPrice: e.target.value }))
+                }
+                className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-2 text-white outline-none"
+                placeholder="99.90"
+              />
+            </label>
+
+            <label className="text-sm text-white/70 md:col-span-2">
+              Descricao
+              <textarea
+                rows={3}
+                value={form.description}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, description: e.target.value }))
+                }
+                className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-2 text-white outline-none"
+                placeholder="Descreva o que inclui no plano"
+              />
+            </label>
+
+            <label className="inline-flex items-center gap-2 text-sm text-white/75 md:col-span-2">
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, isActive: e.target.checked }))
+                }
+              />
+              Plano ativo
+            </label>
+
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-2xl bg-[#d9b341] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
+              >
+                {saving
+                  ? "Salvando..."
+                  : editingPlanId
+                    ? "Salvar alteracoes"
+                    : "Criar plano"}
+              </button>
+            </div>
+          </form>
+        </section>
       ) : null}
 
       {loading ? (

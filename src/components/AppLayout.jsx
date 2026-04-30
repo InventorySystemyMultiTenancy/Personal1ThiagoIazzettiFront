@@ -10,6 +10,7 @@ import {
   LogOut,
   Sparkles,
   CalendarDays,
+  Salad,
 } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import SidebarLink from "./SidebarLink.jsx";
@@ -22,6 +23,7 @@ const adminNavItems = [
   { label: "Planos", path: "admin/planos", icon: Wallet },
   { label: "Treinos", path: "admin/treinos", icon: Dumbbell },
   { label: "Agenda", path: "admin/agenda", icon: CalendarDays },
+  { label: "Dietas", path: "admin/dietas", icon: Salad },
 ];
 
 const clientNavItems = [

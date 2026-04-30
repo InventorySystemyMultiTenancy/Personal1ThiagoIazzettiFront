@@ -232,6 +232,97 @@ export async function updateWorkoutPlan(planId, payload) {
   });
 }
 
+export async function listAgendaEvents(tenantId, filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.alunoId) params.set("alunoId", filters.alunoId);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const response = await request(`/agenda${query}`, { tenantId });
+  return Array.isArray(response?.events) ? response.events : [];
+}
+
+export async function listMyAgendaEvents(tenantId) {
+  const response = await request("/agenda/me", { tenantId });
+  return Array.isArray(response?.events) ? response.events : [];
+}
+
+export async function createAgendaEvent(payload, tenantId) {
+  const response = await request("/agenda", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.event || response;
+}
+
+export async function updateAgendaEvent(eventId, payload, tenantId) {
+  const response = await request(`/agenda/${eventId}`, {
+    method: "PATCH",
+    body: payload,
+    tenantId,
+  });
+  return response?.event || response;
+}
+
+export async function deleteAgendaEvent(eventId, tenantId) {
+  return request(`/agenda/${eventId}`, {
+    method: "DELETE",
+    tenantId,
+  });
+}
+
+export async function confirmAgendaAttendance(
+  eventId,
+  attendanceStatus,
+  tenantId,
+) {
+  const response = await request(`/agenda/${eventId}/attendance`, {
+    method: "PATCH",
+    body: { attendanceStatus },
+    tenantId,
+  });
+  return response?.event || response;
+}
+
+export async function listDiets(tenantId, filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.alunoId) params.set("alunoId", filters.alunoId);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const response = await request(`/diets${query}`, { tenantId });
+  return Array.isArray(response?.diets) ? response.diets : [];
+}
+
+export async function listMyDiets(tenantId) {
+  const response = await request("/diets/me", { tenantId });
+  return Array.isArray(response?.diets) ? response.diets : [];
+}
+
+export async function createDiet(payload, tenantId) {
+  const response = await request("/diets", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.diet || response;
+}
+
+export async function updateDiet(dietId, payload, tenantId) {
+  const response = await request(`/diets/${dietId}`, {
+    method: "PATCH",
+    body: payload,
+    tenantId,
+  });
+  return response?.diet || response;
+}
+
+export async function deleteDiet(dietId, tenantId) {
+  return request(`/diets/${dietId}`, {
+    method: "DELETE",
+    tenantId,
+  });
+}
+
 export async function tenantFetch(path, personalId, options = {}) {
   return request(path, { ...options, tenantId: personalId });
 }
