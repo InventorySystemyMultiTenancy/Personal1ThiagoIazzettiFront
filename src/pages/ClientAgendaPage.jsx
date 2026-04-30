@@ -136,12 +136,12 @@ export default function ClientAgendaPage() {
       }
     };
 
-    if (tenantId) load();
+    if (tenantId !== undefined) load();
 
     return () => {
       cancelled = true;
     };
-  }, [tenantId, monthRange.first]);
+  }, [monthRange.first]);
 
   const eventsByDay = useMemo(() => {
     const map = new Map();
