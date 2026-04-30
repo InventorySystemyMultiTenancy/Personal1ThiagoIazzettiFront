@@ -62,7 +62,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
       <div className="mt-6 space-y-3 text-sm text-white/70">
         <div className="flex items-center gap-2">
           <ShieldCheck size={16} className="text-[#d9b341]" />
-          Contrato vinculado ao tenant
+          Contrato protegido
         </div>
         <div className="flex items-center gap-2">
           <Check size={16} className="text-[#d9b341]" />
@@ -182,13 +182,6 @@ export default function PlansPage({ mode = "public" }) {
       setMessage("Crie uma conta ou faca login como aluno para contratar.");
       return;
     }
-
-    setSelectedPlanId(plan.id);
-    setMessage(
-      plan.isRecurringEnabled === false
-        ? "Plano selecionado, mas o checkout recorrente ainda nao foi configurado para ele."
-        : `Plano ${plan.name} selecionado. Preencha os dados do cartao para concluir a assinatura.`,
-    );
   };
 
   const handleAdminSave = async (event) => {
@@ -266,9 +259,6 @@ export default function PlansPage({ mode = "public" }) {
       <section className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(217,179,65,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-              Catálogo do tenant
-            </p>
             <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
               Planos publicos
             </h1>

@@ -77,9 +77,6 @@ export default function AppLayout() {
         <section className="flex min-h-screen flex-col">
           <header className="flex flex-col gap-4 border-b border-white/10 bg-black/30 px-5 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="font-body text-xs uppercase tracking-[0.24em] text-white/50">
-                Tenant ativo
-              </p>
               <p className="font-title text-lg text-[#d9c179]">{tenantId}</p>
               <p className="font-body text-sm text-white/55">{user?.email}</p>
             </div>

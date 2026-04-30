@@ -374,7 +374,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
               Numero do cartao
               <div
                 id={buildFieldId(formPrefix, "cardNumber")}
-                className="mt-2 min-h-12 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                className="mt-2 min-h-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
               />
             </label>
 
@@ -382,7 +382,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
               Validade
               <div
                 id={buildFieldId(formPrefix, "expirationDate")}
-                className="mt-2 min-h-12 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                className="mt-2 min-h-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
               />
             </label>
 
@@ -390,7 +390,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
               CVV
               <div
                 id={buildFieldId(formPrefix, "securityCode")}
-                className="mt-2 min-h-12 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                className="mt-2 min-h-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
               />
             </label>
 
@@ -485,13 +485,6 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             </div>
             <p className="mt-2 leading-7">
               Os dados sensiveis do cartao ficam no iframe do Mercado Pago. O frontend envia apenas o token gerado para o backend concluir a assinatura.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white/68">
-            <p className="font-semibold text-white">Teste em sandbox</p>
-            <p className="mt-2 leading-7">
-              Use o cartao Visa 4509953566233576, CVV 123, validade 11/25 e nome APRO para validar o fluxo de aprovacao.
             </p>
           </div>
 
