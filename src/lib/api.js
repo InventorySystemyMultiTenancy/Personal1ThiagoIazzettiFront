@@ -194,26 +194,47 @@ export async function getPublicPlans(personalId) {
   return Array.isArray(response?.plans) ? response.plans : [];
 }
 
-export async function listRecurringSubscriptionPlans(tenantId) {
+export async function listRecurringSubscriptionPlans(
+  recurringPersonalId,
+  publicTenantId = recurringPersonalId,
+) {
+  const fallbackToPublicPlans = async () => {
+    if (!publicTenantId) {
+      return [];
+    }
+
+    const fallbackPlans = await getPublicPlans(publicTenantId);
+    return fallbackPlans.map(normalizeRecurringPlan).filter(Boolean);
+  };
+
   try {
     const response = await request(
       "/payments/recurring/subscriptions/plans/public",
       {
-        tenantId,
+        tenantId: recurringPersonalId,
         auth: false,
       },
     );
 
-    return extractListPayload(response)
+    const recurringPlans = extractListPayload(response)
       .map(normalizeRecurringPlan)
       .filter(Boolean);
+
+    if (recurringPlans.length > 0) {
+      return recurringPlans;
+    }
+
+    return fallbackToPublicPlans();
   } catch (error) {
-    if (error instanceof ApiError && error.status !== 404) {
+    if (
+      error instanceof ApiError &&
+      error.status !== 404 &&
+      error.status !== 400
+    ) {
       throw error;
     }
 
-    const fallbackPlans = await getPublicPlans(tenantId);
-    return fallbackPlans.map(normalizeRecurringPlan).filter(Boolean);
+    return fallbackToPublicPlans();
   }
 }
 

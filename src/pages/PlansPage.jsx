@@ -116,7 +116,10 @@ export default function PlansPage({ mode = "public" }) {
       try {
         const items = isAdminMode
           ? await listStudentPlans(tenantId)
-          : await listRecurringSubscriptionPlans(recurringPersonalId);
+          : await listRecurringSubscriptionPlans(
+              recurringPersonalId,
+              tenantId,
+            );
         if (!cancelled) {
           setPlans(Array.isArray(items) ? items : []);
         }
