@@ -51,7 +51,7 @@ export default function LoginPage() {
                 Thiago Iazzetti
               </p>
               <p className="text-xs uppercase tracking-[0.22em] text-white/45">
-                Personal admin e aluno
+                Personal admin & aluno
               </p>
             </div>
           </div>
