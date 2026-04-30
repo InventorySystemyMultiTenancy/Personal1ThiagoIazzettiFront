@@ -106,7 +106,7 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO */}
-      <section className="relative z-10 flex flex-col justify-center px-6 py-10 lg:px-14 lg:py-0 lg:min-h-[calc(100vh-80px)]">
+      <section className="relative z-10 flex flex-col justify-center px-6 py-16 lg:px-14 lg:py-20">
         <div className="grid items-center gap-8 lg:grid-cols-[1fr_360px]">
           {/* LEFT */}
           <div>
@@ -194,7 +194,7 @@ export default function LandingPage() {
 
       {/* PLANS SECTION */}
       {showPlans && (
-        <section ref={plansRef} className="relative z-10 px-6 pb-20 lg:px-14">
+        <section ref={plansRef} className="relative z-10 px-6 py-12 lg:px-14">
           <div className="mb-8 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.35em] text-white/30">
@@ -295,6 +295,85 @@ export default function LandingPage() {
           to { transform: translateX(-50%); }
         }
       `}</style>
+
+      {/* FOOTER */}
+      <footer className="relative z-10 border-t border-white/10 bg-[#0a0a0a] px-6 py-12 lg:px-14">
+        <div className="max-w-7xl mx-auto grid gap-8 md:grid-cols-3 mb-8">
+          {/* Brand */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <img
+                src="/logo.svg"
+                alt="Thiago Iazzetti"
+                className="h-10 w-10 rounded-full bg-white/10 object-contain p-1"
+              />
+              <span className="font-bold tracking-wide text-[#b5f03c]">
+                THIAGO IAZZETTI
+              </span>
+            </div>
+            <p className="text-sm text-white/50">
+              Personal trainer especializado em musculação e transformação
+              corporal.
+            </p>
+          </div>
+
+          {/* Links */}
+          <div>
+            <h4 className="text-sm font-bold uppercase tracking-widest text-white/80 mb-3">
+              Links
+            </h4>
+            <ul className="space-y-2 text-sm text-white/50">
+              <li>
+                <a href="#" className="transition hover:text-[#b5f03c]">
+                  Home
+                </a>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setShowPlans((v) => !v)}
+                  className="transition hover:text-[#b5f03c]"
+                >
+                  Planos
+                </button>
+              </li>
+              <li>
+                <a
+                  href={whatsappLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition hover:text-[#b5f03c]"
+                >
+                  Contato
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h4 className="text-sm font-bold uppercase tracking-widest text-white/80 mb-3">
+              Contato
+            </h4>
+            <a
+              href={whatsappLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-[#b5f03c]/10 border border-[#b5f03c]/30 px-4 py-2 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
+            >
+              Fale conosco no WhatsApp
+            </a>
+          </div>
+        </div>
+
+        {/* Bottom */}
+        <div className="border-t border-white/10 pt-6 text-center">
+          <p className="text-xs text-white/40">
+            © {new Date().getFullYear()} Thiago Iazzetti. Todos os direitos
+            reservados.
+          </p>
+        </div>
+      </footer>
     </main>
   );
 }
