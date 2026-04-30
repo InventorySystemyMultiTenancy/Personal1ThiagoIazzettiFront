@@ -1,6 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, CircleDollarSign, Dumbbell, Loader2, Sparkles } from "lucide-react";
-import { formatDate, getMyStudentProfile } from "../lib/api.js";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CalendarDays,
+  CircleDollarSign,
+  Dumbbell,
+  Loader2,
+  MessageSquare,
+  Send,
+  Sparkles,
+} from "lucide-react";
+import {
+  formatDate,
+  getMyStudentProfile,
+  listMyMessages,
+  sendMyMessage,
+} from "../lib/api.js";
 import { getBillingStatus } from "../lib/billingStatus.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 
@@ -144,20 +157,26 @@ export default function ClientDashboardPage() {
                 <Sparkles className="text-[#b5f03c]" />
               </div>
 
-              <div className={`mt-5 rounded-2xl border px-4 py-4 ${billingStatus.cardClass}`}>
+              <div
+                className={`mt-5 rounded-2xl border px-4 py-4 ${billingStatus.cardClass}`}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs uppercase tracking-[0.22em] text-white/45">
                       Mensalidade
                     </p>
-                    <p className={`mt-2 text-lg font-semibold ${billingStatus.accentClass}`}>
+                    <p
+                      className={`mt-2 text-lg font-semibold ${billingStatus.accentClass}`}
+                    >
                       {billingStatus.label}
                     </p>
                     <p className="mt-2 text-sm leading-6 text-white/68">
                       {billingStatus.detail}
                     </p>
                   </div>
-                  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${billingStatus.badgeClass}`}>
+                  <span
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${billingStatus.badgeClass}`}
+                  >
                     {billingStatus.shortLabel}
                   </span>
                 </div>
@@ -205,13 +224,17 @@ export default function ClientDashboardPage() {
           </section>
 
           <section className="grid gap-4 md:grid-cols-3">
-            <article className={`rounded-[1.5rem] border p-5 ${billingStatus.cardClass}`}>
+            <article
+              className={`rounded-[1.5rem] border p-5 ${billingStatus.cardClass}`}
+            >
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">
                     Status atual
                   </p>
-                  <p className={`mt-2 font-title text-2xl ${billingStatus.accentClass}`}>
+                  <p
+                    className={`mt-2 font-title text-2xl ${billingStatus.accentClass}`}
+                  >
                     {billingStatus.shortLabel}
                   </p>
                 </div>
@@ -233,7 +256,9 @@ export default function ClientDashboardPage() {
                 Vencimento de referencia
               </p>
               <p className="mt-2 font-title text-2xl text-white">
-                {profile?.planDueDate ? formatDate(profile.planDueDate) : "Nao informado"}
+                {profile?.planDueDate
+                  ? formatDate(profile.planDueDate)
+                  : "Nao informado"}
               </p>
             </article>
           </section>
@@ -251,6 +276,163 @@ export default function ClientDashboardPage() {
           </section>
         </>
       ) : null}
+
+      {/* CHAT */}
+      <ClientChatPanel />
     </main>
+  );
+}
+
+function ClientChatPanel() {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [open, setOpen] = useState(false);
+  const bottomRef = useRef(null);
+  const pollRef = useRef(null);
+
+  const loadMessages = async () => {
+    try {
+      const msgs = await listMyMessages();
+      setMessages(msgs);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  useEffect(() => {
+    if (!open) {
+      clearInterval(pollRef.current);
+      return;
+    }
+    setLoading(true);
+    loadMessages().finally(() => setLoading(false));
+    pollRef.current = setInterval(loadMessages, 5000);
+    return () => clearInterval(pollRef.current);
+  }, [open]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!text.trim() || sending) return;
+    setSending(true);
+    const optimistic = {
+      id: `opt-${Date.now()}`,
+      senderRole: "ALUNO",
+      content: text.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    setText("");
+    try {
+      const msg = await sendMyMessage(optimistic.content);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === optimistic.id ? msg : m)),
+      );
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-white/[0.07] overflow-hidden">
+      {/* Toggle header */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-6 py-4 bg-white/[0.03] hover:bg-white/[0.05] transition"
+      >
+        <div className="flex items-center gap-3">
+          <MessageSquare size={16} className="text-[#b5f03c]" />
+          <span className="text-sm font-bold text-white/70">
+            Mensagens com o Personal
+          </span>
+        </div>
+        <span className="text-xs text-white/30">
+          {open ? "Fechar" : "Abrir"}
+        </span>
+      </button>
+
+      {open && (
+        <div className="flex flex-col bg-[#080808]" style={{ height: 400 }}>
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+            {loading && messages.length === 0 ? (
+              <div className="flex justify-center py-8">
+                <Loader2 size={18} className="animate-spin text-white/20" />
+              </div>
+            ) : messages.length === 0 ? (
+              <p className="text-center text-xs text-white/25 pt-10">
+                Nenhuma mensagem ainda. Mande um oi pro seu personal!
+              </p>
+            ) : (
+              messages.map((msg) => {
+                const isMe = msg.senderRole === "ALUNO";
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm leading-6 ${
+                        isMe
+                          ? "bg-[#b5f03c] text-black rounded-br-sm"
+                          : "bg-white/[0.07] text-white/85 rounded-bl-sm"
+                      }`}
+                    >
+                      <p>{msg.content}</p>
+                      <p
+                        className={`mt-1 text-[10px] ${isMe ? "text-black/50" : "text-white/30"}`}
+                      >
+                        {new Date(msg.createdAt).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input */}
+          <div className="border-t border-white/[0.07] px-4 py-3 flex items-end gap-3">
+            <textarea
+              rows={1}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Digite uma mensagem..."
+              className="flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/25 focus:border-[#b5f03c]/40 focus:outline-none"
+              style={{ maxHeight: 100 }}
+            />
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={!text.trim() || sending}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#b5f03c] text-black transition hover:brightness-110 disabled:opacity-40"
+            >
+              {sending ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Send size={16} />
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

@@ -488,3 +488,35 @@ export async function deleteDiet(dietId, tenantId) {
 export async function tenantFetch(path, personalId, options = {}) {
   return request(path, { ...options, tenantId: personalId });
 }
+
+// ── Messages ──────────────────────────────────────────────────────────────────
+
+// Personal: list conversation with one aluno
+export async function listMessages(alunoId) {
+  const response = await request(`/messages/${alunoId}`);
+  return Array.isArray(response?.messages) ? response.messages : [];
+}
+
+// Personal: send message to aluno
+export async function sendMessage(alunoId, content) {
+  const response = await request(`/messages/${alunoId}`, {
+    method: "POST",
+    body: { content },
+  });
+  return response?.message || response;
+}
+
+// Aluno: list my conversation
+export async function listMyMessages() {
+  const response = await request("/messages/me");
+  return Array.isArray(response?.messages) ? response.messages : [];
+}
+
+// Aluno: send message to personal
+export async function sendMyMessage(content) {
+  const response = await request("/messages/me", {
+    method: "POST",
+    body: { content },
+  });
+  return response?.message || response;
+}

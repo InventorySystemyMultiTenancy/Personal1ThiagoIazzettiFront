@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import {
   BarChart3,
@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Edit2,
   Trash2,
+  Send,
+  ChevronLeft,
 } from "lucide-react";
 import {
   createStudent,
@@ -23,6 +25,8 @@ import {
   listStudentPlans,
   listStudents,
   updateStudent,
+  listMessages,
+  sendMessage,
 } from "../lib/api.js";
 import { getBillingStatus } from "../lib/billingStatus.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
@@ -982,23 +986,232 @@ export default function AdminDashboardPage() {
       {activeTab === "treinos" && <WorkoutBuilderPage />}
 
       {/* TAB: COMUNICACAO */}
-      {activeTab === "comunicacao" && (
-        <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-white/60">Comunicação</h2>
-            <MessageSquare className="text-[#b5f03c]/40" size={16} />
-          </div>
-          <p className="text-xs text-white/35 leading-6">
-            Chat interno, repositório de arquivos e notificações para alunos.
+      {activeTab === "comunicacao" && <ChatPanel students={students} />}
+    </main>
+  );
+}
+
+function ChatPanel({ students }) {
+  const [selectedAluno, setSelectedAluno] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef(null);
+  const pollRef = useRef(null);
+
+  const activeStudents = students.filter((s) => s.isActive !== false);
+
+  const loadMessages = async (alunoId) => {
+    setLoadingMsgs(true);
+    try {
+      const msgs = await listMessages(alunoId);
+      setMessages(msgs);
+    } catch {
+      // keep existing
+    } finally {
+      setLoadingMsgs(false);
+    }
+  };
+
+  const selectAluno = async (aluno) => {
+    setSelectedAluno(aluno);
+    setMessages([]);
+    setText("");
+    clearInterval(pollRef.current);
+    await loadMessages(aluno.id);
+    // Poll every 5s
+    pollRef.current = setInterval(() => loadMessages(aluno.id), 5000);
+  };
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    return () => clearInterval(pollRef.current);
+  }, []);
+
+  const handleSend = async () => {
+    if (!text.trim() || !selectedAluno || sending) return;
+    setSending(true);
+    const optimistic = {
+      id: `opt-${Date.now()}`,
+      senderRole: "PERSONAL",
+      content: text.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    setText("");
+    try {
+      const msg = await sendMessage(selectedAluno.id, optimistic.content);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === optimistic.id ? msg : m)),
+      );
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="flex h-[calc(100vh-200px)] min-h-[480px] rounded-2xl border border-white/[0.07] overflow-hidden">
+      {/* Sidebar — student list */}
+      <aside
+        className={`flex flex-col border-r border-white/[0.07] bg-[#0b0b0b] ${selectedAluno ? "hidden sm:flex w-60" : "flex w-full sm:w-60"}`}
+      >
+        <div className="px-4 py-4 border-b border-white/[0.07]">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/30">
+            Conversas
           </p>
-          <div className="mt-6 rounded-xl border border-white/[0.06] bg-black/20 px-6 py-10 text-center">
-            <MessageSquare className="mx-auto mb-3 text-white/15" size={28} />
-            <p className="text-xs text-white/35">
-              Área de comunicação em breve.
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {activeStudents.length === 0 ? (
+            <p className="px-4 py-6 text-xs text-white/30 text-center">
+              Nenhum aluno ativo
+            </p>
+          ) : (
+            activeStudents.map((aluno) => (
+              <button
+                key={aluno.id}
+                type="button"
+                onClick={() => selectAluno(aluno)}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition hover:bg-white/[0.04] ${
+                  selectedAluno?.id === aluno.id
+                    ? "bg-[#b5f03c]/[0.08] border-l-2 border-[#b5f03c]"
+                    : "border-l-2 border-transparent"
+                }`}
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b5f03c]/15 text-[#b5f03c] text-xs font-bold">
+                  {(aluno.fullName || "?")[0].toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white/80">
+                    {aluno.fullName}
+                  </p>
+                  <p className="truncate text-[10px] text-white/35">
+                    {aluno.email || "sem e-mail"}
+                  </p>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </aside>
+
+      {/* Chat area */}
+      <div
+        className={`flex flex-1 flex-col bg-[#080808] ${!selectedAluno ? "hidden sm:flex" : "flex"}`}
+      >
+        {!selectedAluno ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+            <MessageSquare size={32} className="text-white/10" />
+            <p className="text-xs text-white/30">
+              Selecione um aluno para iniciar uma conversa
             </p>
           </div>
-        </article>
-      )}
-    </main>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="flex items-center gap-3 border-b border-white/[0.07] px-5 py-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAluno(null);
+                  clearInterval(pollRef.current);
+                }}
+                className="sm:hidden flex h-7 w-7 items-center justify-center rounded-full text-white/40 hover:text-white"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#b5f03c]/15 text-[#b5f03c] text-xs font-bold">
+                {selectedAluno.fullName[0].toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">
+                  {selectedAluno.fullName}
+                </p>
+                <p className="text-[10px] text-white/35">
+                  {selectedAluno.email || ""}
+                </p>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+              {loadingMsgs && messages.length === 0 ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 size={20} className="animate-spin text-white/20" />
+                </div>
+              ) : messages.length === 0 ? (
+                <p className="text-center text-xs text-white/25 pt-10">
+                  Nenhuma mensagem ainda. Inicie a conversa!
+                </p>
+              ) : (
+                messages.map((msg) => {
+                  const isMe = msg.senderRole === "PERSONAL";
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm leading-6 ${
+                          isMe
+                            ? "bg-[#b5f03c] text-black rounded-br-sm"
+                            : "bg-white/[0.07] text-white/85 rounded-bl-sm"
+                        }`}
+                      >
+                        <p>{msg.content}</p>
+                        <p
+                          className={`mt-1 text-[10px] ${isMe ? "text-black/50" : "text-white/30"}`}
+                        >
+                          {new Date(msg.createdAt).toLocaleTimeString("pt-BR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Input */}
+            <div className="border-t border-white/[0.07] px-4 py-3 flex items-end gap-3">
+              <textarea
+                rows={1}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder="Digite uma mensagem..."
+                className="flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/25 focus:border-[#b5f03c]/40 focus:outline-none"
+                style={{ maxHeight: 120 }}
+              />
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={!text.trim() || sending}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#b5f03c] text-black transition hover:brightness-110 disabled:opacity-40"
+              >
+                {sending ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Send size={16} />
+                )}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
