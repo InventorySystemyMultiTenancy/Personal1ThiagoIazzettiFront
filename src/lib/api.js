@@ -144,7 +144,11 @@ export async function me() {
 }
 
 export async function getPublicPlans(personalId) {
-  return request("/aluno-plans/public", { tenantId: personalId, auth: false });
+  const response = await request("/aluno-plans/public", {
+    tenantId: personalId,
+    auth: false,
+  });
+  return Array.isArray(response?.plans) ? response.plans : [];
 }
 
 export async function listStudents(tenantId) {
@@ -160,19 +164,26 @@ export async function createStudent(payload, tenantId) {
 }
 
 export async function listStudentPlans(tenantId) {
-  return request("/aluno-plans", { tenantId });
+  const response = await request("/aluno-plans", { tenantId });
+  return Array.isArray(response?.plans) ? response.plans : [];
 }
 
 export async function createStudentPlan(payload, tenantId) {
-  return request("/aluno-plans", { method: "POST", body: payload, tenantId });
+  const response = await request("/aluno-plans", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.plan || response;
 }
 
 export async function updateStudentPlan(planId, payload, tenantId) {
-  return request(`/aluno-plans/${planId}`, {
+  const response = await request(`/aluno-plans/${planId}`, {
     method: "PATCH",
     body: payload,
     tenantId,
   });
+  return response?.plan || response;
 }
 
 export async function assignPlanToStudent(studentId, alunoPlanId, tenantId) {
