@@ -1246,7 +1246,7 @@ export default function WorkoutBuilderPage() {
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="block text-sm text-white/70">
-            Aluno
+            {t("WORKOUT_BUILDER_ALUNO_LABEL_THIAGOIAZZETTI", "Aluno")}
             <select
               value={selectedStudentId}
               onChange={(e) => setSelectedStudentId(e.target.value)}
@@ -1267,9 +1267,18 @@ export default function WorkoutBuilderPage() {
           </label>
 
           <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm">
-            <p className="text-white/50">Treino sera vinculado a</p>
+            <p className="text-white/50">
+              {t(
+                "WORKOUT_BUILDER_LINKED_TO_THIAGOIAZZETTI",
+                "Treino sera vinculado a",
+              )}
+            </p>
             <p className="mt-1 font-semibold text-[#b5f03c]">
-              {selectedStudent?.fullName || "Nenhum aluno selecionado"}
+              {selectedStudent?.fullName ||
+                t(
+                  "WORKOUT_BUILDER_NO_STUDENT_THIAGOIAZZETTI",
+                  "Nenhum aluno selecionado",
+                )}
             </p>
           </div>
         </div>
@@ -1294,7 +1303,10 @@ export default function WorkoutBuilderPage() {
                   setWorkoutForm((prev) => ({ ...prev, title: e.target.value }))
                 }
                 className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#b5f03c]/50"
-                placeholder="Ex: Peito e Costas"
+                placeholder={t(
+                  "WORKOUT_BUILDER_TITLE_PLACEHOLDER_THIAGOIAZZETTI",
+                  "Ex: Peito e Costas",
+                )}
               />
             </label>
 
@@ -1310,7 +1322,10 @@ export default function WorkoutBuilderPage() {
                   }))
                 }
                 className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#b5f03c]/50"
-                placeholder="Ex: Força e Hipertrofia"
+                placeholder={t(
+                  "WORKOUT_BUILDER_OBJECTIVE_PLACEHOLDER_THIAGOIAZZETTI",
+                  "Ex: Força e Hipertrofia",
+                )}
               />
             </label>
 
@@ -1326,17 +1341,38 @@ export default function WorkoutBuilderPage() {
                 }
                 className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
               >
-                <option>Hipertrofia</option>
-                <option>Força</option>
-                <option>Definição</option>
-                <option>Resistência</option>
+                <option value="Hipertrofia">
+                  {t(
+                    "WORKOUT_BUILDER_PHASE_HYPERTROPHY_THIAGOIAZZETTI",
+                    "Hipertrofia",
+                  )}
+                </option>
+                <option value="Força">
+                  {t("WORKOUT_BUILDER_PHASE_STRENGTH_THIAGOIAZZETTI", "Força")}
+                </option>
+                <option value="Definição">
+                  {t(
+                    "WORKOUT_BUILDER_PHASE_CUTTING_THIAGOIAZZETTI",
+                    "Definição",
+                  )}
+                </option>
+                <option value="Resistência">
+                  {t(
+                    "WORKOUT_BUILDER_PHASE_ENDURANCE_THIAGOIAZZETTI",
+                    "Resistência",
+                  )}
+                </option>
               </select>
             </label>
           </div>
 
           <div>
             <p className="mb-3 text-sm font-semibold text-white/70">
-              Exercícios ({currentWorkoutExercises.length})
+              {t(
+                "WORKOUT_BUILDER_EXERCISES_HEADER_THIAGOIAZZETTI",
+                "Exercicios",
+              )}{" "}
+              ({currentWorkoutExercises.length})
             </p>
             <div className="space-y-2">
               {currentWorkoutExercises.length === 0 ? (

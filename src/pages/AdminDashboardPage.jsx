@@ -1044,7 +1044,10 @@ export default function AdminDashboardPage() {
                       }))
                     }
                     className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
-                    placeholder="Ex: Plano Premium"
+                    placeholder={t(
+                      "ADMIN_DASH_PLAN_NAME_PLACEHOLDER_THIAGOIAZZETTI",
+                      "Ex: Plano Premium",
+                    )}
                   />
                 </label>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
@@ -1083,7 +1086,10 @@ export default function AdminDashboardPage() {
                     }))
                   }
                   className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
-                  placeholder="Descreva o plano..."
+                  placeholder={t(
+                    "ADMIN_DASH_PLAN_DESC_PLACEHOLDER_THIAGOIAZZETTI",
+                    "Descreva o plano...",
+                  )}
                   rows={3}
                 />
               </label>

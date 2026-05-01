@@ -362,7 +362,10 @@ export default function AdminDietPage() {
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, title: e.target.value }))
                 }
-                placeholder="Ex: Dieta de definicao"
+                placeholder={t(
+                  "DIET_FORM_TITLE_PLACEHOLDER_THIAGOIAZZETTI",
+                  "Ex: Dieta de definicao",
+                )}
                 className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
               />
             </label>
@@ -374,7 +377,10 @@ export default function AdminDietPage() {
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, description: e.target.value }))
                 }
-                placeholder="Objetivo da dieta"
+                placeholder={t(
+                  "DIET_FORM_DESC_PLACEHOLDER_THIAGOIAZZETTI",
+                  "Objetivo da dieta",
+                )}
                 className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
               />
             </label>
@@ -414,7 +420,10 @@ export default function AdminDietPage() {
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, mealPlan: e.target.value }))
                 }
-                placeholder="Ex: Cafe da manha: ovos e aveia..."
+                placeholder={t(
+                  "DIET_FORM_MEALPLAN_PLACEHOLDER_THIAGOIAZZETTI",
+                  "Ex: Cafe da manha: ovos e aveia...",
+                )}
                 className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
               />
             </label>
