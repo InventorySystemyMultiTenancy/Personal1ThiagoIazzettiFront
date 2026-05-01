@@ -505,7 +505,10 @@ function ExerciseSelector({ onAdd, onClose }) {
       <div className="w-full max-w-2xl rounded-4xl border border-white/10 bg-[#0a0a0a] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-title text-2xl text-[#b5f03c]">
-            {t("WORKOUT_MODAL_ADD_EXERCISE_TITLE_THIAGOIAZZETTI", "Adicionar Exercicio")}
+            {t(
+              "WORKOUT_MODAL_ADD_EXERCISE_TITLE_THIAGOIAZZETTI",
+              "Adicionar Exercicio",
+            )}
           </h2>
           <button
             type="button"
@@ -518,7 +521,10 @@ function ExerciseSelector({ onAdd, onClose }) {
 
         <form className="space-y-5" onSubmit={handleAddExercise}>
           <label className="block text-sm text-white/70">
-            {t("WORKOUT_MODAL_MUSCLE_GROUP_LABEL_THIAGOIAZZETTI", "Grupo Muscular")}
+            {t(
+              "WORKOUT_MODAL_MUSCLE_GROUP_LABEL_THIAGOIAZZETTI",
+              "Grupo Muscular",
+            )}
             <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3">
               {Object.keys(exerciseLibrary).map((group) => (
                 <button
@@ -549,7 +555,12 @@ function ExerciseSelector({ onAdd, onClose }) {
               }
               className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
             >
-              <option value="">{t("WORKOUT_MODAL_SELECT_EXERCISE_THIAGOIAZZETTI", "Selecione um exercicio")}</option>
+              <option value="">
+                {t(
+                  "WORKOUT_MODAL_SELECT_EXERCISE_THIAGOIAZZETTI",
+                  "Selecione um exercicio",
+                )}
+              </option>
               {filteredExercises.map((ex) => (
                 <option key={ex.name} value={ex.name}>
                   {ex.name} ({ex.equipment})
@@ -594,7 +605,10 @@ function ExerciseSelector({ onAdd, onClose }) {
             </label>
 
             <label className="block text-sm text-white/70">
-              {t("WORKOUT_MODAL_REST_LABEL_THIAGOIAZZETTI", "Descanso (segundos)")}
+              {t(
+                "WORKOUT_MODAL_REST_LABEL_THIAGOIAZZETTI",
+                "Descanso (segundos)",
+              )}
               <input
                 type="number"
                 min="0"
@@ -616,7 +630,10 @@ function ExerciseSelector({ onAdd, onClose }) {
               type="submit"
               className="flex-1 rounded-xl bg-[#b5f03c] px-4 py-3 font-semibold text-black transition hover:brightness-110"
             >
-              {t("WORKOUT_MODAL_ADD_EXERCISE_BUTTON_THIAGOIAZZETTI", "Adicionar exercicio")}
+              {t(
+                "WORKOUT_MODAL_ADD_EXERCISE_BUTTON_THIAGOIAZZETTI",
+                "Adicionar exercicio",
+              )}
             </button>
             <button
               type="button"
@@ -639,8 +656,11 @@ function WorkoutItem({ exercise, onRemove }) {
       <div className="flex-1">
         <p className="font-semibold text-white">{exercise.exerciseName}</p>
         <p className="text-sm text-white/60">
-          {exercise.sets}x{exercise.reps} • {t("CLIENT_DASH_REST_LABEL_THIAGOIAZZETTI", "Descanso")}:{" "}
-          {exercise.restSeconds ? `${exercise.restSeconds}s` : t("CLIENT_DASH_REST_FREE_THIAGOIAZZETTI", "livre")}
+          {exercise.sets}x{exercise.reps} •{" "}
+          {t("CLIENT_DASH_REST_LABEL_THIAGOIAZZETTI", "Descanso")}:{" "}
+          {exercise.restSeconds
+            ? `${exercise.restSeconds}s`
+            : t("CLIENT_DASH_REST_FREE_THIAGOIAZZETTI", "livre")}
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -782,7 +802,13 @@ export default function WorkoutBuilderPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          setMessage(error?.message || t("WORKOUT_BUILDER_LOAD_STUDENTS_ERROR_THIAGOIAZZETTI", "Nao foi possivel carregar alunos"));
+          setMessage(
+            error?.message ||
+              t(
+                "WORKOUT_BUILDER_LOAD_STUDENTS_ERROR_THIAGOIAZZETTI",
+                "Nao foi possivel carregar alunos",
+              ),
+          );
         }
       }
     };
@@ -814,7 +840,13 @@ export default function WorkoutBuilderPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          setMessage(error?.message || t("WORKOUT_BUILDER_LOAD_WORKOUTS_ERROR_THIAGOIAZZETTI", "Nao foi possivel carregar treinos"));
+          setMessage(
+            error?.message ||
+              t(
+                "WORKOUT_BUILDER_LOAD_WORKOUTS_ERROR_THIAGOIAZZETTI",
+                "Nao foi possivel carregar treinos",
+              ),
+          );
         }
       }
     };
@@ -855,12 +887,22 @@ export default function WorkoutBuilderPage() {
     setMessage("");
 
     if (!selectedStudentId) {
-      setMessage(t("WORKOUT_BUILDER_SELECT_STUDENT_ERROR_THIAGOIAZZETTI", "Selecione um aluno para vincular o treino"));
+      setMessage(
+        t(
+          "WORKOUT_BUILDER_SELECT_STUDENT_ERROR_THIAGOIAZZETTI",
+          "Selecione um aluno para vincular o treino",
+        ),
+      );
       return;
     }
 
     if (!workoutForm.title.trim() || currentWorkoutExercises.length === 0) {
-      setMessage(t("WORKOUT_BUILDER_FORM_REQUIRED_THIAGOIAZZETTI", "Preencha o titulo e adicione exercicios"));
+      setMessage(
+        t(
+          "WORKOUT_BUILDER_FORM_REQUIRED_THIAGOIAZZETTI",
+          "Preencha o titulo e adicione exercicios",
+        ),
+      );
       return;
     }
 
@@ -905,7 +947,13 @@ export default function WorkoutBuilderPage() {
           : `${t("WORKOUT_BUILDER_SAVED_THIAGOIAZZETTI", "Treino salvo para")} ${selectedStudent?.fullName || t("DIET_LIST_STUDENT_DEFAULT_THIAGOIAZZETTI", "aluno")}: "${persistWorkout.title}"`,
       );
     } catch (error) {
-      setMessage(error?.message || t("WORKOUT_BUILDER_SAVE_ERROR_THIAGOIAZZETTI", "Nao foi possivel salvar treino"));
+      setMessage(
+        error?.message ||
+          t(
+            "WORKOUT_BUILDER_SAVE_ERROR_THIAGOIAZZETTI",
+            "Nao foi possivel salvar treino",
+          ),
+      );
     } finally {
       setSaving(false);
     }
@@ -929,7 +977,9 @@ export default function WorkoutBuilderPage() {
         id: exercise.id || `exercise-${workout.id}-${index}`,
       })),
     );
-    setMessage(`${t("WORKOUT_BUILDER_EDITING_THIAGOIAZZETTI", "Editando treino")}: ${workout.title}`);
+    setMessage(
+      `${t("WORKOUT_BUILDER_EDITING_THIAGOIAZZETTI", "Editando treino")}: ${workout.title}`,
+    );
   };
 
   const handleCloneWorkout = (workout) => {
@@ -1131,7 +1181,9 @@ export default function WorkoutBuilderPage() {
             : workout,
         ),
       );
-      setMessage(`${t("WORKOUT_BUILDER_SESSION_UPDATED_THIAGOIAZZETTI", "Sessao atualizada com sucesso")}: "${sessionDraft.title}".`);
+      setMessage(
+        `${t("WORKOUT_BUILDER_SESSION_UPDATED_THIAGOIAZZETTI", "Sessao atualizada com sucesso")}: "${sessionDraft.title}".`,
+      );
     } catch (error) {
       setScheduleError(
         error?.status === 409
@@ -1170,7 +1222,9 @@ export default function WorkoutBuilderPage() {
             : workout,
         ),
       );
-      setMessage(`${t("WORKOUT_BUILDER_SESSION_DELETED_THIAGOIAZZETTI", "Sessao removida com sucesso")}: "${sessionDraft.title}".`);
+      setMessage(
+        `${t("WORKOUT_BUILDER_SESSION_DELETED_THIAGOIAZZETTI", "Sessao removida com sucesso")}: "${sessionDraft.title}".`,
+      );
     } catch (error) {
       setScheduleError(error?.message || "Nao foi possivel excluir a sessao.");
     } finally {
@@ -1182,7 +1236,12 @@ export default function WorkoutBuilderPage() {
     <main className="space-y-6 pb-10">
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
         <h2 className="font-title text-2xl text-[#b5f03c]">
-            {editingWorkoutId ? t("WORKOUT_BUILDER_EDIT_TITLE_THIAGOIAZZETTI", "Editar Treino") : t("WORKOUT_BUILDER_CREATE_TITLE_THIAGOIAZZETTI", "Criar Novo Treino")}
+          {editingWorkoutId
+            ? t("WORKOUT_BUILDER_EDIT_TITLE_THIAGOIAZZETTI", "Editar Treino")
+            : t(
+                "WORKOUT_BUILDER_CREATE_TITLE_THIAGOIAZZETTI",
+                "Criar Novo Treino",
+              )}
         </h2>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -1193,7 +1252,12 @@ export default function WorkoutBuilderPage() {
               onChange={(e) => setSelectedStudentId(e.target.value)}
               className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
             >
-              <option value="">{t("DIET_FORM_SELECT_STUDENT_THIAGOIAZZETTI", "Selecione um aluno")}</option>
+              <option value="">
+                {t(
+                  "DIET_FORM_SELECT_STUDENT_THIAGOIAZZETTI",
+                  "Selecione um aluno",
+                )}
+              </option>
               {students.map((student) => (
                 <option key={student.id} value={student.id}>
                   {student.fullName}
@@ -1219,7 +1283,10 @@ export default function WorkoutBuilderPage() {
         <form className="mt-6 space-y-5" onSubmit={handleSaveWorkout}>
           <div className="grid gap-4 md:grid-cols-3">
             <label className="block text-sm text-white/70">
-              {t("WORKOUT_BUILDER_TITLE_LABEL_THIAGOIAZZETTI", "Titulo do treino")}
+              {t(
+                "WORKOUT_BUILDER_TITLE_LABEL_THIAGOIAZZETTI",
+                "Titulo do treino",
+              )}
               <input
                 type="text"
                 value={workoutForm.title}
@@ -1248,7 +1315,10 @@ export default function WorkoutBuilderPage() {
             </label>
 
             <label className="block text-sm text-white/70">
-              {t("WORKOUT_BUILDER_PHASE_LABEL_THIAGOIAZZETTI", "Fase de Treino")}
+              {t(
+                "WORKOUT_BUILDER_PHASE_LABEL_THIAGOIAZZETTI",
+                "Fase de Treino",
+              )}
               <select
                 value={workoutForm.phase}
                 onChange={(e) =>
@@ -1276,7 +1346,10 @@ export default function WorkoutBuilderPage() {
                     size={24}
                   />
                   <p className="text-sm text-white/60">
-                    {t("WORKOUT_BUILDER_CLICK_TO_ADD_THIAGOIAZZETTI", "Clique em Adicionar exercicio para comecar")}
+                    {t(
+                      "WORKOUT_BUILDER_CLICK_TO_ADD_THIAGOIAZZETTI",
+                      "Clique em Adicionar exercicio para comecar",
+                    )}
                   </p>
                 </div>
               ) : (
@@ -1298,7 +1371,10 @@ export default function WorkoutBuilderPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-6 py-3 font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
             >
               <Plus size={16} />
-              {t("WORKOUT_BUILDER_ADD_EXERCISE_BTN_THIAGOIAZZETTI", "Adicionar Exercicio")}
+              {t(
+                "WORKOUT_BUILDER_ADD_EXERCISE_BTN_THIAGOIAZZETTI",
+                "Adicionar Exercicio",
+              )}
             </button>
 
             <button
@@ -1309,8 +1385,14 @@ export default function WorkoutBuilderPage() {
               {saving
                 ? t("DIET_FORM_SAVING_THIAGOIAZZETTI", "Salvando...")
                 : editingWorkoutId
-                  ? t("WORKOUT_BUILDER_UPDATE_BTN_THIAGOIAZZETTI", "Atualizar Treino")
-                  : t("WORKOUT_BUILDER_SAVE_BTN_THIAGOIAZZETTI", "Salvar Treino")}
+                  ? t(
+                      "WORKOUT_BUILDER_UPDATE_BTN_THIAGOIAZZETTI",
+                      "Atualizar Treino",
+                    )
+                  : t(
+                      "WORKOUT_BUILDER_SAVE_BTN_THIAGOIAZZETTI",
+                      "Salvar Treino",
+                    )}
             </button>
 
             {editingWorkoutId ? (
@@ -1319,7 +1401,10 @@ export default function WorkoutBuilderPage() {
                 onClick={resetWorkoutForm}
                 className="rounded-xl border border-white/10 px-6 py-3 font-semibold text-white/70 transition hover:border-white/20"
               >
-                {t("WORKOUT_BUILDER_CANCEL_EDIT_THIAGOIAZZETTI", "Cancelar edicao")}
+                {t(
+                  "WORKOUT_BUILDER_CANCEL_EDIT_THIAGOIAZZETTI",
+                  "Cancelar edicao",
+                )}
               </button>
             ) : null}
           </div>
@@ -1328,11 +1413,17 @@ export default function WorkoutBuilderPage() {
 
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
         <h2 className="font-title text-2xl text-[#b5f03c]">
-            {t("WORKOUT_BUILDER_TEMPLATES_TITLE_THIAGOIAZZETTI", "Templates de Treino")}
-          </h2>
-          <p className="mt-2 text-sm text-white/60">
-            {t("WORKOUT_BUILDER_TEMPLATES_SUBTITLE_THIAGOIAZZETTI", "Use templates pre-definidos como base e customize conforme necessario")}
-          </p>
+          {t(
+            "WORKOUT_BUILDER_TEMPLATES_TITLE_THIAGOIAZZETTI",
+            "Templates de Treino",
+          )}
+        </h2>
+        <p className="mt-2 text-sm text-white/60">
+          {t(
+            "WORKOUT_BUILDER_TEMPLATES_SUBTITLE_THIAGOIAZZETTI",
+            "Use templates pre-definidos como base e customize conforme necessario",
+          )}
+        </p>
 
         <div className="mt-5 space-y-3">
           {trainingTemplates.map((template) => (
@@ -1344,7 +1435,11 @@ export default function WorkoutBuilderPage() {
                 <p className="font-semibold text-white">{template.name}</p>
                 <p className="text-sm text-white/55">{template.description}</p>
                 <p className="mt-1 text-xs text-white/40">
-                  {template.exercises.length} {t("WORKOUT_BUILDER_EXERCISES_COUNT_THIAGOIAZZETTI", "exercicios")}
+                  {template.exercises.length}{" "}
+                  {t(
+                    "WORKOUT_BUILDER_EXERCISES_COUNT_THIAGOIAZZETTI",
+                    "exercicios",
+                  )}
                 </p>
               </div>
               <button
@@ -1352,7 +1447,10 @@ export default function WorkoutBuilderPage() {
                 onClick={() => handleApplyTemplate(template)}
                 className="rounded-lg border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-2 text-sm font-medium text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
               >
-                {t("WORKOUT_BUILDER_USE_TEMPLATE_THIAGOIAZZETTI", "Usar Template")}
+                {t(
+                  "WORKOUT_BUILDER_USE_TEMPLATE_THIAGOIAZZETTI",
+                  "Usar Template",
+                )}
               </button>
             </div>
           ))}
@@ -1361,14 +1459,22 @@ export default function WorkoutBuilderPage() {
 
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
         <h2 className="font-title text-2xl text-[#b5f03c]">
-            {t("WORKOUT_BUILDER_STUDENT_WORKOUTS_TITLE_THIAGOIAZZETTI", "Treinos do Aluno")} ({workouts.length})
+          {t(
+            "WORKOUT_BUILDER_STUDENT_WORKOUTS_TITLE_THIAGOIAZZETTI",
+            "Treinos do Aluno",
+          )}{" "}
+          ({workouts.length})
+        </h2>
 
         <div className="mt-5 space-y-3">
           {workouts.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/30 px-6 py-8 text-center">
               <Dumbbell className="mx-auto mb-3 text-white/40" size={32} />
               <p className="text-white/60">
-                {t("WORKOUT_BUILDER_NO_WORKOUTS_THIAGOIAZZETTI", "Nenhum treino criado ainda. Crie seu primeiro treino acima!")}
+                {t(
+                  "WORKOUT_BUILDER_NO_WORKOUTS_THIAGOIAZZETTI",
+                  "Nenhum treino criado ainda. Crie seu primeiro treino acima!",
+                )}
               </p>
             </div>
           ) : (
@@ -1384,7 +1490,14 @@ export default function WorkoutBuilderPage() {
                       {workout.objective}
                     </p>
                     <p className="mt-1 text-xs text-white/40">
-                      {workout.exercises.length} {t("WORKOUT_BUILDER_EXERCISES_COUNT_THIAGOIAZZETTI", "exercicios")} • {t("WORKOUT_BUILDER_PHASE_BADGE_THIAGOIAZZETTI", "Fase")}: {workout.phase}
+                      {workout.exercises.length}{" "}
+                      {t(
+                        "WORKOUT_BUILDER_EXERCISES_COUNT_THIAGOIAZZETTI",
+                        "exercicios",
+                      )}{" "}
+                      •{" "}
+                      {t("WORKOUT_BUILDER_PHASE_BADGE_THIAGOIAZZETTI", "Fase")}:{" "}
+                      {workout.phase}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1436,7 +1549,10 @@ export default function WorkoutBuilderPage() {
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                   <div className="flex items-center gap-2 text-sm font-semibold text-[#b5f03c]">
                     <Clock3 size={16} />
-                    {t("CLIENT_WORKOUTS_UPCOMING_TITLE_THIAGOIAZZETTI", "Proximas sessoes")}
+                    {t(
+                      "CLIENT_WORKOUTS_UPCOMING_TITLE_THIAGOIAZZETTI",
+                      "Proximas sessoes",
+                    )}
                   </div>
 
                   <div className="mt-3 space-y-2">
