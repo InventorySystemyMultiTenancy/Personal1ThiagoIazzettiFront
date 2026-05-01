@@ -622,7 +622,10 @@ export default function AdminDashboardPage() {
                       }))
                     }
                     className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
-                    placeholder="Ex: João Silva"
+                    placeholder={t(
+                      "ADMIN_DASH_NAME_PLACEHOLDER_THIAGOIAZZETTI",
+                      "Ex: Joao Silva",
+                    )}
                   />
                 </label>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
@@ -912,7 +915,10 @@ export default function AdminDashboardPage() {
                                 }))
                               }
                               className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
-                              placeholder="Nome completo"
+                              placeholder={t(
+                                "ADMIN_DASH_FULL_NAME_THIAGOIAZZETTI",
+                                "Nome completo",
+                              )}
                             />
                             <input
                               type="email"
@@ -935,7 +941,10 @@ export default function AdminDashboardPage() {
                                 }))
                               }
                               className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
-                              placeholder="Telefone"
+                              placeholder={t(
+                                "ADMIN_DASH_PHONE_THIAGOIAZZETTI",
+                                "Telefone",
+                              )}
                             />
                             <input
                               type="date"
@@ -958,7 +967,12 @@ export default function AdminDashboardPage() {
                               }
                               className="rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
                             >
-                              <option value="">Sem plano</option>
+                              <option value="">
+                                {t(
+                                  "ADMIN_DASH_NO_PLAN_THIAGOIAZZETTI",
+                                  "Sem plano",
+                                )}
+                              </option>
                               {plans.map((plan) => (
                                 <option key={plan.id} value={plan.id}>
                                   {plan.name}
