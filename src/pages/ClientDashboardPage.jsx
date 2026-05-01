@@ -16,6 +16,7 @@ import {
   sendMyMessage,
 } from "../lib/api.js";
 import { getBillingStatus } from "../lib/billingStatus.js";
+import { localizeBillingStatus } from "../lib/billingStatusI18n.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
 
@@ -91,7 +92,7 @@ export default function ClientDashboardPage() {
   const [message, setMessage] = useState("");
 
   const { tenantId } = useTenant();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   useEffect(() => {
     let cancelled = false;
@@ -131,7 +132,10 @@ export default function ClientDashboardPage() {
 
   const workoutPlans = useMemo(() => profile?.workoutPlans || [], [profile]);
   const activePlan = profile?.alunoPlan || null;
-  const billingStatus = useMemo(() => getBillingStatus(profile), [profile]);
+  const billingStatus = useMemo(
+    () => localizeBillingStatus(getBillingStatus(profile), locale),
+    [profile, locale],
+  );
 
   const scheduleEntries = useMemo(() => {
     return workoutPlans.slice(0, 5).map((workout, index) => ({

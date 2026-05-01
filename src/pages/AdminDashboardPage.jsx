@@ -31,6 +31,7 @@ import {
   sendMessage,
 } from "../lib/api.js";
 import { getBillingStatus } from "../lib/billingStatus.js";
+import { localizeBillingStatus } from "../lib/billingStatusI18n.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
 import WorkoutBuilderPage from "./WorkoutBuilderPage.jsx";
@@ -784,7 +785,10 @@ export default function AdminDashboardPage() {
                 </p>
               ) : (
                 students.map((student) => {
-                  const billingStatus = getBillingStatus(student);
+                  const billingStatus = localizeBillingStatus(
+                    getBillingStatus(student),
+                    locale,
+                  );
                   return (
                     <div
                       key={student.id}
