@@ -1,5 +1,7 @@
-import React, {
+/* eslint-disable react-refresh/only-export-components */
+import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -85,7 +87,10 @@ export function I18nProvider({ children }) {
     document.documentElement.dir = direction;
   }, [locale, direction]);
 
-  const t = (key, fallback = "") => dictionary[key] || fallback || key;
+  const t = useCallback(
+    (key, fallback = "") => dictionary[key] || fallback || key,
+    [dictionary],
+  );
 
   const value = useMemo(
     () => ({
@@ -95,7 +100,7 @@ export function I18nProvider({ children }) {
       locales: SUPPORTED_LOCALES,
       t,
     }),
-    [locale, direction, dictionary],
+    [locale, direction, t],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

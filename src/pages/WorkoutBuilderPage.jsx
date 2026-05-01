@@ -21,6 +21,7 @@ import {
   updateWorkoutPlan,
 } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
+import { useI18n } from "../contexts/I18nContext.jsx";
 
 const recurrenceOptions = [
   { label: "Sem recorrencia", value: "NONE" },
@@ -118,19 +119,26 @@ function ScheduleSessionModal({
   onDeleteExistingSession,
   onSubmit,
 }) {
+  const { t } = useI18n();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur">
       <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-4xl border border-white/10 bg-[#0a0a0a] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-white/45">
-              Agendar treinos
+              {t(
+                "WORKOUT_MODAL_SCHEDULE_BADGE_THIAGOIAZZETTI",
+                "Agendar treinos",
+              )}
             </p>
             <h2 className="mt-2 font-title text-3xl text-[#b5f03c]">
               {workout.title}
             </h2>
             <p className="mt-2 text-sm text-white/65">
-              Defina dias, horarios e recorrencia das proximas sessoes desse plano.
+              {t(
+                "WORKOUT_MODAL_SCHEDULE_SUBTITLE_THIAGOIAZZETTI",
+                "Defina dias, horarios e recorrencia das proximas sessoes desse plano.",
+              )}
             </p>
           </div>
 
@@ -157,12 +165,18 @@ function ScheduleSessionModal({
             onChange={(event) => onToggleReplaceExisting(event.target.checked)}
             disabled={saving || loading}
           />
-          Substituir agenda existente deste plano
+          {t(
+            "WORKOUT_MODAL_REPLACE_SCHEDULE_THIAGOIAZZETTI",
+            "Substituir agenda existente deste plano",
+          )}
         </label>
 
         {loading ? (
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
-            Carregando agenda atual do plano...
+            {t(
+              "WORKOUT_MODAL_LOADING_SCHEDULE_THIAGOIAZZETTI",
+              "Carregando agenda atual do plano...",
+            )}
           </div>
         ) : null}
 
@@ -174,7 +188,8 @@ function ScheduleSessionModal({
             >
               <div className="flex items-center justify-between gap-3">
                 <p className="font-semibold text-white">
-                  Sessao {index + 1}
+                  {t("WORKOUT_MODAL_SESSION_LABEL_THIAGOIAZZETTI", "Sessao")}{" "}
+                  {index + 1}
                 </p>
                 {sessions.length > 1 || session.agendaId ? (
                   <button
@@ -184,7 +199,9 @@ function ScheduleSessionModal({
                         ? onDeleteExistingSession(session)
                         : onRemoveSession(session.id)
                     }
-                    disabled={saving || loading || deletingSessionId === session.id}
+                    disabled={
+                      saving || loading || deletingSessionId === session.id
+                    }
                     className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-red-400 disabled:opacity-50"
                   >
                     <Trash2 size={16} />
@@ -194,7 +211,10 @@ function ScheduleSessionModal({
 
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <label className="text-sm text-white/70 xl:col-span-3">
-                  Titulo da sessao
+                  {t(
+                    "WORKOUT_MODAL_SESSION_TITLE_LABEL_THIAGOIAZZETTI",
+                    "Titulo da sessao",
+                  )}
                   <input
                     value={session.title}
                     onChange={(event) =>
@@ -207,7 +227,7 @@ function ScheduleSessionModal({
                 </label>
 
                 <label className="text-sm text-white/70">
-                  Dia
+                  {t("WORKOUT_MODAL_SESSION_DAY_LABEL_THIAGOIAZZETTI", "Dia")}
                   <input
                     type="date"
                     value={session.date}
@@ -220,12 +240,19 @@ function ScheduleSessionModal({
                 </label>
 
                 <label className="text-sm text-white/70">
-                  Inicio
+                  {t(
+                    "WORKOUT_MODAL_SESSION_START_LABEL_THIAGOIAZZETTI",
+                    "Inicio",
+                  )}
                   <input
                     type="time"
                     value={session.startsAtTime}
                     onChange={(event) =>
-                      onSessionChange(session.id, "startsAtTime", event.target.value)
+                      onSessionChange(
+                        session.id,
+                        "startsAtTime",
+                        event.target.value,
+                      )
                     }
                     className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
                     disabled={saving || loading}
@@ -233,12 +260,16 @@ function ScheduleSessionModal({
                 </label>
 
                 <label className="text-sm text-white/70">
-                  Fim
+                  {t("WORKOUT_MODAL_SESSION_END_LABEL_THIAGOIAZZETTI", "Fim")}
                   <input
                     type="time"
                     value={session.endsAtTime}
                     onChange={(event) =>
-                      onSessionChange(session.id, "endsAtTime", event.target.value)
+                      onSessionChange(
+                        session.id,
+                        "endsAtTime",
+                        event.target.value,
+                      )
                     }
                     className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
                     disabled={saving || loading}
@@ -246,11 +277,18 @@ function ScheduleSessionModal({
                 </label>
 
                 <label className="text-sm text-white/70">
-                  Recorrencia
+                  {t(
+                    "WORKOUT_MODAL_SESSION_RECURRENCE_LABEL_THIAGOIAZZETTI",
+                    "Recorrencia",
+                  )}
                   <select
                     value={session.recurrence}
                     onChange={(event) =>
-                      onSessionChange(session.id, "recurrence", event.target.value)
+                      onSessionChange(
+                        session.id,
+                        "recurrence",
+                        event.target.value,
+                      )
                     }
                     className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
                     disabled={saving || loading}
@@ -264,7 +302,10 @@ function ScheduleSessionModal({
                 </label>
 
                 <label className="text-sm text-white/70">
-                  Repetir ate
+                  {t(
+                    "WORKOUT_MODAL_SESSION_UNTIL_LABEL_THIAGOIAZZETTI",
+                    "Repetir ate",
+                  )}
                   <input
                     type="date"
                     value={session.recurrenceUntilDate}
@@ -276,7 +317,9 @@ function ScheduleSessionModal({
                       )
                     }
                     className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                    disabled={saving || loading || session.recurrence === "NONE"}
+                    disabled={
+                      saving || loading || session.recurrence === "NONE"
+                    }
                   />
                 </label>
               </div>
@@ -286,23 +329,39 @@ function ScheduleSessionModal({
                   <button
                     type="button"
                     onClick={() => onUpdateExistingSession(session)}
-                    disabled={saving || loading || updatingSessionId === session.id}
+                    disabled={
+                      saving || loading || updatingSessionId === session.id
+                    }
                     className="rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-2 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20 disabled:opacity-50"
                   >
                     {updatingSessionId === session.id
-                      ? "Salvando sessao..."
-                      : "Salvar sessao"}
+                      ? t(
+                          "WORKOUT_MODAL_SAVING_SESSION_THIAGOIAZZETTI",
+                          "Salvando sessao...",
+                        )
+                      : t(
+                          "WORKOUT_MODAL_SAVE_SESSION_THIAGOIAZZETTI",
+                          "Salvar sessao",
+                        )}
                   </button>
 
                   <button
                     type="button"
                     onClick={() => onDeleteExistingSession(session)}
-                    disabled={saving || loading || deletingSessionId === session.id}
+                    disabled={
+                      saving || loading || deletingSessionId === session.id
+                    }
                     className="rounded-xl border border-red-400/45 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-500/20 disabled:opacity-50"
                   >
                     {deletingSessionId === session.id
-                      ? "Excluindo..."
-                      : "Excluir sessao"}
+                      ? t(
+                          "WORKOUT_MODAL_DELETING_SESSION_THIAGOIAZZETTI",
+                          "Excluindo...",
+                        )
+                      : t(
+                          "WORKOUT_MODAL_DELETE_SESSION_THIAGOIAZZETTI",
+                          "Excluir sessao",
+                        )}
                   </button>
                 </div>
               ) : null}
@@ -318,7 +377,7 @@ function ScheduleSessionModal({
             className="rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-3 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20 disabled:opacity-50"
           >
             <Plus size={16} className="mr-2 inline-block" />
-            Adicionar sessao
+            {t("WORKOUT_MODAL_ADD_SESSION_THIAGOIAZZETTI", "Adicionar sessao")}
           </button>
 
           <button
@@ -327,7 +386,12 @@ function ScheduleSessionModal({
             disabled={saving || loading}
             className="rounded-xl bg-[#b5f03c] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
           >
-            {saving ? "Agendando..." : "Salvar agenda"}
+            {saving
+              ? t("WORKOUT_MODAL_SCHEDULING_THIAGOIAZZETTI", "Agendando...")
+              : t(
+                  "WORKOUT_MODAL_SAVE_SCHEDULE_THIAGOIAZZETTI",
+                  "Salvar agenda",
+                )}
           </button>
         </div>
       </div>
@@ -417,6 +481,7 @@ const trainingTemplates = [
 ];
 
 function ExerciseSelector({ onAdd, onClose }) {
+  const { t } = useI18n();
   const [selectedGroup, setSelectedGroup] = useState("Peito");
   const [formData, setFormData] = useState({
     exerciseName: "",
@@ -440,7 +505,7 @@ function ExerciseSelector({ onAdd, onClose }) {
       <div className="w-full max-w-2xl rounded-4xl border border-white/10 bg-[#0a0a0a] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-title text-2xl text-[#b5f03c]">
-            Adicionar Exercício
+            {t("WORKOUT_MODAL_ADD_EXERCISE_TITLE_THIAGOIAZZETTI", "Adicionar Exercicio")}
           </h2>
           <button
             type="button"
@@ -453,7 +518,7 @@ function ExerciseSelector({ onAdd, onClose }) {
 
         <form className="space-y-5" onSubmit={handleAddExercise}>
           <label className="block text-sm text-white/70">
-            Grupo Muscular
+            {t("WORKOUT_MODAL_MUSCLE_GROUP_LABEL_THIAGOIAZZETTI", "Grupo Muscular")}
             <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3">
               {Object.keys(exerciseLibrary).map((group) => (
                 <button
@@ -473,7 +538,7 @@ function ExerciseSelector({ onAdd, onClose }) {
           </label>
 
           <label className="block text-sm text-white/70">
-            Exercício
+            {t("WORKOUT_MODAL_EXERCISE_LABEL_THIAGOIAZZETTI", "Exercicio")}
             <select
               value={formData.exerciseName}
               onChange={(e) =>
@@ -484,7 +549,7 @@ function ExerciseSelector({ onAdd, onClose }) {
               }
               className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
             >
-              <option value="">Selecione um exercício</option>
+              <option value="">{t("WORKOUT_MODAL_SELECT_EXERCISE_THIAGOIAZZETTI", "Selecione um exercicio")}</option>
               {filteredExercises.map((ex) => (
                 <option key={ex.name} value={ex.name}>
                   {ex.name} ({ex.equipment})
@@ -495,7 +560,7 @@ function ExerciseSelector({ onAdd, onClose }) {
 
           <div className="grid gap-3 md:grid-cols-3">
             <label className="block text-sm text-white/70">
-              Séries
+              {t("WORKOUT_MODAL_SETS_LABEL_THIAGOIAZZETTI", "Series")}
               <input
                 type="number"
                 min="1"
@@ -512,7 +577,7 @@ function ExerciseSelector({ onAdd, onClose }) {
             </label>
 
             <label className="block text-sm text-white/70">
-              Repetições
+              {t("WORKOUT_MODAL_REPS_LABEL_THIAGOIAZZETTI", "Repeticoes")}
               <input
                 type="number"
                 min="1"
@@ -529,7 +594,7 @@ function ExerciseSelector({ onAdd, onClose }) {
             </label>
 
             <label className="block text-sm text-white/70">
-              Descanso (segundos)
+              {t("WORKOUT_MODAL_REST_LABEL_THIAGOIAZZETTI", "Descanso (segundos)")}
               <input
                 type="number"
                 min="0"
@@ -551,14 +616,14 @@ function ExerciseSelector({ onAdd, onClose }) {
               type="submit"
               className="flex-1 rounded-xl bg-[#b5f03c] px-4 py-3 font-semibold text-black transition hover:brightness-110"
             >
-              Adicionar exercício
+              {t("WORKOUT_MODAL_ADD_EXERCISE_BUTTON_THIAGOIAZZETTI", "Adicionar exercicio")}
             </button>
             <button
               type="button"
               onClick={onClose}
               className="flex-1 rounded-xl border border-white/10 px-4 py-3 font-semibold text-white/70 transition hover:border-white/20"
             >
-              Cancelar
+              {t("ADMIN_DASH_CANCEL_THIAGOIAZZETTI", "Cancelar")}
             </button>
           </div>
         </form>
@@ -568,13 +633,14 @@ function ExerciseSelector({ onAdd, onClose }) {
 }
 
 function WorkoutItem({ exercise, onRemove }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
       <div className="flex-1">
         <p className="font-semibold text-white">{exercise.exerciseName}</p>
         <p className="text-sm text-white/60">
-          {exercise.sets}x{exercise.reps} • Descanso:{" "}
-          {exercise.restSeconds ? `${exercise.restSeconds}s` : "livre"}
+          {exercise.sets}x{exercise.reps} • {t("CLIENT_DASH_REST_LABEL_THIAGOIAZZETTI", "Descanso")}:{" "}
+          {exercise.restSeconds ? `${exercise.restSeconds}s` : t("CLIENT_DASH_REST_FREE_THIAGOIAZZETTI", "livre")}
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -598,6 +664,7 @@ function WorkoutItem({ exercise, onRemove }) {
 
 export default function WorkoutBuilderPage() {
   const { tenantId } = useTenant();
+  const { t } = useI18n();
   const [students, setStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [workouts, setWorkouts] = useState([]);
@@ -612,7 +679,9 @@ export default function WorkoutBuilderPage() {
   const [scheduleError, setScheduleError] = useState("");
   const [scheduleTarget, setScheduleTarget] = useState(null);
   const [replaceExistingSchedule, setReplaceExistingSchedule] = useState(true);
-  const [scheduleSessions, setScheduleSessions] = useState([createEmptySession()]);
+  const [scheduleSessions, setScheduleSessions] = useState([
+    createEmptySession(),
+  ]);
   const [updatingSessionId, setUpdatingSessionId] = useState("");
   const [deletingSessionId, setDeletingSessionId] = useState("");
   const [workoutForm, setWorkoutForm] = useState({
@@ -648,7 +717,9 @@ export default function WorkoutBuilderPage() {
       const details = normalizeWorkoutPlan(
         await getWorkoutPlanDetails(workout.id, tenantId),
       );
-      const sourceSessions = Array.isArray(details.schedule) ? details.schedule : [];
+      const sourceSessions = Array.isArray(details.schedule)
+        ? details.schedule
+        : [];
       const draftSessions = sourceSessions.length
         ? sourceSessions.map((session, index) =>
             toEditableSession(session, details.title, index),
@@ -666,7 +737,9 @@ export default function WorkoutBuilderPage() {
       setScheduleTarget(details);
       setScheduleSessions(draftSessions);
     } catch (error) {
-      setScheduleError(error?.message || "Nao foi possivel carregar a agenda deste plano.");
+      setScheduleError(
+        error?.message || "Nao foi possivel carregar a agenda deste plano.",
+      );
       setScheduleSessions([
         {
           ...createEmptySession(),
@@ -709,7 +782,7 @@ export default function WorkoutBuilderPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          setMessage(error?.message || "Nao foi possivel carregar alunos");
+          setMessage(error?.message || t("WORKOUT_BUILDER_LOAD_STUDENTS_ERROR_THIAGOIAZZETTI", "Nao foi possivel carregar alunos"));
         }
       }
     };
@@ -741,7 +814,7 @@ export default function WorkoutBuilderPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          setMessage(error?.message || "Nao foi possivel carregar treinos");
+          setMessage(error?.message || t("WORKOUT_BUILDER_LOAD_WORKOUTS_ERROR_THIAGOIAZZETTI", "Nao foi possivel carregar treinos"));
         }
       }
     };
@@ -782,12 +855,12 @@ export default function WorkoutBuilderPage() {
     setMessage("");
 
     if (!selectedStudentId) {
-      setMessage("Selecione um aluno para vincular o treino");
+      setMessage(t("WORKOUT_BUILDER_SELECT_STUDENT_ERROR_THIAGOIAZZETTI", "Selecione um aluno para vincular o treino"));
       return;
     }
 
     if (!workoutForm.title.trim() || currentWorkoutExercises.length === 0) {
-      setMessage("Preencha o titulo e adicione exercicios");
+      setMessage(t("WORKOUT_BUILDER_FORM_REQUIRED_THIAGOIAZZETTI", "Preencha o titulo e adicione exercicios"));
       return;
     }
 
@@ -813,11 +886,7 @@ export default function WorkoutBuilderPage() {
       };
 
       const persistWorkout = editingWorkoutId
-        ? await updateWorkoutPlan(
-            editingWorkoutId,
-            payload,
-            tenantId,
-          )
+        ? await updateWorkoutPlan(editingWorkoutId, payload, tenantId)
         : await createWorkoutPlan(payload, tenantId);
 
       const normalized = normalizeWorkoutPlan(persistWorkout);
@@ -832,11 +901,11 @@ export default function WorkoutBuilderPage() {
       resetWorkoutForm();
       setMessage(
         editingWorkoutId
-          ? `Treino "${persistWorkout.title}" atualizado com sucesso.`
-          : `Treino "${persistWorkout.title}" salvo para ${selectedStudent?.fullName || "aluno"}`,
+          ? `${t("WORKOUT_BUILDER_UPDATED_THIAGOIAZZETTI", "Treino atualizado com sucesso")}: "${persistWorkout.title}"`
+          : `${t("WORKOUT_BUILDER_SAVED_THIAGOIAZZETTI", "Treino salvo para")} ${selectedStudent?.fullName || t("DIET_LIST_STUDENT_DEFAULT_THIAGOIAZZETTI", "aluno")}: "${persistWorkout.title}"`,
       );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel salvar treino");
+      setMessage(error?.message || t("WORKOUT_BUILDER_SAVE_ERROR_THIAGOIAZZETTI", "Nao foi possivel salvar treino"));
     } finally {
       setSaving(false);
     }
@@ -860,7 +929,7 @@ export default function WorkoutBuilderPage() {
         id: exercise.id || `exercise-${workout.id}-${index}`,
       })),
     );
-    setMessage(`Editando treino: ${workout.title}`);
+    setMessage(`${t("WORKOUT_BUILDER_EDITING_THIAGOIAZZETTI", "Editando treino")}: ${workout.title}`);
   };
 
   const handleCloneWorkout = (workout) => {
@@ -908,27 +977,36 @@ export default function WorkoutBuilderPage() {
     const normalizedSessions = scheduleSessions
       .filter((session) => !session.agendaId)
       .map((session) => {
-      const startsAt = createLocalOffsetISOString(
-        session.date,
-        session.startsAtTime,
-      );
-      const endsAt = createLocalOffsetISOString(session.date, session.endsAtTime);
-      const recurrenceUntil =
-        session.recurrence !== "NONE" && session.recurrenceUntilDate
-          ? createLocalOffsetISOString(session.recurrenceUntilDate, "23:59", "59")
-          : null;
+        const startsAt = createLocalOffsetISOString(
+          session.date,
+          session.startsAtTime,
+        );
+        const endsAt = createLocalOffsetISOString(
+          session.date,
+          session.endsAtTime,
+        );
+        const recurrenceUntil =
+          session.recurrence !== "NONE" && session.recurrenceUntilDate
+            ? createLocalOffsetISOString(
+                session.recurrenceUntilDate,
+                "23:59",
+                "59",
+              )
+            : null;
 
-      return {
-        title: session.title.trim(),
-        startsAt,
-        endsAt,
-        recurrence: session.recurrence,
-        recurrenceUntil,
-      };
+        return {
+          title: session.title.trim(),
+          startsAt,
+          endsAt,
+          recurrence: session.recurrence,
+          recurrenceUntil,
+        };
       });
 
     if (normalizedSessions.length === 0) {
-      setScheduleError("Adicione pelo menos uma nova sessao para salvar a agenda.");
+      setScheduleError(
+        "Adicione pelo menos uma nova sessao para salvar a agenda.",
+      );
       return;
     }
 
@@ -1001,7 +1079,9 @@ export default function WorkoutBuilderPage() {
     );
 
     if (!sessionDraft.title.trim() || !startsAt || !endsAt) {
-      setScheduleError("Preencha titulo, data e horarios validos para editar a sessao.");
+      setScheduleError(
+        "Preencha titulo, data e horarios validos para editar a sessao.",
+      );
       return;
     }
 
@@ -1020,7 +1100,8 @@ export default function WorkoutBuilderPage() {
               ? sessionDraft.recurrence
               : null,
           recurrenceUntil:
-            sessionDraft.recurrence !== "NONE" && sessionDraft.recurrenceUntilDate
+            sessionDraft.recurrence !== "NONE" &&
+            sessionDraft.recurrenceUntilDate
               ? createLocalOffsetISOString(
                   sessionDraft.recurrenceUntilDate,
                   "23:59",
@@ -1050,7 +1131,7 @@ export default function WorkoutBuilderPage() {
             : workout,
         ),
       );
-      setMessage(`Sessao "${sessionDraft.title}" atualizada com sucesso.`);
+      setMessage(`${t("WORKOUT_BUILDER_SESSION_UPDATED_THIAGOIAZZETTI", "Sessao atualizada com sucesso")}: "${sessionDraft.title}".`);
     } catch (error) {
       setScheduleError(
         error?.status === 409
@@ -1089,7 +1170,7 @@ export default function WorkoutBuilderPage() {
             : workout,
         ),
       );
-      setMessage(`Sessao "${sessionDraft.title}" removida com sucesso.`);
+      setMessage(`${t("WORKOUT_BUILDER_SESSION_DELETED_THIAGOIAZZETTI", "Sessao removida com sucesso")}: "${sessionDraft.title}".`);
     } catch (error) {
       setScheduleError(error?.message || "Nao foi possivel excluir a sessao.");
     } finally {
@@ -1101,7 +1182,7 @@ export default function WorkoutBuilderPage() {
     <main className="space-y-6 pb-10">
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
         <h2 className="font-title text-2xl text-[#b5f03c]">
-          {editingWorkoutId ? "Editar Treino" : "Criar Novo Treino"}
+            {editingWorkoutId ? t("WORKOUT_BUILDER_EDIT_TITLE_THIAGOIAZZETTI", "Editar Treino") : t("WORKOUT_BUILDER_CREATE_TITLE_THIAGOIAZZETTI", "Criar Novo Treino")}
         </h2>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -1112,7 +1193,7 @@ export default function WorkoutBuilderPage() {
               onChange={(e) => setSelectedStudentId(e.target.value)}
               className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
             >
-              <option value="">Selecione um aluno</option>
+              <option value="">{t("DIET_FORM_SELECT_STUDENT_THIAGOIAZZETTI", "Selecione um aluno")}</option>
               {students.map((student) => (
                 <option key={student.id} value={student.id}>
                   {student.fullName}
@@ -1138,7 +1219,7 @@ export default function WorkoutBuilderPage() {
         <form className="mt-6 space-y-5" onSubmit={handleSaveWorkout}>
           <div className="grid gap-4 md:grid-cols-3">
             <label className="block text-sm text-white/70">
-              Título do treino
+              {t("WORKOUT_BUILDER_TITLE_LABEL_THIAGOIAZZETTI", "Titulo do treino")}
               <input
                 type="text"
                 value={workoutForm.title}
@@ -1151,7 +1232,7 @@ export default function WorkoutBuilderPage() {
             </label>
 
             <label className="block text-sm text-white/70">
-              Objetivo
+              {t("WORKOUT_BUILDER_OBJECTIVE_LABEL_THIAGOIAZZETTI", "Objetivo")}
               <input
                 type="text"
                 value={workoutForm.objective}
@@ -1167,7 +1248,7 @@ export default function WorkoutBuilderPage() {
             </label>
 
             <label className="block text-sm text-white/70">
-              Fase de Treino
+              {t("WORKOUT_BUILDER_PHASE_LABEL_THIAGOIAZZETTI", "Fase de Treino")}
               <select
                 value={workoutForm.phase}
                 onChange={(e) =>
@@ -1195,7 +1276,7 @@ export default function WorkoutBuilderPage() {
                     size={24}
                   />
                   <p className="text-sm text-white/60">
-                    Clique em "Adicionar exercício" para começar
+                    {t("WORKOUT_BUILDER_CLICK_TO_ADD_THIAGOIAZZETTI", "Clique em Adicionar exercicio para comecar")}
                   </p>
                 </div>
               ) : (
@@ -1217,7 +1298,7 @@ export default function WorkoutBuilderPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-6 py-3 font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
             >
               <Plus size={16} />
-              Adicionar Exercício
+              {t("WORKOUT_BUILDER_ADD_EXERCISE_BTN_THIAGOIAZZETTI", "Adicionar Exercicio")}
             </button>
 
             <button
@@ -1226,10 +1307,10 @@ export default function WorkoutBuilderPage() {
               className="flex-1 rounded-xl bg-[#b5f03c] px-6 py-3 font-semibold text-black transition hover:brightness-110 md:flex-none"
             >
               {saving
-                ? "Salvando..."
+                ? t("DIET_FORM_SAVING_THIAGOIAZZETTI", "Salvando...")
                 : editingWorkoutId
-                  ? "Atualizar Treino"
-                  : "Salvar Treino"}
+                  ? t("WORKOUT_BUILDER_UPDATE_BTN_THIAGOIAZZETTI", "Atualizar Treino")
+                  : t("WORKOUT_BUILDER_SAVE_BTN_THIAGOIAZZETTI", "Salvar Treino")}
             </button>
 
             {editingWorkoutId ? (
@@ -1238,7 +1319,7 @@ export default function WorkoutBuilderPage() {
                 onClick={resetWorkoutForm}
                 className="rounded-xl border border-white/10 px-6 py-3 font-semibold text-white/70 transition hover:border-white/20"
               >
-                Cancelar edicao
+                {t("WORKOUT_BUILDER_CANCEL_EDIT_THIAGOIAZZETTI", "Cancelar edicao")}
               </button>
             ) : null}
           </div>
@@ -1247,11 +1328,11 @@ export default function WorkoutBuilderPage() {
 
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
         <h2 className="font-title text-2xl text-[#b5f03c]">
-          Templates de Treino
-        </h2>
-        <p className="mt-2 text-sm text-white/60">
-          Use templates pré-definidos como base e customize conforme necessário
-        </p>
+            {t("WORKOUT_BUILDER_TEMPLATES_TITLE_THIAGOIAZZETTI", "Templates de Treino")}
+          </h2>
+          <p className="mt-2 text-sm text-white/60">
+            {t("WORKOUT_BUILDER_TEMPLATES_SUBTITLE_THIAGOIAZZETTI", "Use templates pre-definidos como base e customize conforme necessario")}
+          </p>
 
         <div className="mt-5 space-y-3">
           {trainingTemplates.map((template) => (
@@ -1263,7 +1344,7 @@ export default function WorkoutBuilderPage() {
                 <p className="font-semibold text-white">{template.name}</p>
                 <p className="text-sm text-white/55">{template.description}</p>
                 <p className="mt-1 text-xs text-white/40">
-                  {template.exercises.length} exercícios
+                  {template.exercises.length} {t("WORKOUT_BUILDER_EXERCISES_COUNT_THIAGOIAZZETTI", "exercicios")}
                 </p>
               </div>
               <button
@@ -1271,7 +1352,7 @@ export default function WorkoutBuilderPage() {
                 onClick={() => handleApplyTemplate(template)}
                 className="rounded-lg border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-2 text-sm font-medium text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
               >
-                Usar Template
+                {t("WORKOUT_BUILDER_USE_TEMPLATE_THIAGOIAZZETTI", "Usar Template")}
               </button>
             </div>
           ))}
@@ -1280,15 +1361,14 @@ export default function WorkoutBuilderPage() {
 
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
         <h2 className="font-title text-2xl text-[#b5f03c]">
-          Treinos do Aluno ({workouts.length})
-        </h2>
+            {t("WORKOUT_BUILDER_STUDENT_WORKOUTS_TITLE_THIAGOIAZZETTI", "Treinos do Aluno")} ({workouts.length})
 
         <div className="mt-5 space-y-3">
           {workouts.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/30 px-6 py-8 text-center">
               <Dumbbell className="mx-auto mb-3 text-white/40" size={32} />
               <p className="text-white/60">
-                Nenhum treino criado ainda. Crie seu primeiro treino acima!
+                {t("WORKOUT_BUILDER_NO_WORKOUTS_THIAGOIAZZETTI", "Nenhum treino criado ainda. Crie seu primeiro treino acima!")}
               </p>
             </div>
           ) : (
@@ -1304,8 +1384,7 @@ export default function WorkoutBuilderPage() {
                       {workout.objective}
                     </p>
                     <p className="mt-1 text-xs text-white/40">
-                      {workout.exercises.length} exercícios • Fase:{" "}
-                      {workout.phase}
+                      {workout.exercises.length} {t("WORKOUT_BUILDER_EXERCISES_COUNT_THIAGOIAZZETTI", "exercicios")} • {t("WORKOUT_BUILDER_PHASE_BADGE_THIAGOIAZZETTI", "Fase")}: {workout.phase}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1357,25 +1436,33 @@ export default function WorkoutBuilderPage() {
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                   <div className="flex items-center gap-2 text-sm font-semibold text-[#b5f03c]">
                     <Clock3 size={16} />
-                    Proximas sessoes
+                    {t("CLIENT_WORKOUTS_UPCOMING_TITLE_THIAGOIAZZETTI", "Proximas sessoes")}
                   </div>
 
                   <div className="mt-3 space-y-2">
                     {workout.schedule.length === 0 ? (
                       <p className="text-sm text-white/55">
-                        Nenhuma sessao agendada ainda. Clique no calendario para montar a agenda deste plano.
+                        Nenhuma sessao agendada ainda. Clique no calendario para
+                        montar a agenda deste plano.
                       </p>
                     ) : (
                       workout.schedule
                         .slice()
-                        .sort((left, right) => new Date(left.startsAt) - new Date(right.startsAt))
+                        .sort(
+                          (left, right) =>
+                            new Date(left.startsAt) - new Date(right.startsAt),
+                        )
                         .slice(0, 5)
                         .map((session) => (
                           <div
-                            key={session.id || `${workout.id}-${session.startsAt}`}
+                            key={
+                              session.id || `${workout.id}-${session.startsAt}`
+                            }
                             className="rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm text-white/70"
                           >
-                            <p className="font-semibold text-white">{session.title}</p>
+                            <p className="font-semibold text-white">
+                              {session.title}
+                            </p>
                             <p className="mt-1 text-white/55">
                               {new Intl.DateTimeFormat("pt-BR", {
                                 dateStyle: "medium",

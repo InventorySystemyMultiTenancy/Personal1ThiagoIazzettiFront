@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Star, Play, ChevronDown, X, Check } from "lucide-react";
+import { ArrowRight, Star, Play, ChevronDown, X } from "lucide-react";
 import { getTenantFromHost, useTenant } from "../contexts/TenantContext.jsx";
 import { listPublicStudentPlans, formatCurrency } from "../lib/api.js";
 import LanguageSwitcher from "../components/LanguageSwitcher.jsx";
@@ -13,19 +13,6 @@ function whatsappLink() {
   return `https://wa.me/${WHATSAPP_NUMBER}`;
 }
 
-const marqueeItems = [
-  "Musculação",
-  "Emagrecimento",
-  "Ganho de Massa",
-  "Hipertrofia",
-  "Condicionamento",
-  "Treino Funcional",
-  "HIIT",
-  "Mobilidade",
-  "Força",
-  "Resistência",
-];
-
 export default function LandingPage() {
   const { t } = useI18n();
   const { tenantId: contextTenantId } = useTenant();
@@ -34,14 +21,46 @@ export default function LandingPage() {
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const plansRef = useRef(null);
+  const marqueeItems = [
+    t("HOME_MARQUEE_MUSCULATION_THIAGOIAZZETTI", "Musculacao"),
+    t("HOME_MARQUEE_WEIGHT_LOSS_THIAGOIAZZETTI", "Emagrecimento"),
+    t("HOME_MARQUEE_MASS_GAIN_THIAGOIAZZETTI", "Ganho de Massa"),
+    t("HOME_MARQUEE_HYPERTROPHY_THIAGOIAZZETTI", "Hipertrofia"),
+    t("HOME_MARQUEE_CONDITIONING_THIAGOIAZZETTI", "Condicionamento"),
+    t("HOME_MARQUEE_FUNCTIONAL_THIAGOIAZZETTI", "Treino Funcional"),
+    t("HOME_MARQUEE_HIIT_THIAGOIAZZETTI", "HIIT"),
+    t("HOME_MARQUEE_MOBILITY_THIAGOIAZZETTI", "Mobilidade"),
+    t("HOME_MARQUEE_STRENGTH_THIAGOIAZZETTI", "Forca"),
+    t("HOME_MARQUEE_ENDURANCE_THIAGOIAZZETTI", "Resistencia"),
+  ];
 
   useEffect(() => {
     if (!showPlans) return;
-    setPlansLoading(true);
-    listPublicStudentPlans(tenantFromHost || undefined)
-      .then((data) => setPlans(Array.isArray(data) ? data : []))
-      .catch(() => setPlans([]))
-      .finally(() => setPlansLoading(false));
+    let cancelled = false;
+
+    const loadPlans = async () => {
+      setPlansLoading(true);
+      try {
+        const data = await listPublicStudentPlans(tenantFromHost || undefined);
+        if (!cancelled) {
+          setPlans(Array.isArray(data) ? data : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setPlans([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setPlansLoading(false);
+        }
+      }
+    };
+
+    loadPlans();
+
+    return () => {
+      cancelled = true;
+    };
   }, [showPlans, tenantFromHost]);
 
   useEffect(() => {
@@ -120,23 +139,32 @@ export default function LandingPage() {
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#b5f03c]/30 bg-[#b5f03c]/10 px-4 py-1.5 text-sm text-[#b5f03c]">
                 <Star size={14} fill="#b5f03c" className="text-[#b5f03c]" />
                 <span className="font-semibold">4.8/5.0</span>
-                <span className="text-white/50">reviews verificados</span>
+                <span className="text-white/50">
+                  {t(
+                    "HOME_REVIEWS_VERIFIED_THIAGOIAZZETTI",
+                    "reviews verificados",
+                  )}
+                </span>
               </div>
 
               <h1
                 className="max-w-2xl font-black uppercase leading-[0.92] tracking-tight text-[#b5f03c]"
                 style={{ fontSize: "clamp(2.4rem, 6vw, 5.5rem)" }}
               >
-                Transforme
+                {t("HOME_HERO_LINE_1_THIAGOIAZZETTI", "Transforme")}
                 <br />
-                sua jornada
+                {t("HOME_HERO_LINE_2_THIAGOIAZZETTI", "sua jornada")}
                 <br />
-                <span className="text-white">hoje</span>
+                <span className="text-white">
+                  {t("HOME_HERO_LINE_3_THIAGOIAZZETTI", "hoje")}
+                </span>
               </h1>
 
               <p className="mt-4 max-w-lg text-sm leading-6 text-white/60">
-                Libere seu potencial com planos de treino personalizados,
-                especialmente para você.
+                {t(
+                  "HOME_HERO_DESCRIPTION_THIAGOIAZZETTI",
+                  "Libere seu potencial com planos de treino personalizados, especialmente para voce.",
+                )}
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-4">
@@ -144,7 +172,7 @@ export default function LandingPage() {
                   to="/login"
                   className="inline-flex items-center gap-2 rounded-full bg-[#b5f03c] px-7 py-3.5 text-sm font-bold text-black transition hover:brightness-110"
                 >
-                  Junte-se a nós
+                  {t("HOME_JOIN_US_THIAGOIAZZETTI", "Junte-se a nos")}
                   <ArrowRight size={16} />
                 </Link>
                 <button
@@ -155,7 +183,7 @@ export default function LandingPage() {
                   <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/5 transition group-hover:border-[#b5f03c]/50 group-hover:bg-[#b5f03c]/10">
                     <Play size={14} fill="currentColor" />
                   </span>
-                  Ver planos
+                  {t("HOME_VIEW_PLANS_THIAGOIAZZETTI", "Ver planos")}
                 </button>
               </div>
             </div>
@@ -172,26 +200,32 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <span className="text-sm text-white/60">
-                  <strong className="text-white">4k+</strong> membros
+                  <strong className="text-white">4k+</strong>{" "}
+                  {t("HOME_MEMBERS_THIAGOIAZZETTI", "membros")}
                 </span>
               </div>
 
               <p className="text-sm leading-6 text-white/60">
-                Libere seu potencial com planos de treino personalizados,
-                especialmente para você.
+                {t(
+                  "HOME_STATS_DESCRIPTION_THIAGOIAZZETTI",
+                  "Libere seu potencial com planos de treino personalizados, especialmente para voce.",
+                )}
               </p>
 
               <Link
                 to={tenantFromHost ? "/login" : "/cadastro"}
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b5f03c] py-3 text-sm font-bold text-black transition hover:brightness-110"
               >
-                Junte-se a nós
+                {t("HOME_JOIN_US_THIAGOIAZZETTI", "Junte-se a nos")}
                 <ArrowRight size={15} />
               </Link>
 
               {tenantFromHost && (
                 <p className="mt-3 text-center text-xs text-white/40">
-                  Bem-vindo! Acesse a plataforma de{" "}
+                  {t(
+                    "HOME_WELCOME_PLATFORM_THIAGOIAZZETTI",
+                    "Bem-vindo! Acesse a plataforma de",
+                  )}{" "}
                   <span className="text-[#b5f03c]">{tenantFromHost}</span>
                 </p>
               )}
@@ -205,10 +239,10 @@ export default function LandingPage() {
             <div className="mb-8 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.35em] text-white/30">
-                  Disponíveis
+                  {t("HOME_AVAILABLE_THIAGOIAZZETTI", "Disponiveis")}
                 </p>
                 <h2 className="mt-1 text-3xl font-black text-white">
-                  Nossos Planos
+                  {t("HOME_OUR_PLANS_THIAGOIAZZETTI", "Nossos Planos")}
                 </h2>
               </div>
               <button
@@ -227,7 +261,10 @@ export default function LandingPage() {
             ) : plans.length === 0 ? (
               <div className="rounded-3xl border border-white/10 bg-white/5 py-16 text-center">
                 <p className="text-white/40">
-                  Nenhum plano disponível no momento.
+                  {t(
+                    "HOME_NO_PLANS_THIAGOIAZZETTI",
+                    "Nenhum plano disponivel no momento.",
+                  )}
                 </p>
                 <a
                   href={whatsappLink()}
@@ -235,7 +272,7 @@ export default function LandingPage() {
                   rel="noopener noreferrer"
                   className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#b5f03c] px-6 py-2.5 text-sm font-bold text-black"
                 >
-                  Fale conosco
+                  {t("HOME_TALK_TO_US_THIAGOIAZZETTI", "Fale conosco")}
                 </a>
               </div>
             ) : (
@@ -247,7 +284,7 @@ export default function LandingPage() {
                   >
                     <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-[#b5f03c]/10 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                     <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/30">
-                      Plano
+                      {t("HOME_PLAN_LABEL_THIAGOIAZZETTI", "Plano")}
                     </p>
                     <h3 className="mt-2 text-xl font-black text-white">
                       {plan.name}
@@ -260,7 +297,7 @@ export default function LandingPage() {
                     <p className="mt-5 text-4xl font-black text-[#b5f03c] leading-none">
                       {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
                       <span className="text-sm font-normal text-white/35">
-                        /mês
+                        {t("HOME_PER_MONTH_THIAGOIAZZETTI", "/mes")}
                       </span>
                     </p>
                     <a
@@ -269,7 +306,10 @@ export default function LandingPage() {
                       rel="noopener noreferrer"
                       className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b5f03c] py-3 text-sm font-bold text-black transition hover:brightness-110"
                     >
-                      Quero este plano
+                      {t(
+                        "HOME_I_WANT_THIS_PLAN_THIAGOIAZZETTI",
+                        "Quero este plano",
+                      )}
                       <ArrowRight size={15} />
                     </a>
                   </div>
@@ -319,20 +359,22 @@ export default function LandingPage() {
               </span>
             </div>
             <p className="text-sm text-white/50">
-              Personal trainer especializado em musculação e transformação
-              corporal.
+              {t(
+                "FOOTER_BRAND_DESCRIPTION_THIAGOIAZZETTI",
+                "Personal trainer especializado em musculacao e transformacao corporal.",
+              )}
             </p>
           </div>
 
           {/* Links */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-widest text-white/80 mb-3">
-              Links
+              {t("FOOTER_LINKS_TITLE_THIAGOIAZZETTI", "Links")}
             </h4>
             <ul className="space-y-2 text-sm text-white/50">
               <li>
                 <a href="#" className="transition hover:text-[#b5f03c]">
-                  Home
+                  {t("NAV_HOME_THIAGOIAZZETTI", "Home")}
                 </a>
               </li>
               <li>
@@ -341,7 +383,7 @@ export default function LandingPage() {
                   onClick={() => setShowPlans((v) => !v)}
                   className="transition hover:text-[#b5f03c]"
                 >
-                  Planos
+                  {t("NAV_PLANS_THIAGOIAZZETTI", "Planos")}
                 </button>
               </li>
               <li>
@@ -351,7 +393,7 @@ export default function LandingPage() {
                   rel="noopener noreferrer"
                   className="transition hover:text-[#b5f03c]"
                 >
-                  Contato
+                  {t("NAV_CONTACT_THIAGOIAZZETTI", "Contato")}
                 </a>
               </li>
             </ul>
@@ -360,7 +402,7 @@ export default function LandingPage() {
           {/* Contact */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-widest text-white/80 mb-3">
-              Contato
+              {t("FOOTER_CONTACT_TITLE_THIAGOIAZZETTI", "Contato")}
             </h4>
             <a
               href={whatsappLink()}
@@ -368,7 +410,10 @@ export default function LandingPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-[#b5f03c]/10 border border-[#b5f03c]/30 px-4 py-2 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
             >
-              Fale conosco no WhatsApp
+              {t(
+                "FOOTER_WHATSAPP_CTA_THIAGOIAZZETTI",
+                "Fale conosco no WhatsApp",
+              )}
             </a>
           </div>
         </div>
@@ -376,8 +421,11 @@ export default function LandingPage() {
         {/* Bottom */}
         <div className="border-t border-white/10 pt-6 text-center">
           <p className="text-xs text-white/40">
-            © {new Date().getFullYear()} Thiago Iazzetti. Todos os direitos
-            reservados.
+            © {new Date().getFullYear()}{" "}
+            {t(
+              "FOOTER_COPYRIGHT_TEXT_THIAGOIAZZETTI",
+              "Thiago Iazzetti. Todos os direitos reservados.",
+            )}
           </p>
         </div>
       </footer>

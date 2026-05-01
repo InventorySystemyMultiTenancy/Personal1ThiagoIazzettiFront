@@ -32,6 +32,7 @@ import {
 } from "../lib/api.js";
 import { getBillingStatus } from "../lib/billingStatus.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
+import { useI18n } from "../contexts/I18nContext.jsx";
 import WorkoutBuilderPage from "./WorkoutBuilderPage.jsx";
 
 function StatCard({ icon: Icon, label, value, sub, color = "#b5f03c" }) {
@@ -126,6 +127,7 @@ function parseForwardMessage(content) {
 export default function AdminDashboardPage() {
   const location = useLocation();
   const { tenantId } = useTenant();
+  const { t, locale } = useI18n();
   const [students, setStudents] = useState([]);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -174,7 +176,13 @@ export default function AdminDashboardPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          setMessage(error?.message || "Nao foi possivel carregar o painel");
+          setMessage(
+            error?.message ||
+              t(
+                "ADMIN_DASH_LOAD_ERROR_THIAGOIAZZETTI",
+                "Nao foi possivel carregar o painel",
+              ),
+          );
         }
       } finally {
         if (!cancelled) {
@@ -227,32 +235,51 @@ export default function AdminDashboardPage() {
     return [
       {
         icon: Users,
-        label: "Alunos ativos",
+        label: t(
+          "ADMIN_DASH_STAT_ACTIVE_STUDENTS_THIAGOIAZZETTI",
+          "Alunos ativos",
+        ),
         value: students.length,
         color: "#b5f03c",
       },
-      { icon: Wallet, label: "Planos", value: activePlans, color: "#60a5fa" },
+      {
+        icon: Wallet,
+        label: t("ADMIN_DASH_STAT_PLANS_THIAGOIAZZETTI", "Planos"),
+        value: activePlans,
+        color: "#60a5fa",
+      },
       {
         icon: TrendingUp,
-        label: "Inativos (5+ dias)",
+        label: t(
+          "ADMIN_DASH_STAT_INACTIVE_THIAGOIAZZETTI",
+          "Inativos (5+ dias)",
+        ),
         value: inactiveStudents,
         color: "#f87171",
       },
       {
         icon: Dumbbell,
-        label: "Potencial mensal",
+        label: t(
+          "ADMIN_DASH_STAT_POTENTIAL_THIAGOIAZZETTI",
+          "Potencial mensal",
+        ),
         value: formatCurrency(
           plans.reduce((sum, p) => sum + (p.monthlyPriceCents || 0), 0) / 100,
         ),
         color: "#4ade80",
       },
     ];
-  }, [plans, students]);
+  }, [plans, students, t]);
 
   const handleCreateStudent = async (e) => {
     e.preventDefault();
     if (!newStudentForm.fullName.trim() || !newStudentForm.email.trim()) {
-      setMessage("Nome e email sao obrigatorios");
+      setMessage(
+        t(
+          "ADMIN_DASH_STUDENT_REQUIRED_THIAGOIAZZETTI",
+          "Nome e email sao obrigatorios",
+        ),
+      );
       return;
     }
 
@@ -277,9 +304,17 @@ export default function AdminDashboardPage() {
         alunoPlanId: "",
         planDueDate: "",
       });
-      setMessage(`Aluno criado com sucesso: ${created.fullName}`);
+      setMessage(
+        `${t("ADMIN_DASH_STUDENT_CREATED_THIAGOIAZZETTI", "Aluno criado com sucesso")}: ${created.fullName}`,
+      );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel criar o aluno");
+      setMessage(
+        error?.message ||
+          t(
+            "ADMIN_DASH_STUDENT_CREATE_ERROR_THIAGOIAZZETTI",
+            "Nao foi possivel criar o aluno",
+          ),
+      );
     }
   };
 
@@ -316,16 +351,29 @@ export default function AdminDashboardPage() {
         current.map((item) => (item.id === studentId ? updated : item)),
       );
       setEditingStudentId("");
-      setMessage(`Aluno atualizado: ${updated.fullName}`);
+      setMessage(
+        `${t("ADMIN_DASH_STUDENT_UPDATED_THIAGOIAZZETTI", "Aluno atualizado")}: ${updated.fullName}`,
+      );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel atualizar o aluno");
+      setMessage(
+        error?.message ||
+          t(
+            "ADMIN_DASH_STUDENT_UPDATE_ERROR_THIAGOIAZZETTI",
+            "Nao foi possivel atualizar o aluno",
+          ),
+      );
     }
   };
 
   const handleCreatePlan = async (e) => {
     e.preventDefault();
     if (!newPlanForm.name.trim()) {
-      setMessage("Nome do plano e obrigatorio");
+      setMessage(
+        t(
+          "ADMIN_DASH_PLAN_NAME_REQUIRED_THIAGOIAZZETTI",
+          "Nome do plano e obrigatorio",
+        ),
+      );
       return;
     }
 
@@ -333,9 +381,17 @@ export default function AdminDashboardPage() {
       const created = await createStudentPlan(newPlanForm, tenantId);
       setPlans((current) => [created, ...current]);
       setNewPlanForm({ name: "", description: "", monthlyPriceCents: 0 });
-      setMessage(`Plano criado com sucesso: ${created.name}`);
+      setMessage(
+        `${t("ADMIN_DASH_PLAN_CREATED_THIAGOIAZZETTI", "Plano criado com sucesso")}: ${created.name}`,
+      );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel criar o plano");
+      setMessage(
+        error?.message ||
+          t(
+            "ADMIN_DASH_PLAN_CREATE_ERROR_THIAGOIAZZETTI",
+            "Nao foi possivel criar o plano",
+          ),
+      );
     }
   };
 
@@ -345,16 +401,18 @@ export default function AdminDashboardPage() {
       <section className="flex items-center justify-between">
         <div>
           <p className="text-[9px] font-bold uppercase tracking-[0.45em] text-white/20">
-            Painel
+            {t("ADMIN_DASH_HEADER_LABEL_THIAGOIAZZETTI", "Painel")}
           </p>
           <h1 className="mt-1 text-2xl font-black text-white leading-tight tracking-tight">
-            Visão Geral
+            {t("ADMIN_DASH_HEADER_TITLE_THIAGOIAZZETTI", "Visão Geral")}
           </h1>
         </div>
         {loading && (
           <div className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5">
             <Loader2 className="animate-spin text-[#b5f03c]/60" size={13} />
-            <span className="text-[10px] text-white/30">Carregando...</span>
+            <span className="text-[10px] text-white/30">
+              {t("ADMIN_DASH_LOADING_THIAGOIAZZETTI", "Carregando...")}
+            </span>
           </div>
         )}
       </section>
@@ -371,31 +429,31 @@ export default function AdminDashboardPage() {
         <TabButton
           active={activeTab === "visao-geral"}
           icon={BarChart3}
-          label="Visão Geral"
+          label={t("ADMIN_TAB_OVERVIEW_THIAGOIAZZETTI", "Visão Geral")}
           onClick={() => setActiveTab("visao-geral")}
         />
         <TabButton
           active={activeTab === "alunos"}
           icon={Users}
-          label="Alunos"
+          label={t("ADMIN_TAB_STUDENTS_THIAGOIAZZETTI", "Alunos")}
           onClick={() => setActiveTab("alunos")}
         />
         <TabButton
           active={activeTab === "planos"}
           icon={Wallet}
-          label="Planos"
+          label={t("ADMIN_TAB_PLANS_THIAGOIAZZETTI", "Planos")}
           onClick={() => setActiveTab("planos")}
         />
         <TabButton
           active={activeTab === "treinos"}
           icon={Dumbbell}
-          label="Treinos"
+          label={t("ADMIN_TAB_WORKOUTS_THIAGOIAZZETTI", "Treinos")}
           onClick={() => setActiveTab("treinos")}
         />
         <TabButton
           active={activeTab === "comunicacao"}
           icon={MessageSquare}
-          label="Comunicação"
+          label={t("ADMIN_TAB_COMMUNICATION_THIAGOIAZZETTI", "Comunicação")}
           onClick={() => setActiveTab("comunicacao")}
         />
       </div>
@@ -425,7 +483,10 @@ export default function AdminDashboardPage() {
               return (
                 <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/30 mb-4">
-                    Status de Pagamento
+                    {t(
+                      "ADMIN_DASH_PAYMENT_STATUS_THIAGOIAZZETTI",
+                      "Status de Pagamento",
+                    )}
                   </p>
                   <div className="flex h-2 w-full overflow-hidden rounded-full gap-0.5">
                     <div
@@ -444,15 +505,17 @@ export default function AdminDashboardPage() {
                   <div className="mt-4 flex gap-5 text-xs text-white/50">
                     <span className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                      {paid} pagos
+                      {paid} {t("ADMIN_DASH_PAID_THIAGOIAZZETTI", "pagos")}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-amber-400" />
-                      {pending} pendentes
+                      {pending}{" "}
+                      {t("ADMIN_DASH_PENDING_THIAGOIAZZETTI", "pendentes")}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-red-400" />
-                      {overdue} atrasados
+                      {overdue}{" "}
+                      {t("ADMIN_DASH_OVERDUE_THIAGOIAZZETTI", "atrasados")}
                     </span>
                   </div>
                 </article>
@@ -464,7 +527,10 @@ export default function AdminDashboardPage() {
             <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/30">
-                  Alunos inativos
+                  {t(
+                    "ADMIN_DASH_INACTIVE_STUDENTS_THIAGOIAZZETTI",
+                    "Alunos inativos",
+                  )}
                 </p>
                 <AlertCircle className="text-red-400/60" size={15} />
               </div>
@@ -477,7 +543,10 @@ export default function AdminDashboardPage() {
                   return lastActivity < fiveDaysAgo;
                 }).length === 0 ? (
                   <p className="text-xs text-white/40">
-                    Nenhum aluno inativo. Perfeito!
+                    {t(
+                      "ADMIN_DASH_NO_INACTIVE_THIAGOIAZZETTI",
+                      "Nenhum aluno inativo. Perfeito!",
+                    )}
                   </p>
                 ) : (
                   students
@@ -497,7 +566,10 @@ export default function AdminDashboardPage() {
                           {student.fullName}
                         </span>
                         <span className="text-[10px] text-white/35">
-                          Inativo
+                          {t(
+                            "ADMIN_DASH_INACTIVE_LABEL_THIAGOIAZZETTI",
+                            "Inativo",
+                          )}
                         </span>
                       </div>
                     ))
@@ -509,12 +581,15 @@ export default function AdminDashboardPage() {
             <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/30">
-                  Aniversariantes
+                  {t("ADMIN_DASH_BIRTHDAYS_THIAGOIAZZETTI", "Aniversariantes")}
                 </p>
                 <Calendar className="text-[#b5f03c]/50" size={15} />
               </div>
               <p className="text-xs text-white/40">
-                Nenhum aniversário próximo nos próximos 7 dias.
+                {t(
+                  "ADMIN_DASH_NO_BIRTHDAYS_THIAGOIAZZETTI",
+                  "Nenhum aniversário próximo nos próximos 7 dias.",
+                )}
               </p>
             </article>
           </div>
@@ -526,12 +601,15 @@ export default function AdminDashboardPage() {
         <div className="space-y-6">
           <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
             <h2 className="mb-5 text-sm font-bold text-white/60">
-              Cadastrar novo aluno
+              {t(
+                "ADMIN_DASH_CREATE_STUDENT_THIAGOIAZZETTI",
+                "Cadastrar novo aluno",
+              )}
             </h2>
             <form className="space-y-4" onSubmit={handleCreateStudent}>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                  Nome completo
+                  {t("ADMIN_DASH_FULL_NAME_THIAGOIAZZETTI", "Nome completo")}
                   <input
                     type="text"
                     name="fullName"
@@ -547,7 +625,7 @@ export default function AdminDashboardPage() {
                   />
                 </label>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                  Email
+                  {t("ADMIN_DASH_EMAIL_THIAGOIAZZETTI", "Email")}
                   <input
                     type="email"
                     name="email"
@@ -563,7 +641,7 @@ export default function AdminDashboardPage() {
                   />
                 </label>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                  Telefone
+                  {t("ADMIN_DASH_PHONE_THIAGOIAZZETTI", "Telefone")}
                   <input
                     type="tel"
                     name="phone"
@@ -579,7 +657,10 @@ export default function AdminDashboardPage() {
                   />
                 </label>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                  Data de nascimento
+                  {t(
+                    "ADMIN_DASH_BIRTHDATE_THIAGOIAZZETTI",
+                    "Data de nascimento",
+                  )}
                   <input
                     type="date"
                     name="birthDate"
@@ -594,7 +675,10 @@ export default function AdminDashboardPage() {
                   />
                 </label>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                  Vencimento do plano
+                  {t(
+                    "ADMIN_DASH_PLAN_DUE_DATE_THIAGOIAZZETTI",
+                    "Vencimento do plano",
+                  )}
                   <input
                     type="date"
                     name="planDueDate"
@@ -609,7 +693,10 @@ export default function AdminDashboardPage() {
                   />
                 </label>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                  Plano do aluno
+                  {t(
+                    "ADMIN_DASH_STUDENT_PLAN_THIAGOIAZZETTI",
+                    "Plano do aluno",
+                  )}
                   <select
                     name="alunoPlanId"
                     value={newStudentForm.alunoPlanId}
@@ -621,7 +708,9 @@ export default function AdminDashboardPage() {
                     }
                     className="mt-2 w-full rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40"
                   >
-                    <option value="">Sem plano</option>
+                    <option value="">
+                      {t("ADMIN_DASH_NO_PLAN_THIAGOIAZZETTI", "Sem plano")}
+                    </option>
                     {plans.map((plan) => (
                       <option key={plan.id} value={plan.id}>
                         {plan.name} —{" "}
@@ -636,7 +725,10 @@ export default function AdminDashboardPage() {
                 className="flex items-center gap-2 rounded-lg bg-[#b5f03c] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
               >
                 <Plus size={14} />
-                Criar aluno
+                {t(
+                  "ADMIN_DASH_CREATE_STUDENT_BUTTON_THIAGOIAZZETTI",
+                  "Criar aluno",
+                )}
               </button>
             </form>
           </article>
@@ -644,7 +736,10 @@ export default function AdminDashboardPage() {
           <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-sm font-bold text-white/60">
-                Alunos cadastrados
+                {t(
+                  "ADMIN_DASH_STUDENTS_LIST_TITLE_THIAGOIAZZETTI",
+                  "Alunos cadastrados",
+                )}
                 <span className="ml-2 rounded-md bg-white/[0.07] px-2 py-0.5 text-xs font-normal text-white/40">
                   {students.length}
                 </span>
@@ -657,7 +752,7 @@ export default function AdminDashboardPage() {
                       (s) => getBillingStatus(s).key === "overdue",
                     ).length
                   }{" "}
-                  atrasados
+                  {t("ADMIN_DASH_OVERDUE_THIAGOIAZZETTI", "atrasados")}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
@@ -666,7 +761,7 @@ export default function AdminDashboardPage() {
                       (s) => getBillingStatus(s).key === "pending",
                     ).length
                   }{" "}
-                  pendentes
+                  {t("ADMIN_DASH_PENDING_THIAGOIAZZETTI", "pendentes")}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -674,7 +769,7 @@ export default function AdminDashboardPage() {
                     students.filter((s) => getBillingStatus(s).key === "paid")
                       .length
                   }{" "}
-                  pagos
+                  {t("ADMIN_DASH_PAID_THIAGOIAZZETTI", "pagos")}
                 </span>
               </div>
             </div>
@@ -682,7 +777,10 @@ export default function AdminDashboardPage() {
             <div className="space-y-2">
               {students.length === 0 ? (
                 <p className="rounded-lg border border-white/[0.07] px-4 py-6 text-center text-sm text-white/35">
-                  Nenhum aluno cadastrado ainda.
+                  {t(
+                    "ADMIN_DASH_NO_STUDENTS_THIAGOIAZZETTI",
+                    "Nenhum aluno cadastrado ainda.",
+                  )}
                 </p>
               ) : (
                 students.map((student) => {
@@ -698,7 +796,11 @@ export default function AdminDashboardPage() {
                             {student.fullName}
                           </p>
                           <p className="text-xs text-white/40 mt-0.5">
-                            {student.email || "Sem email"}
+                            {student.email ||
+                              t(
+                                "ADMIN_DASH_NO_EMAIL_THIAGOIAZZETTI",
+                                "Sem email",
+                              )}
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -722,14 +824,23 @@ export default function AdminDashboardPage() {
 
                       <div className="mt-3 grid gap-2 text-xs md:grid-cols-2 xl:grid-cols-5">
                         <div className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2">
-                          <p className="text-white/25 text-[10px]">Plano</p>
+                          <p className="text-white/25 text-[10px]">
+                            {t("ADMIN_DASH_COL_PLAN_THIAGOIAZZETTI", "Plano")}
+                          </p>
                           <p className="mt-0.5 font-semibold text-white/75">
-                            {student.alunoPlan?.name || "Sem plano"}
+                            {student.alunoPlan?.name ||
+                              t(
+                                "ADMIN_DASH_NO_PLAN_THIAGOIAZZETTI",
+                                "Sem plano",
+                              )}
                           </p>
                         </div>
                         <div className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2">
                           <p className="text-white/25 text-[10px]">
-                            Mensalidade
+                            {t(
+                              "ADMIN_DASH_COL_MONTHLY_THIAGOIAZZETTI",
+                              "Mensalidade",
+                            )}
                           </p>
                           <p className="mt-0.5 font-semibold text-[#b5f03c]">
                             {student.alunoPlan
@@ -741,7 +852,12 @@ export default function AdminDashboardPage() {
                           </p>
                         </div>
                         <div className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2">
-                          <p className="text-white/25 text-[10px]">Status</p>
+                          <p className="text-white/25 text-[10px]">
+                            {t(
+                              "ADMIN_DASH_COL_STATUS_THIAGOIAZZETTI",
+                              "Status",
+                            )}
+                          </p>
                           <p
                             className={`mt-0.5 font-semibold ${billingStatus.accentClass}`}
                           >
@@ -750,7 +866,10 @@ export default function AdminDashboardPage() {
                         </div>
                         <div className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2">
                           <p className="text-white/25 text-[10px]">
-                            Vencimento
+                            {t(
+                              "ADMIN_DASH_COL_DUE_DATE_THIAGOIAZZETTI",
+                              "Vencimento",
+                            )}
                           </p>
                           <p className="mt-0.5 font-semibold text-white/65">
                             {student.planDueDate
@@ -759,7 +878,12 @@ export default function AdminDashboardPage() {
                           </p>
                         </div>
                         <div className="rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2">
-                          <p className="text-white/25 text-[10px]">Telefone</p>
+                          <p className="text-white/25 text-[10px]">
+                            {t(
+                              "ADMIN_DASH_COL_PHONE_THIAGOIAZZETTI",
+                              "Telefone",
+                            )}
+                          </p>
                           <p className="mt-0.5 font-semibold text-white/65">
                             {student.phone || "—"}
                           </p>
@@ -769,7 +893,10 @@ export default function AdminDashboardPage() {
                       {editingStudentId === student.id ? (
                         <div className="mt-4 rounded-xl border border-white/[0.07] bg-black/30 p-4">
                           <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[#b5f03c]/60">
-                            Editar aluno
+                            {t(
+                              "ADMIN_DASH_EDIT_STUDENT_THIAGOIAZZETTI",
+                              "Editar aluno",
+                            )}
                           </p>
                           <div className="grid gap-3 md:grid-cols-2">
                             <input
@@ -858,21 +985,27 @@ export default function AdminDashboardPage() {
                                   }))
                                 }
                               />
-                              Aluno ativo
+                              {t(
+                                "ADMIN_DASH_ACTIVE_STUDENT_THIAGOIAZZETTI",
+                                "Aluno ativo",
+                              )}
                             </label>
                             <button
                               type="button"
                               onClick={() => handleSaveStudent(student.id)}
                               className="rounded-lg bg-[#b5f03c] px-4 py-2 text-xs font-bold text-black transition hover:brightness-110"
                             >
-                              Salvar
+                              {t("ADMIN_DASH_SAVE_THIAGOIAZZETTI", "Salvar")}
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingStudentId("")}
                               className="rounded-lg border border-white/[0.07] px-4 py-2 text-xs text-white/45 transition hover:text-white"
                             >
-                              Cancelar
+                              {t(
+                                "ADMIN_DASH_CANCEL_THIAGOIAZZETTI",
+                                "Cancelar",
+                              )}
                             </button>
                           </div>
                         </div>
@@ -891,12 +1024,15 @@ export default function AdminDashboardPage() {
         <div className="space-y-6">
           <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
             <h2 className="mb-5 text-sm font-bold text-white/60">
-              Criar novo plano
+              {t("ADMIN_DASH_CREATE_PLAN_THIAGOIAZZETTI", "Criar novo plano")}
             </h2>
             <form className="space-y-4" onSubmit={handleCreatePlan}>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                  Nome do plano
+                  {t(
+                    "ADMIN_DASH_PLAN_NAME_LABEL_THIAGOIAZZETTI",
+                    "Nome do plano",
+                  )}
                   <input
                     type="text"
                     name="name"
@@ -912,7 +1048,10 @@ export default function AdminDashboardPage() {
                   />
                 </label>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                  Preço mensal (R$)
+                  {t(
+                    "ADMIN_DASH_PLAN_PRICE_LABEL_THIAGOIAZZETTI",
+                    "Preço mensal (R$)",
+                  )}
                   <input
                     type="number"
                     name="monthlyPrice"
@@ -933,7 +1072,7 @@ export default function AdminDashboardPage() {
                 </label>
               </div>
               <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                Descrição
+                {t("ADMIN_DASH_PLAN_DESC_LABEL_THIAGOIAZZETTI", "Descrição")}
                 <textarea
                   name="description"
                   value={newPlanForm.description}
@@ -953,14 +1092,20 @@ export default function AdminDashboardPage() {
                 className="flex items-center gap-2 rounded-lg bg-[#b5f03c] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
               >
                 <Plus size={14} />
-                Criar plano
+                {t(
+                  "ADMIN_DASH_CREATE_PLAN_BUTTON_THIAGOIAZZETTI",
+                  "Criar plano",
+                )}
               </button>
             </form>
           </article>
 
           <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
             <h2 className="mb-5 text-sm font-bold text-white/60">
-              Planos de assinatura
+              {t(
+                "ADMIN_DASH_PLANS_LIST_TITLE_THIAGOIAZZETTI",
+                "Planos de assinatura",
+              )}
               <span className="ml-2 rounded-md bg-white/[0.07] px-2 py-0.5 text-xs font-normal text-white/40">
                 {plans.length}
               </span>
@@ -968,7 +1113,10 @@ export default function AdminDashboardPage() {
             <div className="space-y-2">
               {plans.length === 0 ? (
                 <p className="rounded-lg border border-white/[0.07] px-4 py-6 text-center text-sm text-white/35">
-                  Nenhum plano criado ainda.
+                  {t(
+                    "ADMIN_DASH_NO_PLANS_THIAGOIAZZETTI",
+                    "Nenhum plano criado ainda.",
+                  )}
                 </p>
               ) : (
                 plans.map((plan) => (
@@ -981,14 +1129,18 @@ export default function AdminDashboardPage() {
                         {plan.name}
                       </p>
                       <p className="mt-0.5 text-xs text-white/40">
-                        {plan.description || "Plano premium"}
+                        {plan.description ||
+                          t(
+                            "ADMIN_DASH_PREMIUM_PLAN_THIAGOIAZZETTI",
+                            "Plano premium",
+                          )}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <p className="text-lg font-black text-[#b5f03c]">
                         {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
                         <span className="text-xs font-normal text-white/35">
-                          /mês
+                          {t("ADMIN_DASH_PER_MONTH_THIAGOIAZZETTI", "/mês")}
                         </span>
                       </p>
                       <div className="flex items-center gap-1.5">
@@ -1024,6 +1176,7 @@ export default function AdminDashboardPage() {
 }
 
 function ChatPanel({ students }) {
+  const { t } = useI18n();
   const [selectedAluno, setSelectedAluno] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
@@ -1164,13 +1317,16 @@ function ChatPanel({ students }) {
       >
         <div className="px-4 py-4 border-b border-white/[0.07]">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/30">
-            Conversas
+            {t("ADMIN_CHAT_CONVERSATIONS_THIAGOIAZZETTI", "Conversas")}
           </p>
         </div>
         <div className="flex-1 overflow-y-auto">
           {activeStudents.length === 0 ? (
             <p className="px-4 py-6 text-xs text-white/30 text-center">
-              Nenhum aluno ativo
+              {t(
+                "ADMIN_CHAT_NO_ACTIVE_STUDENTS_THIAGOIAZZETTI",
+                "Nenhum aluno ativo",
+              )}
             </p>
           ) : (
             activeStudents.map((aluno) => (
@@ -1192,7 +1348,8 @@ function ChatPanel({ students }) {
                     {aluno.fullName}
                   </p>
                   <p className="truncate text-[10px] text-white/35">
-                    {aluno.email || "sem e-mail"}
+                    {aluno.email ||
+                      t("ADMIN_CHAT_NO_EMAIL_THIAGOIAZZETTI", "sem e-mail")}
                   </p>
                 </div>
               </button>
@@ -1209,7 +1366,10 @@ function ChatPanel({ students }) {
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
             <MessageSquare size={32} className="text-white/10" />
             <p className="text-xs text-white/30">
-              Selecione um aluno para iniciar uma conversa
+              {t(
+                "ADMIN_CHAT_SELECT_STUDENT_THIAGOIAZZETTI",
+                "Selecione um aluno para iniciar uma conversa",
+              )}
             </p>
           </div>
         ) : (
@@ -1248,7 +1408,10 @@ function ChatPanel({ students }) {
                 </div>
               ) : messages.length === 0 ? (
                 <p className="text-center text-xs text-white/25 pt-10">
-                  Nenhuma mensagem ainda. Inicie a conversa!
+                  {t(
+                    "ADMIN_CHAT_NO_MESSAGES_THIAGOIAZZETTI",
+                    "Nenhuma mensagem ainda. Inicie a conversa!",
+                  )}
                 </p>
               ) : (
                 messages.map((msg) => {
@@ -1272,8 +1435,14 @@ function ChatPanel({ students }) {
                               className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isMe ? "text-black/60" : "text-[#b5f03c]"}`}
                             >
                               {forwarded.kind === "workout"
-                                ? "Treino encaminhado"
-                                : "Dieta encaminhada"}
+                                ? t(
+                                    "ADMIN_CHAT_WORKOUT_FORWARDED_THIAGOIAZZETTI",
+                                    "Treino encaminhado",
+                                  )
+                                : t(
+                                    "ADMIN_CHAT_DIET_FORWARDED_THIAGOIAZZETTI",
+                                    "Dieta encaminhada",
+                                  )}
                             </p>
                             <p className="mt-1 font-semibold">
                               {forwarded.title || "Item"}
@@ -1314,7 +1483,12 @@ function ChatPanel({ students }) {
                     onChange={(e) => setSelectedWorkoutId(e.target.value)}
                     className="flex-1 rounded-lg border border-white/[0.08] bg-[#111] px-3 py-2 text-xs text-white/70 outline-none focus:border-[#b5f03c]/40"
                   >
-                    <option value="">Encaminhar treino...</option>
+                    <option value="">
+                      {t(
+                        "ADMIN_CHAT_FORWARD_WORKOUT_THIAGOIAZZETTI",
+                        "Encaminhar treino...",
+                      )}
+                    </option>
                     {workouts.map((plan) => (
                       <option key={plan.id} value={plan.id}>
                         {plan.title}
@@ -1327,7 +1501,7 @@ function ChatPanel({ students }) {
                     disabled={!selectedWorkoutId || sendingForward}
                     className="rounded-lg border border-[#b5f03c]/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#b5f03c] transition hover:bg-[#b5f03c]/10 disabled:opacity-40"
                   >
-                    Enviar
+                    {t("ADMIN_CHAT_SEND_THIAGOIAZZETTI", "Enviar")}
                   </button>
                 </div>
 
@@ -1337,7 +1511,12 @@ function ChatPanel({ students }) {
                     onChange={(e) => setSelectedDietId(e.target.value)}
                     className="flex-1 rounded-lg border border-white/[0.08] bg-[#111] px-3 py-2 text-xs text-white/70 outline-none focus:border-[#b5f03c]/40"
                   >
-                    <option value="">Encaminhar dieta...</option>
+                    <option value="">
+                      {t(
+                        "ADMIN_CHAT_FORWARD_DIET_THIAGOIAZZETTI",
+                        "Encaminhar dieta...",
+                      )}
+                    </option>
                     {diets.map((diet) => (
                       <option key={diet.id} value={diet.id}>
                         {diet.title}
@@ -1350,7 +1529,7 @@ function ChatPanel({ students }) {
                     disabled={!selectedDietId || sendingForward}
                     className="rounded-lg border border-[#b5f03c]/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#b5f03c] transition hover:bg-[#b5f03c]/10 disabled:opacity-40"
                   >
-                    Enviar
+                    {t("ADMIN_CHAT_SEND_THIAGOIAZZETTI", "Enviar")}
                   </button>
                 </div>
               </div>
@@ -1366,7 +1545,10 @@ function ChatPanel({ students }) {
                       handleSend();
                     }
                   }}
-                  placeholder="Digite uma mensagem..."
+                  placeholder={t(
+                    "ADMIN_CHAT_INPUT_PLACEHOLDER_THIAGOIAZZETTI",
+                    "Digite uma mensagem...",
+                  )}
                   className="flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/25 focus:border-[#b5f03c]/40 focus:outline-none"
                   style={{ maxHeight: 120 }}
                 />

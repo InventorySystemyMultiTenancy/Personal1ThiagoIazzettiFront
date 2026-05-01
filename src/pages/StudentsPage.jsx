@@ -1,4 +1,5 @@
 import React from "react";
+import { useI18n } from "../contexts/I18nContext.jsx";
 
 const students = [
   { id: "1", nome: "Lucas M.", foco: "Hipertrofia", progresso: "Excelente" },
@@ -12,11 +13,17 @@ const students = [
 ];
 
 export default function StudentsPage() {
+  const { t } = useI18n();
   return (
     <section className="rounded-premium border border-black/10 bg-white p-5 shadow-soft">
-      <h1 className="font-title text-3xl text-premium-gold">Meus Alunos</h1>
+      <h1 className="font-title text-3xl text-premium-gold">
+        {t("STUDENTS_TITLE_THIAGOIAZZETTI", "Meus Alunos")}
+      </h1>
       <p className="mt-1 font-body text-sm text-premium-anthracite/70">
-        Visao consolidada de objetivos e progresso.
+        {t(
+          "STUDENTS_SUBTITLE_THIAGOIAZZETTI",
+          "Visao consolidada de objetivos e progresso.",
+        )}
       </p>
 
       <div className="mt-5 grid gap-3">
@@ -29,10 +36,11 @@ export default function StudentsPage() {
               {student.nome}
             </p>
             <p className="font-body text-sm text-premium-anthracite/70">
-              Foco: {student.foco}
+              {t("STUDENTS_FOCUS_LABEL_THIAGOIAZZETTI", "Foco")}: {student.foco}
             </p>
             <p className="font-body text-sm text-premium-anthracite/70">
-              Progresso: {student.progresso}
+              {t("STUDENTS_PROGRESS_LABEL_THIAGOIAZZETTI", "Progresso")}:{" "}
+              {student.progresso}
             </p>
           </article>
         ))}

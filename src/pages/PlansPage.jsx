@@ -12,9 +12,12 @@ import {
 } from "../lib/api.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useTenant } from "../contexts/TenantContext.jsx";
+import { useI18n } from "../contexts/I18nContext.jsx";
 
-function PlanCard({ plan, onSelect, selected, actionLabel }) {
-  const price = Number(plan.transactionAmount ?? Number(plan.monthlyPriceCents || 0) / 100);
+function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
+  const price = Number(
+    plan.transactionAmount ?? Number(plan.monthlyPriceCents || 0) / 100,
+  );
   const frequencyType = plan.frequencyType || "months";
   const frequency = Number(plan.frequency || 1);
 
@@ -29,7 +32,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-            Plano
+            {t("PLANS_PLAN_LABEL_THIAGOIAZZETTI", "Plano")}
           </p>
           <h3 className="mt-2 font-title text-2xl text-[#b5f03c]">
             {plan.name}
@@ -41,7 +44,11 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
       </div>
 
       <p className="mt-4 text-sm leading-7 text-white/68">
-        {plan.description || "Plano premium com acompanhamento do personal."}
+        {plan.description ||
+          t(
+            "PLANS_PREMIUM_DESCRIPTION_THIAGOIAZZETTI",
+            "Plano premium com acompanhamento do personal.",
+          )}
       </p>
 
       <div className="mt-6 flex items-end gap-2">
@@ -51,24 +58,30 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
         <span className="pb-1 text-sm text-white/50">
           {frequencyType === "months"
             ? frequency === 1
-              ? "/mes"
-              : `/ ${frequency} meses`
+              ? t("PLANS_PER_MONTH_THIAGOIAZZETTI", "/mes")
+              : `${t("PLANS_EVERY_THIAGOIAZZETTI", "/")}${frequency} ${t("PLANS_MONTHS_THIAGOIAZZETTI", "meses")}`
             : frequency === 1
-              ? "/dia"
-              : `/ ${frequency} dias`}
+              ? t("PLANS_PER_DAY_THIAGOIAZZETTI", "/dia")
+              : `${t("PLANS_EVERY_THIAGOIAZZETTI", "/")}${frequency} ${t("PLANS_DAYS_THIAGOIAZZETTI", "dias")}`}
         </span>
       </div>
 
       <div className="mt-6 space-y-3 text-sm text-white/70">
         <div className="flex items-center gap-2">
           <ShieldCheck size={16} className="text-[#b5f03c]" />
-          Contrato protegido
+          {t("PLANS_PROTECTED_CONTRACT_THIAGOIAZZETTI", "Contrato protegido")}
         </div>
         <div className="flex items-center gap-2">
           <Check size={16} className="text-[#b5f03c]" />
           {plan.isRecurringEnabled === false
-            ? "Checkout online pendente de configuracao"
-            : "Cobranca recorrente automatica no cartao"}
+            ? t(
+                "PLANS_CHECKOUT_PENDING_THIAGOIAZZETTI",
+                "Checkout online pendente de configuracao",
+              )
+            : t(
+                "PLANS_RECURRING_AUTOMATIC_THIAGOIAZZETTI",
+                "Cobranca recorrente automatica no cartao",
+              )}
         </div>
       </div>
 
@@ -88,6 +101,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel }) {
 }
 
 export default function PlansPage({ mode = "public" }) {
+  const { t } = useI18n();
   const { tenantId } = useTenant();
   const { user, isClient } = useAuth();
   const [plans, setPlans] = useState([]);
@@ -104,7 +118,8 @@ export default function PlansPage({ mode = "public" }) {
   });
 
   const isAdminMode = mode === "admin";
-  const recurringPersonalId = user?.personalId || import.meta.env.VITE_PERSONAL_ID || tenantId;
+  const recurringPersonalId =
+    user?.personalId || import.meta.env.VITE_PERSONAL_ID || tenantId;
 
   useEffect(() => {
     let cancelled = false;
@@ -116,16 +131,19 @@ export default function PlansPage({ mode = "public" }) {
       try {
         const items = isAdminMode
           ? await listStudentPlans(tenantId)
-          : await listRecurringSubscriptionPlans(
-              recurringPersonalId,
-              tenantId,
-            );
+          : await listRecurringSubscriptionPlans(recurringPersonalId, tenantId);
         if (!cancelled) {
           setPlans(Array.isArray(items) ? items : []);
         }
       } catch (error) {
         if (!cancelled) {
-          setMessage(error?.message || "Nao foi possivel carregar os planos");
+          setMessage(
+            error?.message ||
+              t(
+                "PLANS_ERROR_LOAD_THIAGOIAZZETTI",
+                "Nao foi possivel carregar os planos",
+              ),
+          );
           setPlans([]);
         }
       } finally {
@@ -145,10 +163,15 @@ export default function PlansPage({ mode = "public" }) {
   }, [tenantId, isAdminMode, recurringPersonalId]);
 
   const actionLabel = useMemo(() => {
-    if (isAdminMode) return "Gerenciar plano";
-    if (isClient && user?.role === "ALUNO") return "Selecionar plano";
-    return "Criar conta para contratar";
-  }, [isAdminMode, isClient, user?.role]);
+    if (isAdminMode)
+      return t("PLANS_ACTION_MANAGE_THIAGOIAZZETTI", "Gerenciar plano");
+    if (isClient && user?.role === "ALUNO")
+      return t("PLANS_ACTION_SELECT_THIAGOIAZZETTI", "Selecionar plano");
+    return t(
+      "PLANS_ACTION_CREATE_ACCOUNT_THIAGOIAZZETTI",
+      "Criar conta para contratar",
+    );
+  }, [isAdminMode, isClient, user?.role, t]);
 
   const selectedPlan = useMemo(
     () => plans.find((plan) => plan.id === selectedPlanId) || null,
@@ -179,25 +202,42 @@ export default function PlansPage({ mode = "public" }) {
     }
 
     if (!user || user.role !== "ALUNO") {
-      setMessage("Crie uma conta ou faca login como aluno para contratar.");
+      setMessage(
+        t(
+          "PLANS_MESSAGE_LOGIN_REQUIRED_THIAGOIAZZETTI",
+          "Crie uma conta ou faca login como aluno para contratar.",
+        ),
+      );
       return;
     }
 
     setSelectedPlanId(plan.id);
-    setMessage(`Plano ${plan.name} selecionado. Preencha os dados do cartao para concluir a assinatura.`);
+    setMessage(
+      `${t("PLANS_MESSAGE_PLAN_SELECTED_THIAGOIAZZETTI", "Plano")} ${plan.name} ${t("PLANS_MESSAGE_FILL_CARD_THIAGOIAZZETTI", "selecionado. Preencha os dados do cartao para concluir a assinatura.")}`,
+    );
   };
 
   const handleAdminSave = async (event) => {
     event.preventDefault();
 
     if (!form.name.trim() || !form.monthlyPrice) {
-      setMessage("Nome e preco mensal sao obrigatorios");
+      setMessage(
+        t(
+          "PLANS_MESSAGE_REQUIRED_FIELDS_THIAGOIAZZETTI",
+          "Nome e preco mensal sao obrigatorios",
+        ),
+      );
       return;
     }
 
     const monthlyPriceNumber = Number(form.monthlyPrice);
     if (!Number.isFinite(monthlyPriceNumber) || monthlyPriceNumber <= 0) {
-      setMessage("Preco mensal invalido");
+      setMessage(
+        t(
+          "PLANS_MESSAGE_INVALID_PRICE_THIAGOIAZZETTI",
+          "Preco mensal invalido",
+        ),
+      );
       return;
     }
 
@@ -220,16 +260,32 @@ export default function PlansPage({ mode = "public" }) {
         setPlans((prev) =>
           prev.map((plan) => (plan.id === editingPlanId ? updated : plan)),
         );
-        setMessage("Plano atualizado com sucesso");
+        setMessage(
+          t(
+            "PLANS_MESSAGE_UPDATED_SUCCESS_THIAGOIAZZETTI",
+            "Plano atualizado com sucesso",
+          ),
+        );
       } else {
         const created = await createStudentPlan(payload, tenantId);
         setPlans((prev) => [created, ...prev]);
-        setMessage("Plano criado com sucesso");
+        setMessage(
+          t(
+            "PLANS_MESSAGE_CREATED_SUCCESS_THIAGOIAZZETTI",
+            "Plano criado com sucesso",
+          ),
+        );
       }
 
       resetForm();
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel salvar o plano");
+      setMessage(
+        error?.message ||
+          t(
+            "PLANS_MESSAGE_SAVE_ERROR_THIAGOIAZZETTI",
+            "Nao foi possivel salvar o plano",
+          ),
+      );
     } finally {
       setSaving(false);
     }
@@ -239,7 +295,10 @@ export default function PlansPage({ mode = "public" }) {
     if (!editingPlanId) return;
 
     const confirmed = window.confirm(
-      "Tem certeza que deseja excluir este plano? Esta acao nao pode ser desfeita.",
+      t(
+        "PLANS_CONFIRM_DELETE_THIAGOIAZZETTI",
+        "Tem certeza que deseja excluir este plano? Esta acao nao pode ser desfeita.",
+      ),
     );
 
     if (!confirmed) return;
@@ -248,10 +307,21 @@ export default function PlansPage({ mode = "public" }) {
       setSaving(true);
       await deleteStudentPlan(editingPlanId, tenantId);
       setPlans((prev) => prev.filter((plan) => plan.id !== editingPlanId));
-      setMessage("Plano excluido com sucesso");
+      setMessage(
+        t(
+          "PLANS_MESSAGE_DELETED_SUCCESS_THIAGOIAZZETTI",
+          "Plano excluido com sucesso",
+        ),
+      );
       resetForm();
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel excluir o plano");
+      setMessage(
+        error?.message ||
+          t(
+            "PLANS_MESSAGE_DELETE_ERROR_THIAGOIAZZETTI",
+            "Nao foi possivel excluir o plano",
+          ),
+      );
     } finally {
       setSaving(false);
     }
@@ -263,11 +333,13 @@ export default function PlansPage({ mode = "public" }) {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
-              Planos publicos
+              {t("PLANS_TITLE_THIAGOIAZZETTI", "Planos publicos")}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
-              Aqui voce ve os planos criados pelo personal e pode contratar a
-              opcao ideal quando estiver logado como aluno.
+              {t(
+                "PLANS_SUBTITLE_THIAGOIAZZETTI",
+                "Aqui voce ve os planos criados pelo personal e pode contratar a opcao ideal quando estiver logado como aluno.",
+              )}
             </p>
           </div>
           {/* Tenant detected via subdomínio — não exibir campo editável */}
@@ -279,13 +351,13 @@ export default function PlansPage({ mode = "public" }) {
               to={`/`}
               className="rounded-full border border-white/10 px-4 py-2 transition hover:border-[#b5f03c]/50 hover:text-white"
             >
-              Abrir página inicial
+              {t("PLANS_LINK_OPEN_HOME_THIAGOIAZZETTI", "Abrir pagina inicial")}
             </Link>
             <Link
               to={user?.role === "ALUNO" ? "/cliente" : "/login"}
               className="rounded-full bg-[#b5f03c] px-4 py-2 font-semibold text-black transition hover:brightness-110"
             >
-              Continuar
+              {t("PLANS_LINK_CONTINUE_THIAGOIAZZETTI", "Continuar")}
             </Link>
           </div>
         ) : null}
@@ -301,7 +373,9 @@ export default function PlansPage({ mode = "public" }) {
         <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-title text-2xl text-[#d4f7a0]">
-              {editingPlanId ? "Editar plano" : "Novo plano"}
+              {editingPlanId
+                ? t("PLANS_EDIT_TITLE_THIAGOIAZZETTI", "Editar plano")
+                : t("PLANS_NEW_TITLE_THIAGOIAZZETTI", "Novo plano")}
             </h2>
             {editingPlanId ? (
               <button
@@ -309,7 +383,7 @@ export default function PlansPage({ mode = "public" }) {
                 onClick={resetForm}
                 className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/70"
               >
-                Cancelar edicao
+                {t("PLANS_CANCEL_EDIT_THIAGOIAZZETTI", "Cancelar edicao")}
               </button>
             ) : null}
           </div>
@@ -319,19 +393,22 @@ export default function PlansPage({ mode = "public" }) {
             onSubmit={handleAdminSave}
           >
             <label className="text-sm text-white/70 md:col-span-1">
-              Nome do plano
+              {t("PLANS_NAME_LABEL_THIAGOIAZZETTI", "Nome do plano")}
               <input
                 value={form.name}
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, name: e.target.value }))
                 }
                 className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-2 text-white outline-none"
-                placeholder="Ex: Plano Premium"
+                placeholder={t(
+                  "PLANS_NAME_PLACEHOLDER_THIAGOIAZZETTI",
+                  "Ex: Plano Premium",
+                )}
               />
             </label>
 
             <label className="text-sm text-white/70 md:col-span-1">
-              Preco mensal (R$)
+              {t("PLANS_PRICE_LABEL_THIAGOIAZZETTI", "Preco mensal (R$)")}
               <input
                 type="number"
                 min="0"
@@ -346,7 +423,7 @@ export default function PlansPage({ mode = "public" }) {
             </label>
 
             <label className="text-sm text-white/70 md:col-span-2">
-              Descricao
+              {t("PLANS_DESCRIPTION_LABEL_THIAGOIAZZETTI", "Descricao")}
               <textarea
                 rows={3}
                 value={form.description}
@@ -354,7 +431,10 @@ export default function PlansPage({ mode = "public" }) {
                   setForm((prev) => ({ ...prev, description: e.target.value }))
                 }
                 className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-2 text-white outline-none"
-                placeholder="Descreva o que inclui no plano"
+                placeholder={t(
+                  "PLANS_DESCRIPTION_PLACEHOLDER_THIAGOIAZZETTI",
+                  "Descreva o que inclui no plano",
+                )}
               />
             </label>
 
@@ -366,7 +446,7 @@ export default function PlansPage({ mode = "public" }) {
                   setForm((prev) => ({ ...prev, isActive: e.target.checked }))
                 }
               />
-              Plano ativo
+              {t("PLANS_ACTIVE_LABEL_THIAGOIAZZETTI", "Plano ativo")}
             </label>
 
             <div className="md:col-span-2">
@@ -377,10 +457,13 @@ export default function PlansPage({ mode = "public" }) {
                   className="rounded-2xl bg-[#b5f03c] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
                 >
                   {saving
-                    ? "Salvando..."
+                    ? t("PLANS_SAVING_THIAGOIAZZETTI", "Salvando...")
                     : editingPlanId
-                      ? "Salvar alteracoes"
-                      : "Criar plano"}
+                      ? t(
+                          "PLANS_SAVE_CHANGES_THIAGOIAZZETTI",
+                          "Salvar alteracoes",
+                        )
+                      : t("PLANS_CREATE_BUTTON_THIAGOIAZZETTI", "Criar plano")}
                 </button>
 
                 {editingPlanId ? (
@@ -390,7 +473,7 @@ export default function PlansPage({ mode = "public" }) {
                     disabled={saving}
                     className="rounded-2xl border border-red-400/45 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-200 transition hover:bg-red-500/20 disabled:opacity-60"
                   >
-                    Excluir plano
+                    {t("PLANS_DELETE_BUTTON_THIAGOIAZZETTI", "Excluir plano")}
                   </button>
                 ) : null}
               </div>
@@ -402,13 +485,16 @@ export default function PlansPage({ mode = "public" }) {
       {loading ? (
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-white/65">
           <Loader2 className="animate-spin text-[#b5f03c]" size={18} />
-          Carregando planos...
+          {t("PLANS_LOADING_THIAGOIAZZETTI", "Carregando planos...")}
         </div>
       ) : null}
 
       {!loading && plans.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-8 text-sm text-white/65">
-          Nenhum plano de assinatura encontrado para esse tenant.
+          {t(
+            "PLANS_EMPTY_THIAGOIAZZETTI",
+            "Nenhum plano de assinatura encontrado para esse tenant.",
+          )}
         </div>
       ) : null}
 
@@ -420,6 +506,7 @@ export default function PlansPage({ mode = "public" }) {
             onSelect={handleSelect}
             selected={selectedPlanId === plan.id}
             actionLabel={actionLabel}
+            t={t}
           />
         ))}
       </section>
@@ -430,14 +517,19 @@ export default function PlansPage({ mode = "public" }) {
           plan={selectedPlan}
           personalId={recurringPersonalId}
           onSuccess={() => {
-            setMessage(`Assinatura do plano ${selectedPlan.name} criada com sucesso.`);
+            setMessage(
+              `${t("PLANS_SUBSCRIPTION_SUCCESS_PREFIX_THIAGOIAZZETTI", "Assinatura do plano")} ${selectedPlan.name} ${t("PLANS_SUBSCRIPTION_SUCCESS_SUFFIX_THIAGOIAZZETTI", "criada com sucesso.")}`,
+            );
           }}
         />
       ) : null}
 
       {!isAdminMode && (!user || user.role !== "ALUNO") ? (
         <section className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-white/70">
-          O checkout recorrente fica disponivel apos o login do aluno. Se ainda nao tiver conta, faca seu cadastro vinculado ao tenant e volte para escolher o plano.
+          {t(
+            "PLANS_CHECKOUT_HINT_THIAGOIAZZETTI",
+            "O checkout recorrente fica disponivel apos o login do aluno. Se ainda nao tiver conta, faca seu cadastro vinculado ao tenant e volte para escolher o plano.",
+          )}
         </section>
       ) : null}
     </main>

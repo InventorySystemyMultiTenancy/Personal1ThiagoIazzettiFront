@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { confirmAgendaAttendance, listMyAgendaEvents } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
+import { useI18n } from "../contexts/I18nContext.jsx";
 
 function eventTone(type) {
   if (type === "TREINO")
@@ -50,6 +51,7 @@ function sameDay(a, b) {
 }
 
 export default function ClientAgendaPage() {
+  const { t, locale } = useI18n();
   const { tenantId } = useTenant();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,11 +74,11 @@ export default function ClientAgendaPage() {
 
   const monthLabel = useMemo(
     () =>
-      new Intl.DateTimeFormat("pt-BR", {
+      new Intl.DateTimeFormat(locale || "pt-BR", {
         month: "long",
         year: "numeric",
       }).format(monthCursor),
-    [monthCursor],
+    [monthCursor, locale],
   );
 
   const calendarDays = useMemo(() => {
@@ -104,7 +106,13 @@ export default function ClientAgendaPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          setMessage(error?.message || "Nao foi possivel carregar agenda");
+          setMessage(
+            error?.message ||
+              t(
+                "CLIENT_AGENDA_ERROR_LOAD_THIAGOIAZZETTI",
+                "Nao foi possivel carregar agenda",
+              ),
+          );
         }
       } finally {
         if (!cancelled) {
@@ -141,22 +149,33 @@ export default function ClientAgendaPage() {
       map.get(key).push(event);
     });
     return Array.from(map.entries()).map(([key, items]) => ({
-      dayLabel: new Intl.DateTimeFormat("pt-BR", {
+      dayLabel: new Intl.DateTimeFormat(locale || "pt-BR", {
         weekday: "long",
         day: "2-digit",
         month: "2-digit",
       }).format(new Date(key)),
       items,
     }));
-  }, [events]);
+  }, [events, locale]);
 
   const handleConfirm = async (eventId, status = "CONFIRMADO") => {
     try {
       const updated = await confirmAgendaAttendance(eventId, status, tenantId);
       setEvents((prev) => prev.map((ev) => (ev.id === eventId ? updated : ev)));
-      setMessage("Presenca atualizada");
+      setMessage(
+        t(
+          "CLIENT_AGENDA_ATTENDANCE_UPDATED_THIAGOIAZZETTI",
+          "Presenca atualizada",
+        ),
+      );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel confirmar presenca");
+      setMessage(
+        error?.message ||
+          t(
+            "CLIENT_AGENDA_ATTENDANCE_ERROR_THIAGOIAZZETTI",
+            "Nao foi possivel confirmar presenca",
+          ),
+      );
     }
   };
 
@@ -166,14 +185,19 @@ export default function ClientAgendaPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-              Agenda do aluno
+              {t("CLIENT_AGENDA_LABEL_THIAGOIAZZETTI", "Agenda do aluno")}
             </p>
             <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
-              Seus horarios e orientacoes
+              {t(
+                "CLIENT_AGENDA_TITLE_THIAGOIAZZETTI",
+                "Seus horarios e orientacoes",
+              )}
             </h1>
             <p className="mt-3 text-sm text-white/68">
-              Aqui aparecem os compromissos que seu personal cadastrou para
-              voce, incluindo treino e dieta.
+              {t(
+                "CLIENT_AGENDA_SUBTITLE_THIAGOIAZZETTI",
+                "Aqui aparecem os compromissos que seu personal cadastrou para voce, incluindo treino e dieta.",
+              )}
             </p>
           </div>
           <CalendarDays className="text-[#b5f03c]" size={28} />
@@ -188,11 +212,14 @@ export default function ClientAgendaPage() {
 
       {loading ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
-          Carregando agenda...
+          {t("CLIENT_AGENDA_LOADING_THIAGOIAZZETTI", "Carregando agenda...")}
         </div>
       ) : grouped.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
-          Nenhum evento na agenda por enquanto.
+          {t(
+            "CLIENT_AGENDA_EMPTY_THIAGOIAZZETTI",
+            "Nenhum evento na agenda por enquanto.",
+          )}
         </div>
       ) : (
         <>
@@ -227,7 +254,15 @@ export default function ClientAgendaPage() {
               </button>
             </div>
             <div className="grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-[0.08em] text-white/45">
-              {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map((d) => (
+              {[
+                t("WEEKDAY_SUN_THIAGOIAZZETTI", "Dom"),
+                t("WEEKDAY_MON_THIAGOIAZZETTI", "Seg"),
+                t("WEEKDAY_TUE_THIAGOIAZZETTI", "Ter"),
+                t("WEEKDAY_WED_THIAGOIAZZETTI", "Qua"),
+                t("WEEKDAY_THU_THIAGOIAZZETTI", "Qui"),
+                t("WEEKDAY_FRI_THIAGOIAZZETTI", "Sex"),
+                t("WEEKDAY_SAT_THIAGOIAZZETTI", "Sab"),
+              ].map((d) => (
                 <div key={d}>{d}</div>
               ))}
             </div>
@@ -253,7 +288,7 @@ export default function ClientAgendaPage() {
                           className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[10px] text-white/80"
                         >
                           {new Date(event.startsAt).toLocaleTimeString(
-                            "pt-BR",
+                            locale || "pt-BR",
                             { hour: "2-digit", minute: "2-digit" },
                           )}{" "}
                           {event.title}
@@ -261,7 +296,8 @@ export default function ClientAgendaPage() {
                       ))}
                       {dayEvents.length > 3 ? (
                         <p className="text-[10px] text-white/55">
-                          +{dayEvents.length - 3} eventos
+                          +{dayEvents.length - 3}{" "}
+                          {t("CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI", "eventos")}
                         </p>
                       ) : null}
                     </div>
@@ -328,7 +364,10 @@ export default function ClientAgendaPage() {
                         className="inline-flex items-center gap-2 rounded-lg border border-emerald-400/35 px-3 py-1.5 text-xs text-emerald-200"
                       >
                         <CheckCircle2 size={13} />
-                        Confirmar presenca
+                        {t(
+                          "CLIENT_AGENDA_CONFIRM_ATTENDANCE_THIAGOIAZZETTI",
+                          "Confirmar presenca",
+                        )}
                       </button>
                     </div>
                   </div>

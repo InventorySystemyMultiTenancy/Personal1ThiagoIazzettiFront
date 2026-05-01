@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronLeft,
@@ -18,6 +18,7 @@ import {
   updateAgendaEvent,
 } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
+import { useI18n } from "../contexts/I18nContext.jsx";
 
 function eventTone(type) {
   if (type === "TREINO")
@@ -66,6 +67,7 @@ function sameDay(a, b) {
 }
 
 export default function AdminAgendaPage() {
+  const { t, locale } = useI18n();
   const { tenantId } = useTenant();
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -96,11 +98,11 @@ export default function AdminAgendaPage() {
 
   const monthLabel = useMemo(
     () =>
-      new Intl.DateTimeFormat("pt-BR", {
+      new Intl.DateTimeFormat(locale || "pt-BR", {
         month: "long",
         year: "numeric",
       }).format(monthCursor),
-    [monthCursor],
+    [monthCursor, locale],
   );
 
   const monthRange = useMemo(() => {
@@ -195,7 +197,13 @@ export default function AdminAgendaPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          setMessage(error?.message || "Nao foi possivel carregar agenda");
+          setMessage(
+            error?.message ||
+              t(
+                "ADMIN_AGENDA_ERROR_LOAD_THIAGOIAZZETTI",
+                "Nao foi possivel carregar agenda",
+              ),
+          );
         }
       } finally {
         if (!cancelled) {
@@ -288,7 +296,12 @@ export default function AdminAgendaPage() {
     setMessage("");
 
     if (!form.alunoId || !form.title.trim() || !form.startsAt) {
-      setMessage("Aluno, titulo e horario inicial sao obrigatorios");
+      setMessage(
+        t(
+          "ADMIN_AGENDA_REQUIRED_FIELDS_THIAGOIAZZETTI",
+          "Aluno, titulo e horario inicial sao obrigatorios",
+        ),
+      );
       return;
     }
 
@@ -312,15 +325,28 @@ export default function AdminAgendaPage() {
         setEvents((prev) =>
           prev.map((ev) => (ev.id === editingId ? updated : ev)),
         );
-        setMessage("Evento atualizado com sucesso");
+        setMessage(
+          t(
+            "ADMIN_AGENDA_EVENT_UPDATED_THIAGOIAZZETTI",
+            "Evento atualizado com sucesso",
+          ),
+        );
       } else {
         await createAgendaEvent(payload, tenantId);
-        setMessage("Evento criado com sucesso");
+        setMessage(
+          t(
+            "ADMIN_AGENDA_EVENT_CREATED_THIAGOIAZZETTI",
+            "Evento criado com sucesso",
+          ),
+        );
       }
       resetForm();
       await loadEvents(form.alunoId);
     } catch (error) {
-      setMessage(error?.message || "Falha ao salvar evento");
+      setMessage(
+        error?.message ||
+          t("ADMIN_AGENDA_SAVE_ERROR_THIAGOIAZZETTI", "Falha ao salvar evento"),
+      );
     }
   };
 
@@ -344,14 +370,27 @@ export default function AdminAgendaPage() {
   };
 
   const handleDelete = async (eventId) => {
-    const ok = window.confirm("Excluir este evento da agenda?");
+    const ok = window.confirm(
+      t(
+        "ADMIN_AGENDA_CONFIRM_DELETE_THIAGOIAZZETTI",
+        "Excluir este evento da agenda?",
+      ),
+    );
     if (!ok) return;
     try {
       await deleteAgendaEvent(eventId, tenantId);
       setEvents((prev) => prev.filter((ev) => ev.id !== eventId));
-      setMessage("Evento removido");
+      setMessage(
+        t("ADMIN_AGENDA_EVENT_DELETED_THIAGOIAZZETTI", "Evento removido"),
+      );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel excluir evento");
+      setMessage(
+        error?.message ||
+          t(
+            "ADMIN_AGENDA_DELETE_ERROR_THIAGOIAZZETTI",
+            "Nao foi possivel excluir evento",
+          ),
+      );
     }
   };
 
@@ -372,13 +411,16 @@ export default function AdminAgendaPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-              Agenda
+              {t("ADMIN_AGENDA_LABEL_THIAGOIAZZETTI", "Agenda")}
             </p>
             <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
-              Agenda do Personal
+              {t("ADMIN_AGENDA_TITLE_THIAGOIAZZETTI", "Agenda do Personal")}
             </h1>
             <p className="mt-3 text-sm text-white/68">
-              Calendario mensal, recorrencia semanal/mensal e presenca do aluno.
+              {t(
+                "ADMIN_AGENDA_SUBTITLE_THIAGOIAZZETTI",
+                "Calendario mensal, recorrencia semanal/mensal e presenca do aluno.",
+              )}
             </p>
           </div>
           <CalendarDays className="text-[#b5f03c]" size={28} />
@@ -420,7 +462,15 @@ export default function AdminAgendaPage() {
           </button>
         </div>
         <div className="grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-[0.08em] text-white/45">
-          {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map((d) => (
+          {[
+            t("WEEKDAY_SUN_THIAGOIAZZETTI", "Dom"),
+            t("WEEKDAY_MON_THIAGOIAZZETTI", "Seg"),
+            t("WEEKDAY_TUE_THIAGOIAZZETTI", "Ter"),
+            t("WEEKDAY_WED_THIAGOIAZZETTI", "Qua"),
+            t("WEEKDAY_THU_THIAGOIAZZETTI", "Qui"),
+            t("WEEKDAY_FRI_THIAGOIAZZETTI", "Sex"),
+            t("WEEKDAY_SAT_THIAGOIAZZETTI", "Sab"),
+          ].map((d) => (
             <div key={d}>{d}</div>
           ))}
         </div>
@@ -445,16 +495,20 @@ export default function AdminAgendaPage() {
                       key={event.id}
                       className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[10px] text-white/80"
                     >
-                      {new Date(event.startsAt).toLocaleTimeString("pt-BR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}{" "}
+                      {new Date(event.startsAt).toLocaleTimeString(
+                        locale || "pt-BR",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}{" "}
                       {event.title}
                     </div>
                   ))}
                   {dayEvents.length > 3 ? (
                     <p className="text-[10px] text-white/55">
-                      +{dayEvents.length - 3} eventos
+                      +{dayEvents.length - 3}{" "}
+                      {t("CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI", "eventos")}
                     </p>
                   ) : null}
                 </div>
@@ -467,11 +521,16 @@ export default function AdminAgendaPage() {
       <section className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
         <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
           <h2 className="font-title text-2xl text-[#b5f03c]">
-            {editingId ? "Editar evento" : "Novo evento"}
+            {editingId
+              ? t(
+                  "ADMIN_AGENDA_EDIT_EVENT_TITLE_THIAGOIAZZETTI",
+                  "Editar evento",
+                )
+              : t("ADMIN_AGENDA_NEW_EVENT_TITLE_THIAGOIAZZETTI", "Novo evento")}
           </h2>
           <form className="mt-5 space-y-4" onSubmit={handleSave}>
             <label className="block text-sm text-white/70">
-              Aluno
+              {t("ADMIN_AGENDA_STUDENT_LABEL_THIAGOIAZZETTI", "Aluno")}
               <select
                 value={form.alunoId}
                 onChange={(e) =>
@@ -479,7 +538,9 @@ export default function AdminAgendaPage() {
                 }
                 className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
               >
-                <option value="">Selecione</option>
+                <option value="">
+                  {t("ADMIN_AGENDA_SELECT_STUDENT_THIAGOIAZZETTI", "Selecione")}
+                </option>
                 {students.map((student) => (
                   <option key={student.id} value={student.id}>
                     {student.fullName}
@@ -489,7 +550,7 @@ export default function AdminAgendaPage() {
             </label>
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-sm text-white/70">
-                Tipo
+                {t("ADMIN_AGENDA_TYPE_LABEL_THIAGOIAZZETTI", "Tipo")}
                 <select
                   value={form.type}
                   onChange={(e) =>
@@ -497,15 +558,25 @@ export default function AdminAgendaPage() {
                   }
                   className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
                 >
-                  <option value="TREINO">Treino</option>
-                  <option value="DIETA">Dieta</option>
-                  <option value="CONSULTA">Consulta</option>
-                  <option value="CHECKIN">Check-in</option>
-                  <option value="OUTRO">Outro</option>
+                  <option value="TREINO">
+                    {t("ADMIN_AGENDA_TYPE_WORKOUT_THIAGOIAZZETTI", "Treino")}
+                  </option>
+                  <option value="DIETA">
+                    {t("ADMIN_AGENDA_TYPE_DIET_THIAGOIAZZETTI", "Dieta")}
+                  </option>
+                  <option value="CONSULTA">
+                    {t("ADMIN_AGENDA_TYPE_CONSULT_THIAGOIAZZETTI", "Consulta")}
+                  </option>
+                  <option value="CHECKIN">
+                    {t("ADMIN_AGENDA_TYPE_CHECKIN_THIAGOIAZZETTI", "Check-in")}
+                  </option>
+                  <option value="OUTRO">
+                    {t("ADMIN_AGENDA_TYPE_OTHER_THIAGOIAZZETTI", "Outro")}
+                  </option>
                 </select>
               </label>
               <label className="block text-sm text-white/70">
-                Presenca
+                {t("ADMIN_AGENDA_ATTENDANCE_LABEL_THIAGOIAZZETTI", "Presenca")}
                 <select
                   value={form.attendanceStatus}
                   onChange={(e) =>
@@ -516,14 +587,26 @@ export default function AdminAgendaPage() {
                   }
                   className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
                 >
-                  <option value="PENDENTE">Pendente</option>
-                  <option value="CONFIRMADO">Confirmado</option>
-                  <option value="FALTOU">Faltou</option>
+                  <option value="PENDENTE">
+                    {t(
+                      "ADMIN_AGENDA_STATUS_PENDING_THIAGOIAZZETTI",
+                      "Pendente",
+                    )}
+                  </option>
+                  <option value="CONFIRMADO">
+                    {t(
+                      "ADMIN_AGENDA_STATUS_CONFIRMED_THIAGOIAZZETTI",
+                      "Confirmado",
+                    )}
+                  </option>
+                  <option value="FALTOU">
+                    {t("ADMIN_AGENDA_STATUS_MISSED_THIAGOIAZZETTI", "Faltou")}
+                  </option>
                 </select>
               </label>
             </div>
             <label className="block text-sm text-white/70">
-              Titulo
+              {t("ADMIN_AGENDA_TITLE_FIELD_THIAGOIAZZETTI", "Titulo")}
               <input
                 value={form.title}
                 onChange={(e) =>
@@ -533,7 +616,7 @@ export default function AdminAgendaPage() {
               />
             </label>
             <label className="block text-sm text-white/70">
-              Descricao
+              {t("ADMIN_AGENDA_DESCRIPTION_LABEL_THIAGOIAZZETTI", "Descricao")}
               <textarea
                 rows={3}
                 value={form.description}
@@ -545,7 +628,7 @@ export default function AdminAgendaPage() {
             </label>
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-sm text-white/70">
-                Inicio
+                {t("ADMIN_AGENDA_START_LABEL_THIAGOIAZZETTI", "Inicio")}
                 <input
                   type="datetime-local"
                   value={form.startsAt}
@@ -556,7 +639,7 @@ export default function AdminAgendaPage() {
                 />
               </label>
               <label className="block text-sm text-white/70">
-                Fim
+                {t("ADMIN_AGENDA_END_LABEL_THIAGOIAZZETTI", "Fim")}
                 <input
                   type="datetime-local"
                   value={form.endsAt}
@@ -569,7 +652,10 @@ export default function AdminAgendaPage() {
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-sm text-white/70">
-                Recorrencia
+                {t(
+                  "ADMIN_AGENDA_RECURRENCE_LABEL_THIAGOIAZZETTI",
+                  "Recorrencia",
+                )}
                 <select
                   value={form.recurrence}
                   onChange={(e) =>
@@ -577,13 +663,28 @@ export default function AdminAgendaPage() {
                   }
                   className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
                 >
-                  <option value="NONE">Nao repetir</option>
-                  <option value="WEEKLY">Semanal</option>
-                  <option value="MONTHLY">Mensal</option>
+                  <option value="NONE">
+                    {t(
+                      "ADMIN_AGENDA_RECURRENCE_NONE_THIAGOIAZZETTI",
+                      "Nao repetir",
+                    )}
+                  </option>
+                  <option value="WEEKLY">
+                    {t(
+                      "ADMIN_AGENDA_RECURRENCE_WEEKLY_THIAGOIAZZETTI",
+                      "Semanal",
+                    )}
+                  </option>
+                  <option value="MONTHLY">
+                    {t(
+                      "ADMIN_AGENDA_RECURRENCE_MONTHLY_THIAGOIAZZETTI",
+                      "Mensal",
+                    )}
+                  </option>
                 </select>
               </label>
               <label className="block text-sm text-white/70">
-                Repetir ate
+                {t("ADMIN_AGENDA_REPEAT_UNTIL_THIAGOIAZZETTI", "Repetir ate")}
                 <input
                   type="datetime-local"
                   value={form.recurrenceUntil}
@@ -599,7 +700,10 @@ export default function AdminAgendaPage() {
               </label>
             </div>
             <label className="block text-sm text-white/70">
-              Treino relacionado
+              {t(
+                "ADMIN_AGENDA_RELATED_WORKOUT_THIAGOIAZZETTI",
+                "Treino relacionado",
+              )}
               <select
                 value={form.workoutPlanId}
                 onChange={(e) =>
@@ -610,7 +714,12 @@ export default function AdminAgendaPage() {
                 }
                 className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
               >
-                <option value="">Sem treino vinculado</option>
+                <option value="">
+                  {t(
+                    "ADMIN_AGENDA_NO_WORKOUT_THIAGOIAZZETTI",
+                    "Sem treino vinculado",
+                  )}
+                </option>
                 {workouts.map((workout) => (
                   <option key={workout.id} value={workout.id}>
                     {workout.title}
@@ -619,7 +728,10 @@ export default function AdminAgendaPage() {
               </select>
             </label>
             <label className="block text-sm text-white/70">
-              Dieta / orientacoes
+              {t(
+                "ADMIN_AGENDA_DIET_NOTES_LABEL_THIAGOIAZZETTI",
+                "Dieta / orientacoes",
+              )}
               <textarea
                 rows={3}
                 value={form.dietNotes}
@@ -635,7 +747,15 @@ export default function AdminAgendaPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-[#b5f03c] px-5 py-3 font-semibold text-black"
               >
                 <Save size={16} />
-                {editingId ? "Salvar alteracoes" : "Criar evento"}
+                {editingId
+                  ? t(
+                      "ADMIN_AGENDA_SAVE_CHANGES_THIAGOIAZZETTI",
+                      "Salvar alteracoes",
+                    )
+                  : t(
+                      "ADMIN_AGENDA_CREATE_EVENT_THIAGOIAZZETTI",
+                      "Criar evento",
+                    )}
               </button>
               {editingId ? (
                 <button
@@ -643,7 +763,7 @@ export default function AdminAgendaPage() {
                   onClick={resetForm}
                   className="rounded-xl border border-white/15 px-5 py-3 text-sm text-white/70"
                 >
-                  Cancelar
+                  {t("ADMIN_AGENDA_CANCEL_THIAGOIAZZETTI", "Cancelar")}
                 </button>
               ) : null}
             </div>
@@ -652,19 +772,28 @@ export default function AdminAgendaPage() {
 
         <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
           <h2 className="font-title text-2xl text-[#b5f03c]">
-            Eventos ({events.length})
+            {t("ADMIN_AGENDA_EVENTS_TITLE_THIAGOIAZZETTI", "Eventos")} (
+            {events.length})
           </h2>
           <p className="mt-2 text-sm text-white/60">
             {selectedStudent
-              ? `Aluno selecionado: ${selectedStudent.fullName}`
-              : "Mostrando agenda geral"}
+              ? `${t("ADMIN_AGENDA_SELECTED_STUDENT_THIAGOIAZZETTI", "Aluno selecionado")}: ${selectedStudent.fullName}`
+              : t(
+                  "ADMIN_AGENDA_GENERAL_SCHEDULE_THIAGOIAZZETTI",
+                  "Mostrando agenda geral",
+                )}
           </p>
           <div className="mt-5 space-y-3">
             {loading ? (
-              <p className="text-sm text-white/60">Carregando...</p>
+              <p className="text-sm text-white/60">
+                {t("ADMIN_AGENDA_LOADING_THIAGOIAZZETTI", "Carregando...")}
+              </p>
             ) : events.length === 0 ? (
               <p className="rounded-2xl border border-white/10 bg-black/30 px-4 py-5 text-sm text-white/65">
-                Nenhum evento cadastrado.
+                {t(
+                  "ADMIN_AGENDA_EMPTY_THIAGOIAZZETTI",
+                  "Nenhum evento cadastrado.",
+                )}
               </p>
             ) : (
               events.map((event) => (
@@ -692,14 +821,17 @@ export default function AdminAgendaPage() {
                         onClick={() => handleEdit(event)}
                         className="rounded-lg border border-white/10 px-3 py-1 text-xs text-white/70 hover:text-white"
                       >
-                        Editar
+                        {t("ADMIN_AGENDA_EDIT_BUTTON_THIAGOIAZZETTI", "Editar")}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(event.id)}
                         className="rounded-lg border border-red-400/30 px-3 py-1 text-xs text-red-200"
                       >
-                        Excluir
+                        {t(
+                          "ADMIN_AGENDA_DELETE_BUTTON_THIAGOIAZZETTI",
+                          "Excluir",
+                        )}
                       </button>
                     </div>
                   </div>

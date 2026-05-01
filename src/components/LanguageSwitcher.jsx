@@ -1,4 +1,3 @@
-import React from "react";
 import { Languages } from "lucide-react";
 import { useI18n } from "../contexts/I18nContext.jsx";
 
