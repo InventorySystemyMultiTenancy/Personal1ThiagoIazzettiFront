@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -11,6 +11,86 @@ import {
 import { confirmAgendaAttendance, listMyAgendaEvents } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
+
+const CLIENT_AGENDA_FALLBACKS = {
+  "en-US": {
+    CLIENT_AGENDA_LABEL_THIAGOIAZZETTI: "Student schedule",
+    CLIENT_AGENDA_TITLE_THIAGOIAZZETTI: "Your schedule and guidance",
+    CLIENT_AGENDA_SUBTITLE_THIAGOIAZZETTI:
+      "Here you can see the appointments your personal trainer registered for you, including workout and diet.",
+    CLIENT_AGENDA_LOADING_THIAGOIAZZETTI: "Loading schedule...",
+    CLIENT_AGENDA_EMPTY_THIAGOIAZZETTI: "No events in schedule yet.",
+    CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI: "events",
+    CLIENT_AGENDA_ERROR_LOAD_THIAGOIAZZETTI: "Could not load schedule",
+    CLIENT_AGENDA_ATTENDANCE_UPDATED_THIAGOIAZZETTI: "Attendance updated",
+    CLIENT_AGENDA_ATTENDANCE_ERROR_THIAGOIAZZETTI:
+      "Could not confirm attendance",
+    CLIENT_AGENDA_CONFIRM_ATTENDANCE_THIAGOIAZZETTI: "Confirm attendance",
+    WEEKDAY_SUN_THIAGOIAZZETTI: "Sun",
+    WEEKDAY_MON_THIAGOIAZZETTI: "Mon",
+    WEEKDAY_TUE_THIAGOIAZZETTI: "Tue",
+    WEEKDAY_WED_THIAGOIAZZETTI: "Wed",
+    WEEKDAY_THU_THIAGOIAZZETTI: "Thu",
+    WEEKDAY_FRI_THIAGOIAZZETTI: "Fri",
+    WEEKDAY_SAT_THIAGOIAZZETTI: "Sat",
+  },
+  "it-IT": {
+    CLIENT_AGENDA_LABEL_THIAGOIAZZETTI: "Agenda studente",
+    CLIENT_AGENDA_TITLE_THIAGOIAZZETTI: "I tuoi orari e indicazioni",
+    CLIENT_AGENDA_SUBTITLE_THIAGOIAZZETTI:
+      "Qui compaiono gli impegni registrati dal tuo personal trainer, inclusi allenamento e dieta.",
+    CLIENT_AGENDA_LOADING_THIAGOIAZZETTI: "Caricamento agenda...",
+    CLIENT_AGENDA_EMPTY_THIAGOIAZZETTI: "Nessun evento in agenda per ora.",
+    CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI: "eventi",
+    CLIENT_AGENDA_ERROR_LOAD_THIAGOIAZZETTI: "Impossibile caricare agenda",
+    CLIENT_AGENDA_ATTENDANCE_UPDATED_THIAGOIAZZETTI: "Presenza aggiornata",
+    CLIENT_AGENDA_ATTENDANCE_ERROR_THIAGOIAZZETTI:
+      "Impossibile confermare la presenza",
+    CLIENT_AGENDA_CONFIRM_ATTENDANCE_THIAGOIAZZETTI: "Conferma presenza",
+    WEEKDAY_SUN_THIAGOIAZZETTI: "Dom",
+    WEEKDAY_MON_THIAGOIAZZETTI: "Lun",
+    WEEKDAY_TUE_THIAGOIAZZETTI: "Mar",
+    WEEKDAY_WED_THIAGOIAZZETTI: "Mer",
+    WEEKDAY_THU_THIAGOIAZZETTI: "Gio",
+    WEEKDAY_FRI_THIAGOIAZZETTI: "Ven",
+    WEEKDAY_SAT_THIAGOIAZZETTI: "Sab",
+  },
+  "es-ES": {
+    CLIENT_AGENDA_LABEL_THIAGOIAZZETTI: "Agenda del alumno",
+    CLIENT_AGENDA_TITLE_THIAGOIAZZETTI: "Tus horarios y orientaciones",
+    CLIENT_AGENDA_SUBTITLE_THIAGOIAZZETTI:
+      "Aqui aparecen los compromisos que tu personal trainer registró para ti, incluyendo entrenamiento y dieta.",
+    CLIENT_AGENDA_LOADING_THIAGOIAZZETTI: "Cargando agenda...",
+    CLIENT_AGENDA_EMPTY_THIAGOIAZZETTI:
+      "No hay eventos en la agenda por ahora.",
+    CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI: "eventos",
+    CLIENT_AGENDA_ERROR_LOAD_THIAGOIAZZETTI: "No fue posible cargar agenda",
+    CLIENT_AGENDA_ATTENDANCE_UPDATED_THIAGOIAZZETTI: "Asistencia actualizada",
+    CLIENT_AGENDA_ATTENDANCE_ERROR_THIAGOIAZZETTI:
+      "No fue posible confirmar asistencia",
+    CLIENT_AGENDA_CONFIRM_ATTENDANCE_THIAGOIAZZETTI: "Confirmar asistencia",
+    WEEKDAY_SUN_THIAGOIAZZETTI: "Dom",
+    WEEKDAY_MON_THIAGOIAZZETTI: "Lun",
+    WEEKDAY_TUE_THIAGOIAZZETTI: "Mar",
+    WEEKDAY_WED_THIAGOIAZZETTI: "Mié",
+    WEEKDAY_THU_THIAGOIAZZETTI: "Jue",
+    WEEKDAY_FRI_THIAGOIAZZETTI: "Vie",
+    WEEKDAY_SAT_THIAGOIAZZETTI: "Sáb",
+  },
+};
+
+function translateClientAgenda(rawT, locale, key, fallback = "") {
+  const remoteValue = rawT(key, "");
+  const localValue = CLIENT_AGENDA_FALLBACKS[locale]?.[key];
+  const isLikelyUntranslated =
+    locale !== "pt-BR" && locale !== "pt-PT" && remoteValue === fallback;
+
+  if (isLikelyUntranslated && localValue) {
+    return localValue;
+  }
+
+  return remoteValue || localValue || fallback || key;
+}
 
 function eventTone(type) {
   if (type === "TREINO")
@@ -51,7 +131,11 @@ function sameDay(a, b) {
 }
 
 export default function ClientAgendaPage() {
-  const { t, locale } = useI18n();
+  const { t: rawT, locale } = useI18n();
+  const t = useCallback(
+    (key, fallback = "") => translateClientAgenda(rawT, locale, key, fallback),
+    [rawT, locale],
+  );
   const { tenantId } = useTenant();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
