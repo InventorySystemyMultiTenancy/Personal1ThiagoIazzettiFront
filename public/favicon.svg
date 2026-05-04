@@ -1,0 +1,59 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="96" y1="96" x2="416" y2="416" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F2E3B3"/>
+      <stop offset="0.52" stop-color="#D9C179"/>
+      <stop offset="1" stop-color="#D9B341"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="512" height="512" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.851 0 0 0 0 0.702 0 0 0 0 0.255 0 0 0 0.45 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" fill="white"/>
+  <g filter="url(#shadow)">
+    <circle cx="256" cy="256" r="220" stroke="url(#g1)" stroke-width="14"/>
+    <circle cx="256" cy="256" r="176" stroke="url(#g1)" stroke-width="8" opacity="0.9"/>
+
+    <path d="M132 246C140 174 201 116 276 116C318 116 356 131 385 157" stroke="url(#g1)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M127 286C137 357 199 410 276 410C322 410 362 393 390 364" stroke="url(#g1)" stroke-width="10" stroke-linecap="round"/>
+
+    <g transform="translate(126 118) rotate(28 130 130)" fill="url(#g1)" stroke="#D9A74A" stroke-width="8" stroke-linejoin="round">
+      <rect x="70" y="34" width="74" height="48" rx="10"/>
+      <rect x="58" y="82" width="98" height="42" rx="10"/>
+      <rect x="74" y="124" width="66" height="20" rx="8"/>
+      <rect x="46" y="55" width="20" height="98" rx="10"/>
+      <rect x="150" y="55" width="20" height="98" rx="10"/>
+    </g>
+
+    <g transform="translate(256 118) scale(-1 1) rotate(28 130 130)" fill="url(#g1)" stroke="#D9A74A" stroke-width="8" stroke-linejoin="round">
+      <rect x="70" y="34" width="74" height="48" rx="10"/>
+      <rect x="58" y="82" width="98" height="42" rx="10"/>
+      <rect x="74" y="124" width="66" height="20" rx="8"/>
+      <rect x="46" y="55" width="20" height="98" rx="10"/>
+      <rect x="150" y="55" width="20" height="98" rx="10"/>
+    </g>
+
+    <g transform="translate(126 246) rotate(-28 130 130)" fill="url(#g1)" stroke="#D9A74A" stroke-width="8" stroke-linejoin="round">
+      <rect x="70" y="34" width="74" height="48" rx="10"/>
+      <rect x="58" y="82" width="98" height="42" rx="10"/>
+      <rect x="74" y="124" width="66" height="20" rx="8"/>
+      <rect x="46" y="55" width="20" height="98" rx="10"/>
+      <rect x="150" y="55" width="20" height="98" rx="10"/>
+    </g>
+
+    <g transform="translate(256 246) scale(-1 1) rotate(-28 130 130)" fill="url(#g1)" stroke="#D9A74A" stroke-width="8" stroke-linejoin="round">
+      <rect x="70" y="34" width="74" height="48" rx="10"/>
+      <rect x="58" y="82" width="98" height="42" rx="10"/>
+      <rect x="74" y="124" width="66" height="20" rx="8"/>
+      <rect x="46" y="55" width="20" height="98" rx="10"/>
+      <rect x="150" y="55" width="20" height="98" rx="10"/>
+    </g>
+
+    <text x="256" y="92" text-anchor="middle" fill="#D9B341" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="2">THIAGOIAZZETTI</text>
+    <text x="256" y="450" text-anchor="middle" fill="#D9B341" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="2">PERSONAL PREMIUM</text>
+  </g>
+</svg>
