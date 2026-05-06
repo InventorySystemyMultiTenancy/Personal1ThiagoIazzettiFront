@@ -227,6 +227,7 @@ export default function AdminDashboardPage() {
 
   const stats = useMemo(() => {
     const activePlans = plans.filter((plan) => plan.isActive !== false).length;
+    const activeStudents = students.filter((s) => s.isActive !== false).length;
     const inactiveStudents = students.filter((s) => {
       const lastActivity = new Date(s.lastActivityAt || 0);
       const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
@@ -240,7 +241,7 @@ export default function AdminDashboardPage() {
           "ADMIN_DASH_STAT_ACTIVE_STUDENTS_THIAGOIAZZETTI",
           "Alunos ativos",
         ),
-        value: students.length,
+        value: activeStudents,
         color: "#b5f03c",
       },
       {
