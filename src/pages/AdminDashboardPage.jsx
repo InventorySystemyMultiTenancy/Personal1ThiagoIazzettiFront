@@ -229,7 +229,7 @@ export default function AdminDashboardPage() {
     const activePlans = plans.filter((plan) => plan.isActive !== false).length;
     const activeStudents = students.filter((s) => s.isActive !== false).length;
     const inactiveStudents = students.filter((s) => {
-      const lastActivity = new Date(s.lastActivityAt || 0);
+      const lastActivity = new Date(s.updatedAt || 0);
       const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
       return lastActivity < fiveDaysAgo;
     }).length;
@@ -538,7 +538,7 @@ export default function AdminDashboardPage() {
               </div>
               <div className="space-y-2">
                 {students.filter((s) => {
-                  const lastActivity = new Date(s.lastActivityAt || 0);
+                  const lastActivity = new Date(s.updatedAt || 0);
                   const fiveDaysAgo = new Date(
                     Date.now() - 5 * 24 * 60 * 60 * 1000,
                   );
@@ -553,7 +553,7 @@ export default function AdminDashboardPage() {
                 ) : (
                   students
                     .filter((s) => {
-                      const lastActivity = new Date(s.lastActivityAt || 0);
+                      const lastActivity = new Date(s.updatedAt || 0);
                       const fiveDaysAgo = new Date(
                         Date.now() - 5 * 24 * 60 * 60 * 1000,
                       );
