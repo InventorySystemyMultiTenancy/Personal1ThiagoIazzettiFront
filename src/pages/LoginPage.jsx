@@ -61,7 +61,7 @@ export default function LoginPage() {
         <section className="rounded-[2rem] border border-[#b5f03c]/20 bg-black/50 p-8 shadow-[0_30px_90px_rgba(0,0,0,0.6)] backdrop-blur-md">
           <div className="flex items-center gap-3">
             <img
-              src="/logo.svg"
+              src="/image.png"
               alt="Thiago Iazzetti Personal Premium"
               className="h-12 w-12 rounded-2xl bg-white object-cover p-1"
             />

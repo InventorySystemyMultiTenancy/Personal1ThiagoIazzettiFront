@@ -92,7 +92,7 @@ export default function LandingPage() {
         <nav className="flex items-center justify-between px-6 py-5 lg:px-14">
           <div className="flex items-center gap-3">
             <img
-              src="/logo.svg"
+              src="/image.png"
               alt="Thiago Iazzetti"
               className="h-11 w-11 rounded-full bg-white/10 object-contain p-1"
             />
@@ -350,7 +350,7 @@ export default function LandingPage() {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <img
-                src="/logo.svg"
+                src="/image.png"
                 alt="Thiago Iazzetti"
                 className="h-10 w-10 rounded-full bg-white/10 object-contain p-1"
               />

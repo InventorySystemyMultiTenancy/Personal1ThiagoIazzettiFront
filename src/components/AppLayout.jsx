@@ -105,7 +105,7 @@ export default function AppLayout() {
           <div className="mb-8 flex items-center gap-3 px-2">
             <div className="relative">
               <img
-                src="/logo.svg"
+                src="/image.png"
                 alt="Thiago Iazzetti"
                 className="h-10 w-10 rounded-2xl bg-white/10 object-cover p-0.5"
               />
