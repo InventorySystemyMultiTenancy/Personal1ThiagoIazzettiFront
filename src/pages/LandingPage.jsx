@@ -6,7 +6,7 @@ import { listPublicStudentPlans, formatCurrency } from "../lib/api.js";
 import LanguageSwitcher from "../components/LanguageSwitcher.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
 
-const WHATSAPP_NUMBER = "5511971174080";
+const WHATSAPP_NUMBER = "5511965949300";
 
 function whatsappLink() {
   // wa.me opens native app on mobile and web on desktop
