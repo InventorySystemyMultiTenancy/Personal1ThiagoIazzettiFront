@@ -9,6 +9,8 @@ import {
   AlertCircle,
   CalendarDays,
   Clock3,
+  Bookmark,
+  Play,
 } from "lucide-react";
 import {
   createWorkoutPlan,
@@ -21,6 +23,10 @@ import {
   updateWorkoutPlan,
   listCustomExercises,
   createCustomExercise,
+  listWorkoutTemplates,
+  createWorkoutTemplate,
+  updateWorkoutTemplate,
+  deleteWorkoutTemplate,
 } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
@@ -812,6 +818,10 @@ export default function WorkoutBuilderPage() {
   const [updatingSessionId, setUpdatingSessionId] = useState("");
   const [deletingSessionId, setDeletingSessionId] = useState("");
   const [customExercises, setCustomExercises] = useState([]);
+  const [workoutTemplates, setWorkoutTemplates] = useState([]);
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState("");
   const [workoutForm, setWorkoutForm] = useState({
     title: "",
     objective: "",
@@ -913,8 +923,10 @@ export default function WorkoutBuilderPage() {
 
   const resetWorkoutForm = () => {
     setEditingWorkoutId("");
+    setEditingTemplateId("");
     setWorkoutForm({ title: "", objective: "", phase: "Hipertrofia" });
     setCurrentWorkoutExercises([]);
+    setSaveAsTemplate(false);
   };
 
   useEffect(() => {
@@ -936,6 +948,14 @@ export default function WorkoutBuilderPage() {
             setCustomExercises(Array.isArray(exercises) ? exercises : []);
           } catch (error) {
             console.error("Erro ao carregar exercícios customizados:", error);
+          }
+
+          // Carregar templates de treino
+          try {
+            const templates = await listWorkoutTemplates(tenantId);
+            setWorkoutTemplates(Array.isArray(templates) ? templates : []);
+          } catch (error) {
+            console.error("Erro ao carregar templates de treino:", error);
           }
         }
       } catch (error) {
@@ -1046,6 +1066,46 @@ export default function WorkoutBuilderPage() {
 
     setSaving(true);
     try {
+      // Se estamos editando um template, não criar/atualizar treino do aluno
+      if (editingTemplateId) {
+        const templatePayload = {
+          title: workoutForm.title,
+          objective: workoutForm.objective,
+          items: currentWorkoutExercises.map((exercise, index) => ({
+            exerciseName: exercise.exerciseName,
+            sets: Number(exercise.sets),
+            reps: String(exercise.reps),
+            restSeconds: exercise.restSeconds
+              ? Number(exercise.restSeconds)
+              : null,
+            orderIndex: index,
+          })),
+        };
+
+        try {
+          const updatedTemplate = await updateWorkoutTemplate(
+            editingTemplateId,
+            templatePayload,
+            tenantId,
+          );
+          setWorkoutTemplates((prev) =>
+            prev.map((template) =>
+              template.id === editingTemplateId ? updatedTemplate : template,
+            ),
+          );
+          resetWorkoutForm();
+          setMessage("Template atualizado com sucesso!");
+          setSaving(false);
+          return;
+        } catch (error) {
+          setMessage(
+            error?.message || "Erro ao atualizar template. Tente novamente.",
+          );
+          setSaving(false);
+          return;
+        }
+      }
+
       const payload = {
         alunoId: selectedStudentId,
         title: workoutForm.title,
@@ -1070,6 +1130,36 @@ export default function WorkoutBuilderPage() {
         : await createWorkoutPlan(payload, tenantId);
 
       const normalized = normalizeWorkoutPlan(persistWorkout);
+
+      // Se marcado "Salvar como template", criar template
+      if (saveAsTemplate && !editingWorkoutId) {
+        try {
+          const templatePayload = {
+            title: workoutForm.title,
+            objective: workoutForm.objective,
+            items: currentWorkoutExercises.map((exercise, index) => ({
+              exerciseName: exercise.exerciseName,
+              sets: Number(exercise.sets),
+              reps: String(exercise.reps),
+              restSeconds: exercise.restSeconds
+                ? Number(exercise.restSeconds)
+                : null,
+              orderIndex: index,
+            })),
+          };
+          const newTemplate = await createWorkoutTemplate(
+            templatePayload,
+            tenantId,
+          );
+          setWorkoutTemplates((prev) => [newTemplate, ...prev]);
+          setSaveAsTemplate(false);
+        } catch (error) {
+          console.error(
+            "Erro ao salvar template:",
+            error?.message || "Template não foi salvo",
+          );
+        }
+      }
 
       setWorkouts((prev) =>
         editingWorkoutId
@@ -1136,6 +1226,63 @@ export default function WorkoutBuilderPage() {
       id: Math.random().toString(36).substr(2, 9),
     }));
     setCurrentWorkoutExercises(exercisesWithIds);
+  };
+
+  const handleUseTemplate = (template) => {
+    setWorkoutForm({
+      title: template.title,
+      objective: template.objective,
+      phase: "Hipertrofia", // Default phase
+    });
+    const templatesExercises = Array.isArray(template.items)
+      ? template.items
+      : [];
+    const exercisesWithIds = templatesExercises.map((ex) => ({
+      ...ex,
+      id: Math.random().toString(36).substr(2, 9),
+    }));
+    setCurrentWorkoutExercises(exercisesWithIds);
+    setSaveAsTemplate(false);
+    // Scroll para o topo do formulário
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleEditTemplate = (template) => {
+    setWorkoutForm({
+      title: template.title,
+      objective: template.objective,
+      phase: "Hipertrofia",
+    });
+    const templatesExercises = Array.isArray(template.items)
+      ? template.items
+      : [];
+    const exercisesWithIds = templatesExercises.map((ex) => ({
+      ...ex,
+      id: Math.random().toString(36).substr(2, 9),
+    }));
+    setCurrentWorkoutExercises(exercisesWithIds);
+    setEditingTemplateId(template.id);
+    setSaveAsTemplate(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDeleteTemplate = async (templateId) => {
+    if (!window.confirm("Tem certeza que deseja deletar este template?")) {
+      return;
+    }
+
+    try {
+      await deleteWorkoutTemplate(templateId, tenantId);
+      setWorkoutTemplates((prev) =>
+        prev.filter((template) => template.id !== templateId),
+      );
+      setMessage("Template deletado com sucesso!");
+    } catch (error) {
+      setMessage(
+        error?.message ||
+          "Erro ao deletar template. Tente novamente.",
+      );
+    }
   };
 
   const handleScheduleSessionChange = (sessionId, field, value) => {
@@ -1538,6 +1685,19 @@ export default function WorkoutBuilderPage() {
             </div>
           </div>
 
+          <label className="inline-flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70 transition hover:border-white/20">
+            <input
+              type="checkbox"
+              checked={saveAsTemplate}
+              onChange={(e) => setSaveAsTemplate(e.target.checked)}
+              className="h-4 w-4 rounded border border-white/30 bg-white/5"
+            />
+            {t(
+              "WORKOUT_BUILDER_SAVE_AS_TEMPLATE_THIAGOIAZZETTI",
+              "Salvar como template",
+            )}
+          </label>
+
           <div className="flex flex-wrap gap-3 pt-4">
             <button
               type="button"
@@ -1553,23 +1713,28 @@ export default function WorkoutBuilderPage() {
 
             <button
               type="submit"
-              disabled={saving || !selectedStudentId}
+              disabled={saving || (!selectedStudentId && !editingTemplateId)}
               className="flex-1 rounded-xl bg-[#b5f03c] px-6 py-3 font-semibold text-black transition hover:brightness-110 md:flex-none"
             >
               {saving
                 ? t("DIET_FORM_SAVING_THIAGOIAZZETTI", "Salvando...")
-                : editingWorkoutId
+                : editingTemplateId
                   ? t(
-                      "WORKOUT_BUILDER_UPDATE_BTN_THIAGOIAZZETTI",
-                      "Atualizar Treino",
+                      "WORKOUT_BUILDER_UPDATE_TEMPLATE_BTN_THIAGOIAZZETTI",
+                      "Atualizar Template",
                     )
-                  : t(
-                      "WORKOUT_BUILDER_SAVE_BTN_THIAGOIAZZETTI",
-                      "Salvar Treino",
-                    )}
+                  : editingWorkoutId
+                    ? t(
+                        "WORKOUT_BUILDER_UPDATE_BTN_THIAGOIAZZETTI",
+                        "Atualizar Treino",
+                      )
+                    : t(
+                        "WORKOUT_BUILDER_SAVE_BTN_THIAGOIAZZETTI",
+                        "Salvar Treino",
+                      )}
             </button>
 
-            {editingWorkoutId ? (
+            {editingWorkoutId || editingTemplateId ? (
               <button
                 type="button"
                 onClick={resetWorkoutForm}
@@ -1770,7 +1935,93 @@ export default function WorkoutBuilderPage() {
         </div>
       </article>
 
-      {showExerciseModal && (
+      <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
+        <h2 className="font-title text-2xl text-[#b5f03c]">
+          {t(
+            "WORKOUT_BUILDER_TEMPLATES_TITLE_THIAGOIAZZETTI",
+            "Templates de Treino",
+          )}{" "}
+          ({workoutTemplates.length})
+        </h2>
+
+        <div className="mt-5 space-y-3">
+          {workoutTemplates.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-black/30 px-6 py-8 text-center">
+              <Bookmark className="mx-auto mb-3 text-white/40" size={32} />
+              <p className="text-white/60">
+                {t(
+                  "WORKOUT_BUILDER_NO_TEMPLATES_THIAGOIAZZETTI",
+                  "Nenhum template criado ainda. Marque a opcao 'Salvar como template' ao criar um treino!",
+                )}
+              </p>
+            </div>
+          ) : (
+            workoutTemplates.map((template) => (
+              <div
+                key={template.id}
+                className="rounded-2xl border border-white/10 bg-black/30 p-4"
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="flex-1">
+                    <p className="font-semibold text-white">{template.title}</p>
+                    <p className="mt-1 text-sm text-white/55">
+                      {template.objective}
+                    </p>
+                    {template.items && (
+                      <p className="mt-1 text-xs text-white/40">
+                        {template.items.length}{" "}
+                        {t(
+                          "WORKOUT_BUILDER_EXERCISES_COUNT_THIAGOIAZZETTI",
+                          "exercicios",
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleUseTemplate(template)}
+                      className="rounded-lg border border-[#b5f03c]/50 bg-[#b5f03c]/10 p-2 text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
+                      title="Usar template"
+                    >
+                      <Play size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleEditTemplate(template)}
+                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#b5f03c]"
+                      title="Editar template"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTemplate(template.id)}
+                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-red-400"
+                      title="Deletar template"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {template.items && template.items.length > 0 && (
+                  <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                    {template.items.map((exercise, index) => (
+                      <div key={index} className="text-sm text-white/70">
+                        <span className="font-semibold text-white">
+                          {exercise.exerciseName}
+                        </span>{" "}
+                        • {exercise.sets}x{exercise.reps}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </article>
         <ExerciseSelector
           exerciseLibrary={mergedExerciseLibrary}
           tenantId={tenantId}

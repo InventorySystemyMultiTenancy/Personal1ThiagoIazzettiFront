@@ -560,3 +560,35 @@ export async function deleteCustomExercise(exerciseId, tenantId) {
     tenantId,
   });
 }
+
+// ── Workout Templates ─────────────────────────────────────────────────────────
+
+export async function listWorkoutTemplates(tenantId) {
+  const response = await request("/workout-plans/templates", { tenantId });
+  return Array.isArray(response?.templates) ? response.templates : [];
+}
+
+export async function createWorkoutTemplate(payload, tenantId) {
+  const response = await request("/workout-plans/templates", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.template || response;
+}
+
+export async function updateWorkoutTemplate(templateId, payload, tenantId) {
+  const response = await request(`/workout-plans/templates/${templateId}`, {
+    method: "PATCH",
+    body: payload,
+    tenantId,
+  });
+  return response?.template || response;
+}
+
+export async function deleteWorkoutTemplate(templateId, tenantId) {
+  return request(`/workout-plans/templates/${templateId}`, {
+    method: "DELETE",
+    tenantId,
+  });
+}
