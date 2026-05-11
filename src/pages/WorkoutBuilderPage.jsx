@@ -19,6 +19,8 @@ import {
   scheduleWorkoutPlan,
   updateAgendaEvent,
   updateWorkoutPlan,
+  listCustomExercises,
+  createCustomExercise,
 } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
@@ -480,11 +482,20 @@ const trainingTemplates = [
   },
 ];
 
-function ExerciseSelector({ onAdd, onClose }) {
+function ExerciseSelector({
+  onAdd,
+  onClose,
+  exerciseLibrary,
+  tenantId,
+  onExerciseCreated,
+}) {
   const { t } = useI18n();
   const [selectedGroup, setSelectedGroup] = useState("Peito");
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     exerciseName: "",
+    equipment: "",
     sets: 3,
     reps: 10,
     restSeconds: 60,
@@ -492,11 +503,53 @@ function ExerciseSelector({ onAdd, onClose }) {
 
   const filteredExercises = exerciseLibrary[selectedGroup] || [];
 
-  const handleAddExercise = (e) => {
+  const handleAddExercise = async (e) => {
     e.preventDefault();
     if (formData.exerciseName.trim()) {
+      // Se for um exercício novo, salvar no backend primeiro
+      if (isCreatingNew && formData.equipment.trim()) {
+        setIsSaving(true);
+        try {
+          const newExercise = await createCustomExercise(
+            {
+              name: formData.exerciseName.trim(),
+              muscleGroup: selectedGroup,
+              equipment: formData.equipment.trim(),
+            },
+            tenantId,
+          );
+          onExerciseCreated?.(newExercise);
+        } catch (error) {
+          console.error("Erro ao salvar exercício customizado:", error);
+        } finally {
+          setIsSaving(false);
+        }
+      }
+
       onAdd(formData);
-      setFormData({ exerciseName: "", sets: 3, reps: 10, restSeconds: 60 });
+      setFormData({
+        exerciseName: "",
+        equipment: "",
+        sets: 3,
+        reps: 10,
+        restSeconds: 60,
+      });
+      setIsCreatingNew(false);
+    }
+  };
+
+  const handleSelectChange = (e) => {
+    const value = e.target.value;
+    if (value === "__create_new__") {
+      setIsCreatingNew(true);
+      setFormData((prev) => ({ ...prev, exerciseName: "", equipment: "" }));
+    } else {
+      setIsCreatingNew(false);
+      setFormData((prev) => ({
+        ...prev,
+        exerciseName: value,
+        equipment: "",
+      }));
     }
   };
 
@@ -546,13 +599,8 @@ function ExerciseSelector({ onAdd, onClose }) {
           <label className="block text-sm text-white/70">
             {t("WORKOUT_MODAL_EXERCISE_LABEL_THIAGOIAZZETTI", "Exercicio")}
             <select
-              value={formData.exerciseName}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  exerciseName: e.target.value,
-                }))
-              }
+              value={isCreatingNew ? "__create_new__" : formData.exerciseName}
+              onChange={handleSelectChange}
               className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
             >
               <option value="">
@@ -566,8 +614,61 @@ function ExerciseSelector({ onAdd, onClose }) {
                   {ex.name} ({ex.equipment})
                 </option>
               ))}
+              <option value="__create_new__" className="font-semibold">
+                +{" "}
+                {t(
+                  "WORKOUT_MODAL_CREATE_NEW_EXERCISE_THIAGOIAZZETTI",
+                  "Criar novo exercicio",
+                )}
+              </option>
             </select>
           </label>
+
+          {isCreatingNew && (
+            <>
+              <label className="block text-sm text-white/70">
+                {t(
+                  "WORKOUT_MODAL_EXERCISE_NAME_THIAGOIAZZETTI",
+                  "Nome do exercicio",
+                )}
+                <input
+                  type="text"
+                  placeholder={t(
+                    "WORKOUT_MODAL_EXERCISE_NAME_PLACEHOLDER_THIAGOIAZZETTI",
+                    "Ex: Flexão com peso",
+                  )}
+                  value={formData.exerciseName}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      exerciseName: e.target.value,
+                    }))
+                  }
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#b5f03c]/50"
+                  autoFocus
+                />
+              </label>
+
+              <label className="block text-sm text-white/70">
+                {t("WORKOUT_MODAL_EQUIPMENT_THIAGOIAZZETTI", "Equipamento")}
+                <input
+                  type="text"
+                  placeholder={t(
+                    "WORKOUT_MODAL_EQUIPMENT_PLACEHOLDER_THIAGOIAZZETTI",
+                    "Ex: Barra, Halteres, Máquina",
+                  )}
+                  value={formData.equipment}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      equipment: e.target.value,
+                    }))
+                  }
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#b5f03c]/50"
+                />
+              </label>
+            </>
+          )}
 
           <div className="grid gap-3 md:grid-cols-3">
             <label className="block text-sm text-white/70">
@@ -628,12 +729,18 @@ function ExerciseSelector({ onAdd, onClose }) {
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-[#b5f03c] px-4 py-3 font-semibold text-black transition hover:brightness-110"
+              disabled={isSaving}
+              className="flex-1 rounded-xl bg-[#b5f03c] px-4 py-3 font-semibold text-black transition hover:brightness-110 disabled:opacity-50"
             >
-              {t(
-                "WORKOUT_MODAL_ADD_EXERCISE_BUTTON_THIAGOIAZZETTI",
-                "Adicionar exercicio",
-              )}
+              {isSaving
+                ? t(
+                    "WORKOUT_MODAL_SAVING_EXERCISE_THIAGOIAZZETTI",
+                    "Salvando...",
+                  )
+                : t(
+                    "WORKOUT_MODAL_ADD_EXERCISE_BUTTON_THIAGOIAZZETTI",
+                    "Adicionar exercicio",
+                  )}
             </button>
             <button
               type="button"
@@ -704,6 +811,7 @@ export default function WorkoutBuilderPage() {
   ]);
   const [updatingSessionId, setUpdatingSessionId] = useState("");
   const [deletingSessionId, setDeletingSessionId] = useState("");
+  const [customExercises, setCustomExercises] = useState([]);
   const [workoutForm, setWorkoutForm] = useState({
     title: "",
     objective: "",
@@ -714,6 +822,28 @@ export default function WorkoutBuilderPage() {
     () => students.find((s) => s.id === selectedStudentId) || null,
     [students, selectedStudentId],
   );
+
+  // Mesclar biblioteca de exercícios hardcoded com customizados
+  const mergedExerciseLibrary = useMemo(() => {
+    const merged = { ...exerciseLibrary };
+
+    customExercises.forEach((exercise) => {
+      const group = exercise.muscleGroup;
+      if (!merged[group]) {
+        merged[group] = [];
+      }
+
+      const exists = merged[group].some((ex) => ex.name === exercise.name);
+      if (!exists) {
+        merged[group].push({
+          name: exercise.name,
+          equipment: exercise.equipment,
+        });
+      }
+    });
+
+    return merged;
+  }, [customExercises]);
 
   const toEditableSession = (session, fallbackTitle, index) => ({
     id: session.id || `existing-${index}`,
@@ -798,6 +928,14 @@ export default function WorkoutBuilderPage() {
           setStudents(items);
           if (items.length > 0) {
             setSelectedStudentId((prev) => prev || items[0].id);
+          }
+
+          // Carregar exercícios customizados
+          try {
+            const exercises = await listCustomExercises(tenantId);
+            setCustomExercises(Array.isArray(exercises) ? exercises : []);
+          } catch (error) {
+            console.error("Erro ao carregar exercícios customizados:", error);
           }
         }
       } catch (error) {
@@ -1634,8 +1772,14 @@ export default function WorkoutBuilderPage() {
 
       {showExerciseModal && (
         <ExerciseSelector
+          exerciseLibrary={mergedExerciseLibrary}
+          tenantId={tenantId}
           onAdd={handleAddExerciseToWorkout}
           onClose={() => setShowExerciseModal(false)}
+          onExerciseCreated={(exercise) => {
+            // Adicionar o novo exercício ao estado de customExercises
+            setCustomExercises((prev) => [...prev, exercise]);
+          }}
         />
       )}
 

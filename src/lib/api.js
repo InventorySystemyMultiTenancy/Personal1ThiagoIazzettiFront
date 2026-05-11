@@ -520,3 +520,43 @@ export async function sendMyMessage(content) {
   });
   return response?.message || response;
 }
+
+// ── Custom Exercises ──────────────────────────────────────────────────────────
+
+export async function listCustomExercises(tenantId) {
+  const response = await request("/custom-exercises", { tenantId });
+  return Array.isArray(response?.exercises) ? response.exercises : [];
+}
+
+export async function listCustomExercisesByGroup(muscleGroup, tenantId) {
+  const response = await request(
+    `/custom-exercises/by-group?muscleGroup=${encodeURIComponent(muscleGroup)}`,
+    { tenantId },
+  );
+  return Array.isArray(response?.exercises) ? response.exercises : [];
+}
+
+export async function createCustomExercise(payload, tenantId) {
+  const response = await request("/custom-exercises", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.exercise || response;
+}
+
+export async function updateCustomExercise(exerciseId, payload, tenantId) {
+  const response = await request(`/custom-exercises/${exerciseId}`, {
+    method: "PATCH",
+    body: payload,
+    tenantId,
+  });
+  return response?.exercise || response;
+}
+
+export async function deleteCustomExercise(exerciseId, tenantId) {
+  return request(`/custom-exercises/${exerciseId}`, {
+    method: "DELETE",
+    tenantId,
+  });
+}
