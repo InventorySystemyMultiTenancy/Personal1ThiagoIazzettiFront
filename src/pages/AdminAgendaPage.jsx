@@ -14,6 +14,7 @@ import {
   deleteAgendaEvent,
   listAgendaEvents,
   listStudents,
+  listWorkoutSessions,
   listWorkoutPlans,
   updateAgendaEvent,
 } from "../lib/api.js";
@@ -333,6 +334,15 @@ function formatDateTime(value) {
   }).format(d);
 }
 
+function formatDurationSeconds(durationSeconds) {
+  const total = Math.max(0, Number(durationSeconds || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function sameDay(a, b) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -352,9 +362,11 @@ export default function AdminAgendaPage() {
   const [message, setMessage] = useState("");
   const [students, setStudents] = useState([]);
   const [events, setEvents] = useState([]);
+  const [workoutSessions, setWorkoutSessions] = useState([]);
   const [workouts, setWorkouts] = useState([]);
   const [editingId, setEditingId] = useState("");
   const [monthCursor, setMonthCursor] = useState(() => new Date());
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
 
   const [form, setForm] = useState({
     alunoId: "",
@@ -409,8 +421,8 @@ export default function AdminAgendaPage() {
     });
   }, [monthRange]);
 
-  const loadEvents = async (alunoId) => {
-    const data = await listAgendaEvents(tenantId, {
+  const loadEventsAndSessions = async (alunoId) => {
+    const filters = {
       alunoId: alunoId || undefined,
       from: new Date(
         monthRange.first.getFullYear(),
@@ -428,8 +440,15 @@ export default function AdminAgendaPage() {
         59,
         59,
       ).toISOString(),
-    });
-    setEvents(Array.isArray(data) ? data : []);
+    };
+
+    const [eventsData, sessionsData] = await Promise.all([
+      listAgendaEvents(tenantId, filters),
+      listWorkoutSessions(tenantId, filters),
+    ]);
+
+    setEvents(Array.isArray(eventsData) ? eventsData : []);
+    setWorkoutSessions(Array.isArray(sessionsData) ? sessionsData : []);
   };
 
   useEffect(() => {
@@ -449,7 +468,7 @@ export default function AdminAgendaPage() {
         const firstId = normalizedStudents[0]?.id || "";
         if (firstId) {
           setForm((prev) => ({ ...prev, alunoId: prev.alunoId || firstId }));
-          const [allEvents, studentWorkouts] = await Promise.all([
+          const [allEvents, studentWorkouts, sessions] = await Promise.all([
             listAgendaEvents(tenantId, {
               from: new Date(
                 monthRange.first.getFullYear(),
@@ -469,10 +488,30 @@ export default function AdminAgendaPage() {
               ).toISOString(),
             }),
             listWorkoutPlans(firstId, tenantId),
+            listWorkoutSessions(tenantId, {
+              alunoId: firstId,
+              from: new Date(
+                monthRange.first.getFullYear(),
+                monthRange.first.getMonth(),
+                1,
+                0,
+                0,
+                0,
+              ).toISOString(),
+              to: new Date(
+                monthRange.first.getFullYear(),
+                monthRange.first.getMonth() + 1,
+                31,
+                23,
+                59,
+                59,
+              ).toISOString(),
+            }),
           ]);
           if (cancelled) return;
           setEvents(Array.isArray(allEvents) ? allEvents : []);
           setWorkouts(Array.isArray(studentWorkouts) ? studentWorkouts : []);
+          setWorkoutSessions(Array.isArray(sessions) ? sessions : []);
         }
       } catch (error) {
         if (!cancelled) {
@@ -500,7 +539,7 @@ export default function AdminAgendaPage() {
 
   useEffect(() => {
     if (!tenantId) return;
-    loadEvents(form.alunoId).catch(() => {});
+    loadEventsAndSessions(form.alunoId).catch(() => {});
   }, [monthRange.first.getMonth(), monthRange.first.getFullYear()]);
 
   useEffect(() => {
@@ -513,9 +552,28 @@ export default function AdminAgendaPage() {
       }
 
       try {
-        const [studentWorkouts, studentEvents] = await Promise.all([
+        const [studentWorkouts, studentEvents, sessions] = await Promise.all([
           listWorkoutPlans(form.alunoId, tenantId),
           listAgendaEvents(tenantId, {
+            alunoId: form.alunoId,
+            from: new Date(
+              monthRange.first.getFullYear(),
+              monthRange.first.getMonth(),
+              1,
+              0,
+              0,
+              0,
+            ).toISOString(),
+            to: new Date(
+              monthRange.first.getFullYear(),
+              monthRange.first.getMonth() + 1,
+              31,
+              23,
+              59,
+              59,
+            ).toISOString(),
+          }),
+          listWorkoutSessions(tenantId, {
             alunoId: form.alunoId,
             from: new Date(
               monthRange.first.getFullYear(),
@@ -538,10 +596,12 @@ export default function AdminAgendaPage() {
         if (!cancelled) {
           setWorkouts(Array.isArray(studentWorkouts) ? studentWorkouts : []);
           setEvents(Array.isArray(studentEvents) ? studentEvents : []);
+          setWorkoutSessions(Array.isArray(sessions) ? sessions : []);
         }
       } catch (_error) {
         if (!cancelled) {
           setWorkouts([]);
+          setWorkoutSessions([]);
         }
       }
     };
@@ -684,6 +744,22 @@ export default function AdminAgendaPage() {
     return map;
   }, [events]);
 
+  const sessionsByDay = useMemo(() => {
+    const map = new Map();
+    workoutSessions.forEach((session) => {
+      const key = new Date(session.startedAt).toDateString();
+      const arr = map.get(key) || [];
+      arr.push(session);
+      map.set(key, arr);
+    });
+    return map;
+  }, [workoutSessions]);
+
+  const selectedDaySessions = useMemo(() => {
+    const key = selectedDay.toDateString();
+    return sessionsByDay.get(key) || [];
+  }, [selectedDay, sessionsByDay]);
+
   return (
     <main className="space-y-6">
       <section className="rounded-[1.75rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(181,240,60,0.15),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
@@ -757,10 +833,12 @@ export default function AdminAgendaPage() {
           {calendarDays.map((day) => {
             const key = day.toDateString();
             const dayEvents = eventsByDay.get(key) || [];
+            const daySessions = sessionsByDay.get(key) || [];
             const inMonth = day.getMonth() === monthRange.first.getMonth();
             return (
               <div
                 key={key}
+                onClick={() => setSelectedDay(day)}
                 className={`min-h-28 rounded-xl border p-2 ${inMonth ? "border-white/15 bg-black/25" : "border-white/5 bg-black/10"}`}
               >
                 <p
@@ -788,6 +866,11 @@ export default function AdminAgendaPage() {
                     <p className="text-[10px] text-white/55">
                       +{dayEvents.length - 3}{" "}
                       {t("CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI", "eventos")}
+                    </p>
+                  ) : null}
+                  {daySessions.length > 0 ? (
+                    <p className="text-[10px] text-emerald-200">
+                      {daySessions.length} treino(s) concluido(s)
                     </p>
                   ) : null}
                 </div>
@@ -1047,6 +1130,52 @@ export default function AdminAgendaPage() {
               ) : null}
             </div>
           </form>
+        </article>
+
+        <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
+          <h2 className="font-title text-2xl text-[#b5f03c]">
+            Historico de treino do dia (
+            {selectedDay.toLocaleDateString("pt-BR")})
+          </h2>
+          <div className="mt-4 space-y-3">
+            {selectedDaySessions.length === 0 ? (
+              <p className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-sm text-white/60">
+                Nenhum treino finalizado neste dia.
+              </p>
+            ) : (
+              selectedDaySessions.map((session) => (
+                <div
+                  key={session.id}
+                  className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                >
+                  <p className="font-semibold text-white">
+                    {session.workoutPlan?.title || "Treino"}
+                  </p>
+                  <p className="mt-1 text-sm text-white/60">
+                    Duracao: {formatDurationSeconds(session.durationSeconds)}
+                  </p>
+                  <p className="text-xs text-white/45">
+                    Inicio: {formatDateTime(session.startedAt)}
+                  </p>
+                  <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                    {(session.items || []).map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/75"
+                      >
+                        <p className="font-semibold text-white">
+                          {item.exerciseName}
+                        </p>
+                        <p className="text-white/60">
+                          Cargas: {item.loadNotes || "-"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </article>
 
         <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">

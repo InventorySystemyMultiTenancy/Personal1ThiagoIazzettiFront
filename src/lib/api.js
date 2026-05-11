@@ -394,6 +394,43 @@ export async function updateWorkoutPlan(planId, payload, tenantId) {
   return response?.plan || response?.data || response;
 }
 
+export async function listWorkoutSessions(tenantId, filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.alunoId) params.set("alunoId", filters.alunoId);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const response = await request(`/workout-sessions${query}`, { tenantId });
+  return Array.isArray(response?.sessions) ? response.sessions : [];
+}
+
+export async function listMyWorkoutSessions(tenantId, filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const response = await request(`/workout-sessions/me${query}`, { tenantId });
+  return Array.isArray(response?.sessions) ? response.sessions : [];
+}
+
+export async function startWorkoutSession(payload, tenantId) {
+  const response = await request("/workout-sessions/start", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.session || response;
+}
+
+export async function finishWorkoutSession(payload, tenantId) {
+  const response = await request("/workout-sessions/finish", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.session || response;
+}
+
 export async function listAgendaEvents(tenantId, filters = {}) {
   const params = new URLSearchParams();
   if (filters.alunoId) params.set("alunoId", filters.alunoId);
