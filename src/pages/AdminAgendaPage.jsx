@@ -1140,30 +1140,34 @@ export default function AdminAgendaPage() {
                 className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
               />
             </label>
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="block text-sm text-white/70">
-                {t("ADMIN_AGENDA_START_LABEL_THIAGOIAZZETTI", "Inicio")}
-                <input
-                  type="datetime-local"
-                  value={form.startsAt}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, startsAt: e.target.value }))
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                />
-              </label>
-              <label className="block text-sm text-white/70">
-                {t("ADMIN_AGENDA_END_LABEL_THIAGOIAZZETTI", "Fim")}
-                <input
-                  type="datetime-local"
-                  value={form.endsAt}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, endsAt: e.target.value }))
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                />
-              </label>
-            </div>
+
+            {form.recurrence === "NONE" && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="block text-sm text-white/70">
+                  {t("ADMIN_AGENDA_START_LABEL_THIAGOIAZZETTI", "Inicio")}
+                  <input
+                    type="datetime-local"
+                    value={form.startsAt}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, startsAt: e.target.value }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
+                  />
+                </label>
+                <label className="block text-sm text-white/70">
+                  {t("ADMIN_AGENDA_END_LABEL_THIAGOIAZZETTI", "Fim")}
+                  <input
+                    type="datetime-local"
+                    value={form.endsAt}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, endsAt: e.target.value }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
+                  />
+                </label>
+              </div>
+            )}
+
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-sm text-white/70">
                 {t(
@@ -1214,87 +1218,89 @@ export default function AdminAgendaPage() {
               </label>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    Grade semanal de horários
-                  </p>
-                  <p className="text-xs text-white/55">
-                    Marque os dias e horários para gerar a grade do mês
-                    selecionado.
-                  </p>
+            {form.recurrence !== "NONE" && (
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      Grade semanal de horários
+                    </p>
+                    <p className="text-xs text-white/55">
+                      Marque os dias e horários para gerar a grade do mês
+                      selecionado.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateMonthlyGrid}
+                    disabled={creatingGrid}
+                    className="rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-2 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20 disabled:opacity-50"
+                  >
+                    {creatingGrid ? "Gerando..." : "Criar grade do mês"}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleCreateMonthlyGrid}
-                  disabled={creatingGrid}
-                  className="rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-2 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20 disabled:opacity-50"
-                >
-                  {creatingGrid ? "Gerando..." : "Criar grade do mês"}
-                </button>
-              </div>
 
-              <div className="mt-4 space-y-2">
-                {WEEKDAY_SLOTS.map((slot) => {
-                  const slotState = weeklyGrid[slot.key] || {
-                    enabled: false,
-                    startsAtTime: "07:00",
-                    endsAtTime: "08:00",
-                  };
+                <div className="mt-4 space-y-2">
+                  {WEEKDAY_SLOTS.map((slot) => {
+                    const slotState = weeklyGrid[slot.key] || {
+                      enabled: false,
+                      startsAtTime: "07:00",
+                      endsAtTime: "08:00",
+                    };
 
-                  return (
-                    <div
-                      key={slot.key}
-                      className="grid grid-cols-[auto_1fr_1fr] items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
-                    >
-                      <label className="inline-flex items-center gap-2 text-sm text-white/75">
+                    return (
+                      <div
+                        key={slot.key}
+                        className="grid grid-cols-[auto_1fr_1fr] items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
+                      >
+                        <label className="inline-flex items-center gap-2 text-sm text-white/75">
+                          <input
+                            type="checkbox"
+                            checked={slotState.enabled}
+                            onChange={(e) =>
+                              handleWeeklyGridChange(
+                                slot.key,
+                                "enabled",
+                                e.target.checked,
+                              )
+                            }
+                          />
+                          {slot.label}
+                        </label>
+
                         <input
-                          type="checkbox"
-                          checked={slotState.enabled}
+                          type="time"
+                          value={slotState.startsAtTime}
+                          disabled={!slotState.enabled}
                           onChange={(e) =>
                             handleWeeklyGridChange(
                               slot.key,
-                              "enabled",
-                              e.target.checked,
+                              "startsAtTime",
+                              e.target.value,
                             )
                           }
+                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none disabled:opacity-40"
                         />
-                        {slot.label}
-                      </label>
 
-                      <input
-                        type="time"
-                        value={slotState.startsAtTime}
-                        disabled={!slotState.enabled}
-                        onChange={(e) =>
-                          handleWeeklyGridChange(
-                            slot.key,
-                            "startsAtTime",
-                            e.target.value,
-                          )
-                        }
-                        className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none disabled:opacity-40"
-                      />
-
-                      <input
-                        type="time"
-                        value={slotState.endsAtTime}
-                        disabled={!slotState.enabled}
-                        onChange={(e) =>
-                          handleWeeklyGridChange(
-                            slot.key,
-                            "endsAtTime",
-                            e.target.value,
-                          )
-                        }
-                        className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none disabled:opacity-40"
-                      />
-                    </div>
-                  );
-                })}
+                        <input
+                          type="time"
+                          value={slotState.endsAtTime}
+                          disabled={!slotState.enabled}
+                          onChange={(e) =>
+                            handleWeeklyGridChange(
+                              slot.key,
+                              "endsAtTime",
+                              e.target.value,
+                            )
+                          }
+                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none disabled:opacity-40"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             <label className="block text-sm text-white/70">
               {t(
