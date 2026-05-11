@@ -4,6 +4,7 @@ import {
   Trash2,
   Edit2,
   Copy,
+  Eye,
   Dumbbell,
   X,
   AlertCircle,
@@ -14,13 +15,16 @@ import {
   createWorkoutPlan,
   deleteAgendaEvent,
   getWorkoutPlanDetails,
+  listWorkoutPlanTemplates,
   listStudents,
   listWorkoutPlans,
   scheduleWorkoutPlan,
   updateAgendaEvent,
   updateWorkoutPlan,
+  cloneWorkoutPlanTemplate,
 } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 const recurrenceOptions = [
   { label: "Sem recorrencia", value: "NONE" },
@@ -97,6 +101,23 @@ function normalizeWorkoutPlan(plan) {
     ...plan,
     exercises: Array.isArray(plan?.items) ? plan.items : [],
     schedule: Array.isArray(plan?.schedule) ? plan.schedule : [],
+  };
+}
+
+function normalizeWorkoutTemplate(template) {
+  const raw = template || {};
+  const items = Array.isArray(raw.items)
+    ? raw.items
+    : Array.isArray(raw.exercises)
+      ? raw.exercises
+      : [];
+
+  return {
+    ...raw,
+    id: String(raw.id || raw.templateId || raw.planId || raw.name || ""),
+    title: raw.title || raw.name || "Template",
+    objective: raw.objective || raw.description || "",
+    items,
   };
 }
 
@@ -335,6 +356,215 @@ function ScheduleSessionModal({
   );
 }
 
+function TemplateLibraryModal({
+  templates,
+  loading,
+  error,
+  previewTemplateId,
+  onTogglePreview,
+  onInsert,
+  onClone,
+  onClose,
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur">
+      <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-4xl border border-white/10 bg-[#0a0a0a] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-white/45">
+              Biblioteca de templates
+            </p>
+            <h2 className="mt-2 font-title text-3xl text-[#d9c179]">
+              Templates de treino
+            </h2>
+            <p className="mt-2 text-sm text-white/65">
+              Visualize e importe templates para acelerar a montagem do treino.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-white/10 p-2 text-white/60 transition hover:text-white"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {error ? (
+          <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
+            Carregando templates...
+          </div>
+        ) : null}
+
+        {!loading && templates.length === 0 ? (
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-white/65">
+            Nenhum template encontrado.
+          </div>
+        ) : null}
+
+        <div className="mt-5 space-y-3">
+          {templates.map((template) => {
+            const previewItems = template.items.slice(0, 4);
+            const isPreviewOpen = previewTemplateId === template.id;
+
+            return (
+              <div
+                key={template.id}
+                className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4"
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="font-semibold text-white">{template.title}</p>
+                    <p className="text-sm text-white/55">
+                      {template.objective || "Objetivo nao informado."}
+                    </p>
+                    <p className="mt-1 text-xs text-white/40">
+                      {template.items.length} exercicio(s)
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onTogglePreview(template.id)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/65 transition hover:border-white/20"
+                    >
+                      <Eye size={14} />
+                      {isPreviewOpen ? "Ocultar" : "Visualizar"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onInsert(template)}
+                      className="rounded-lg border border-[#d9b341]/50 bg-[#d9b341]/10 px-4 py-2 text-sm font-semibold text-[#d9c179] transition hover:bg-[#d9b341]/20"
+                    >
+                      Inserir no formulario
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onClone(template)}
+                      className="rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition hover:border-white/20"
+                    >
+                      Clonar para aluno
+                    </button>
+                  </div>
+                </div>
+
+                {isPreviewOpen ? (
+                  <div className="mt-4 grid gap-2 md:grid-cols-2">
+                    {previewItems.map((item, index) => (
+                      <div
+                        key={item.id || `${template.id}-${index}`}
+                        className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white/70"
+                      >
+                        <p className="font-semibold text-white">
+                          {item.exerciseName}
+                        </p>
+                        <p className="text-xs text-white/50">
+                          {item.sets}x{item.reps} • Descanso: {item.restSeconds || 0}s
+                        </p>
+                      </div>
+                    ))}
+                    {template.items.length > previewItems.length ? (
+                      <p className="text-xs text-white/45">
+                        +{template.items.length - previewItems.length} exercicio(s)
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CloneTemplateModal({
+  template,
+  students,
+  selectedStudentId,
+  onSelectStudent,
+  onClose,
+  onConfirm,
+  loading,
+  error,
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur">
+      <div className="w-full max-w-xl rounded-4xl border border-white/10 bg-[#0a0a0a] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-white/45">
+              Clonar template
+            </p>
+            <h2 className="mt-2 font-title text-2xl text-[#d9c179]">
+              {template?.title}
+            </h2>
+            <p className="mt-2 text-sm text-white/65">
+              Selecione o aluno para criar o treino a partir do template.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-full border border-white/10 p-2 text-white/60 transition hover:text-white disabled:opacity-50"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {error ? (
+          <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            {error}
+          </div>
+        ) : null}
+
+        <label className="mt-5 block text-sm text-white/70">
+          Aluno
+          <select
+            value={selectedStudentId}
+            onChange={(event) => onSelectStudent(event.target.value)}
+            className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
+          >
+            <option value="">Selecione um aluno</option>
+            {students.map((student) => (
+              <option key={student.id} value={student.id}>
+                {student.fullName}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={!selectedStudentId || loading}
+            className="rounded-xl bg-[#d9b341] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
+          >
+            {loading ? "Clonando..." : "Clonar template"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-white/70 transition hover:border-white/20 disabled:opacity-60"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Biblioteca de exercícios por grupo muscular
 const exerciseLibrary = {
   Peito: [
@@ -380,41 +610,6 @@ const exerciseLibrary = {
   ],
 };
 
-// Templates de treino pré-definidos
-const trainingTemplates = [
-  {
-    name: "Full Body A",
-    description: "Treino completo focado em força",
-    exercises: [
-      { exerciseName: "Agachamento livre", sets: 4, reps: 6, restSeconds: 120 },
-      { exerciseName: "Supino reto", sets: 4, reps: 6, restSeconds: 120 },
-      { exerciseName: "Barra fixa", sets: 3, reps: 8, restSeconds: 90 },
-    ],
-  },
-  {
-    name: "Full Body B",
-    description: "Treino completo com foco em hipertrofia",
-    exercises: [
-      { exerciseName: "Leg press", sets: 4, reps: 8, restSeconds: 90 },
-      { exerciseName: "Supino inclinado", sets: 4, reps: 8, restSeconds: 90 },
-      { exerciseName: "Remada curvada", sets: 4, reps: 8, restSeconds: 90 },
-    ],
-  },
-  {
-    name: "Upper Body",
-    description: "Focado em tronco e braços",
-    exercises: [
-      { exerciseName: "Supino reto", sets: 4, reps: 6, restSeconds: 120 },
-      { exerciseName: "Remada alta", sets: 4, reps: 8, restSeconds: 90 },
-      {
-        exerciseName: "Desenvolvimento com halteres",
-        sets: 3,
-        reps: 8,
-        restSeconds: 90,
-      },
-    ],
-  },
-];
 
 function ExerciseSelector({ onAdd, onClose }) {
   const [selectedGroup, setSelectedGroup] = useState("Peito");
@@ -567,23 +762,113 @@ function ExerciseSelector({ onAdd, onClose }) {
   );
 }
 
-function WorkoutItem({ exercise, onRemove }) {
+function WorkoutItem({ exercise, onRemove, onUpdate }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({
+    sets: exercise.sets ?? 0,
+    reps: exercise.reps ?? "",
+    restSeconds: exercise.restSeconds ?? "",
+  });
+
+  useEffect(() => {
+    setDraft({
+      sets: exercise.sets ?? 0,
+      reps: exercise.reps ?? "",
+      restSeconds: exercise.restSeconds ?? "",
+    });
+  }, [exercise.reps, exercise.restSeconds, exercise.sets]);
+
+  const handleSave = () => {
+    onUpdate(exercise.id, {
+      sets: Number(draft.sets) || 0,
+      reps: String(draft.reps || ""),
+      restSeconds:
+        draft.restSeconds === "" ? null : Number(draft.restSeconds),
+    });
+    setEditing(false);
+  };
+
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+    <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 md:flex-row md:items-center md:justify-between">
       <div className="flex-1">
         <p className="font-semibold text-white">{exercise.exerciseName}</p>
-        <p className="text-sm text-white/60">
-          {exercise.sets}x{exercise.reps} • Descanso:{" "}
-          {exercise.restSeconds ? `${exercise.restSeconds}s` : "livre"}
-        </p>
+        {editing ? (
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            <label className="text-xs text-white/60">
+              Series
+              <input
+                type="number"
+                min="1"
+                value={draft.sets}
+                onChange={(event) =>
+                  setDraft((prev) => ({ ...prev, sets: event.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none"
+              />
+            </label>
+            <label className="text-xs text-white/60">
+              Repeticoes
+              <input
+                type="number"
+                min="1"
+                value={draft.reps}
+                onChange={(event) =>
+                  setDraft((prev) => ({ ...prev, reps: event.target.value }))
+                }
+                className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none"
+              />
+            </label>
+            <label className="text-xs text-white/60">
+              Descanso (s)
+              <input
+                type="number"
+                min="0"
+                step="15"
+                value={draft.restSeconds}
+                onChange={(event) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    restSeconds: event.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none"
+              />
+            </label>
+          </div>
+        ) : (
+          <p className="text-sm text-white/60">
+            {exercise.sets}x{exercise.reps} • Descanso:{" "}
+            {exercise.restSeconds ? `${exercise.restSeconds}s` : "livre"}
+          </p>
+        )}
       </div>
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
-        >
-          <Edit2 size={16} />
-        </button>
+        {editing ? (
+          <>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="rounded-lg border border-[#d9b341]/50 bg-[#d9b341]/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#d9c179]"
+            >
+              Salvar
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/60"
+            >
+              Cancelar
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#d9b341]"
+          >
+            <Edit2 size={16} />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onRemove(exercise.id)}
@@ -598,11 +883,13 @@ function WorkoutItem({ exercise, onRemove }) {
 
 export default function WorkoutBuilderPage() {
   const { tenantId } = useTenant();
+  const { isPersonal } = useAuth();
   const [students, setStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [workouts, setWorkouts] = useState([]);
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [currentWorkoutExercises, setCurrentWorkoutExercises] = useState([]);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -615,6 +902,16 @@ export default function WorkoutBuilderPage() {
   const [scheduleSessions, setScheduleSessions] = useState([createEmptySession()]);
   const [updatingSessionId, setUpdatingSessionId] = useState("");
   const [deletingSessionId, setDeletingSessionId] = useState("");
+  const [templates, setTemplates] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [templatesError, setTemplatesError] = useState("");
+  const [previewTemplateId, setPreviewTemplateId] = useState("");
+  const [cloneTemplateTarget, setCloneTemplateTarget] = useState(null);
+  const [cloneStudentId, setCloneStudentId] = useState("");
+  const [cloningTemplate, setCloningTemplate] = useState(false);
+  const [cloneTemplateError, setCloneTemplateError] = useState("");
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
   const [workoutForm, setWorkoutForm] = useState({
     title: "",
     objective: "",
@@ -625,6 +922,8 @@ export default function WorkoutBuilderPage() {
     () => students.find((s) => s.id === selectedStudentId) || null,
     [students, selectedStudentId],
   );
+
+  const canUseTemplates = isPersonal;
 
   const toEditableSession = (session, fallbackTitle, index) => ({
     id: session.id || `existing-${index}`,
@@ -692,6 +991,8 @@ export default function WorkoutBuilderPage() {
     setEditingWorkoutId("");
     setWorkoutForm({ title: "", objective: "", phase: "Hipertrofia" });
     setCurrentWorkoutExercises([]);
+    setSaveAsTemplate(false);
+    setTemplateName("");
   };
 
   useEffect(() => {
@@ -763,18 +1064,119 @@ export default function WorkoutBuilderPage() {
     setCurrentWorkoutExercises((prev) => prev.filter((ex) => ex.id !== id));
   };
 
-  const handleApplyTemplate = (template) => {
+  const handleUpdateExercise = (id, changes) => {
+    setCurrentWorkoutExercises((prev) =>
+      prev.map((exercise) =>
+        exercise.id === id ? { ...exercise, ...changes } : exercise,
+      ),
+    );
+  };
+
+  const handleToggleSaveAsTemplate = (checked) => {
+    setSaveAsTemplate(checked);
+    if (checked) {
+      setTemplateName((prev) => prev.trim() || workoutForm.title.trim());
+    } else {
+      setTemplateName("");
+    }
+  };
+
+  const handleInsertTemplate = (template) => {
     setEditingWorkoutId("");
     setWorkoutForm({
-      title: template.name,
-      objective: template.description,
-      phase: "Hipertrofia",
+      title: template.title,
+      objective: stripPhaseFromObjective(template.objective),
+      phase: inferPhase(template.objective),
     });
-    const exercisesWithIds = template.exercises.map((ex) => ({
-      ...ex,
+
+    const exercisesWithIds = template.items.map((exercise) => ({
+      ...exercise,
       id: Math.random().toString(36).substr(2, 9),
     }));
     setCurrentWorkoutExercises(exercisesWithIds);
+    setShowTemplatesModal(false);
+    setMessage(`Template "${template.title}" inserido no formulario.`);
+  };
+
+  const loadTemplates = async () => {
+    if (!tenantId) return;
+    setLoadingTemplates(true);
+    setTemplatesError("");
+
+    try {
+      const result = await listWorkoutPlanTemplates(tenantId);
+      const items = Array.isArray(result)
+        ? result.map(normalizeWorkoutTemplate)
+        : [];
+      setTemplates(items);
+    } catch (error) {
+      setTemplatesError(error?.message || "Nao foi possivel carregar templates.");
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  const openTemplatesModal = () => {
+    setShowTemplatesModal(true);
+    setPreviewTemplateId("");
+    if (templates.length === 0) {
+      loadTemplates();
+    }
+  };
+
+  const closeTemplatesModal = () => {
+    if (loadingTemplates) return;
+    setShowTemplatesModal(false);
+    setPreviewTemplateId("");
+    setTemplatesError("");
+  };
+
+  const openCloneTemplateModal = (template) => {
+    setCloneTemplateTarget(template);
+    setCloneStudentId("");
+    setCloneTemplateError("");
+  };
+
+  const closeCloneTemplateModal = () => {
+    if (cloningTemplate) return;
+    setCloneTemplateTarget(null);
+    setCloneStudentId("");
+    setCloneTemplateError("");
+  };
+
+  const handleConfirmCloneTemplate = async () => {
+    if (!cloneTemplateTarget?.id || !cloneStudentId) return;
+
+    setCloningTemplate(true);
+    setCloneTemplateError("");
+
+    try {
+      const created = await cloneWorkoutPlanTemplate(
+        cloneTemplateTarget.id,
+        { alunoId: cloneStudentId },
+        tenantId,
+      );
+      const normalized = normalizeWorkoutPlan(created);
+      if (cloneStudentId === selectedStudentId) {
+        setWorkouts((prev) => [normalized, ...prev]);
+      }
+
+      const targetStudent = students.find(
+        (student) => student.id === cloneStudentId,
+      );
+      setMessage(
+        `Template "${cloneTemplateTarget.title}" clonado para ${
+          targetStudent?.fullName || "aluno"
+        }.`,
+      );
+      closeCloneTemplateModal();
+    } catch (error) {
+      setCloneTemplateError(
+        error?.message || "Nao foi possivel clonar o template.",
+      );
+    } finally {
+      setCloningTemplate(false);
+    }
   };
 
   const handleSaveWorkout = async (e) => {
@@ -788,6 +1190,11 @@ export default function WorkoutBuilderPage() {
 
     if (!workoutForm.title.trim() || currentWorkoutExercises.length === 0) {
       setMessage("Preencha o titulo e adicione exercicios");
+      return;
+    }
+
+    if (!editingWorkoutId && saveAsTemplate && !templateName.trim()) {
+      setMessage("Informe o nome do template");
       return;
     }
 
@@ -812,6 +1219,11 @@ export default function WorkoutBuilderPage() {
         })),
       };
 
+      if (!editingWorkoutId && saveAsTemplate) {
+        payload.saveAsTemplate = true;
+        payload.templateName = templateName.trim() || workoutForm.title.trim();
+      }
+
       const persistWorkout = editingWorkoutId
         ? await updateWorkoutPlan(
             editingWorkoutId,
@@ -833,7 +1245,9 @@ export default function WorkoutBuilderPage() {
       setMessage(
         editingWorkoutId
           ? `Treino "${persistWorkout.title}" atualizado com sucesso.`
-          : `Treino "${persistWorkout.title}" salvo para ${selectedStudent?.fullName || "aluno"}`,
+          : saveAsTemplate
+            ? `Treino "${persistWorkout.title}" salvo e template criado com sucesso.`
+            : `Treino "${persistWorkout.title}" salvo para ${selectedStudent?.fullName || "aluno"}`,
       );
     } catch (error) {
       setMessage(error?.message || "Nao foi possivel salvar treino");
@@ -844,6 +1258,8 @@ export default function WorkoutBuilderPage() {
 
   const handleEditWorkout = (workout) => {
     setEditingWorkoutId(workout.id);
+    setSaveAsTemplate(false);
+    setTemplateName("");
     setWorkoutForm({
       title: workout.title || "",
       objective: stripPhaseFromObjective(workout.objective),
@@ -864,6 +1280,9 @@ export default function WorkoutBuilderPage() {
   };
 
   const handleCloneWorkout = (workout) => {
+    setEditingWorkoutId("");
+    setSaveAsTemplate(false);
+    setTemplateName("");
     setWorkoutForm({
       title: `${workout.title} (Cópia)`,
       objective: workout.objective,
@@ -1183,6 +1602,34 @@ export default function WorkoutBuilderPage() {
             </label>
           </div>
 
+          {canUseTemplates && !editingWorkoutId ? (
+            <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/70">
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={saveAsTemplate}
+                  onChange={(event) =>
+                    handleToggleSaveAsTemplate(event.target.checked)
+                  }
+                />
+                Salvar como template
+              </label>
+
+              {saveAsTemplate ? (
+                <label className="mt-3 block text-sm text-white/70">
+                  Nome do template
+                  <input
+                    type="text"
+                    value={templateName}
+                    onChange={(event) => setTemplateName(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
+                    placeholder="Ex: Treino funcional avançado"
+                  />
+                </label>
+              ) : null}
+            </div>
+          ) : null}
+
           <div>
             <p className="mb-3 text-sm font-semibold text-white/70">
               Exercícios ({currentWorkoutExercises.length})
@@ -1204,6 +1651,7 @@ export default function WorkoutBuilderPage() {
                     key={exercise.id}
                     exercise={exercise}
                     onRemove={handleRemoveExercise}
+                    onUpdate={handleUpdateExercise}
                   />
                 ))
               )}
@@ -1211,6 +1659,15 @@ export default function WorkoutBuilderPage() {
           </div>
 
           <div className="flex flex-wrap gap-3 pt-4">
+            {canUseTemplates ? (
+              <button
+                type="button"
+                onClick={openTemplatesModal}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-semibold text-white/75 transition hover:border-white/20"
+              >
+                Importar de template
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => setShowExerciseModal(true)}
@@ -1245,38 +1702,39 @@ export default function WorkoutBuilderPage() {
         </form>
       </article>
 
-      <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
-        <h2 className="font-title text-2xl text-[#d9c179]">
-          Templates de Treino
-        </h2>
-        <p className="mt-2 text-sm text-white/60">
-          Use templates pré-definidos como base e customize conforme necessário
-        </p>
-
-        <div className="mt-5 space-y-3">
-          {trainingTemplates.map((template) => (
-            <div
-              key={template.name}
-              className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-4 md:flex-row md:items-center md:justify-between"
-            >
-              <div>
-                <p className="font-semibold text-white">{template.name}</p>
-                <p className="text-sm text-white/55">{template.description}</p>
-                <p className="mt-1 text-xs text-white/40">
-                  {template.exercises.length} exercícios
-                </p>
-              </div>
+      {canUseTemplates ? (
+        <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="font-title text-2xl text-[#d9c179]">
+                Biblioteca de Templates
+              </h2>
+              <p className="mt-2 text-sm text-white/60">
+                Salve treinos como templates e reutilize na criacao de novos planos.
+              </p>
+              <p className="mt-2 text-xs text-white/45">
+                {templates.length} template(s) carregado(s)
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => handleApplyTemplate(template)}
-                className="rounded-lg border border-[#d9b341]/50 bg-[#d9b341]/10 px-4 py-2 text-sm font-medium text-[#d9c179] transition hover:bg-[#d9b341]/20"
+                onClick={openTemplatesModal}
+                className="rounded-xl border border-[#d9b341]/50 bg-[#d9b341]/10 px-5 py-3 text-sm font-semibold text-[#d9c179] transition hover:bg-[#d9b341]/20"
               >
-                Usar Template
+                Abrir biblioteca
+              </button>
+              <button
+                type="button"
+                onClick={loadTemplates}
+                className="rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-white/70 transition hover:border-white/20"
+              >
+                Atualizar
               </button>
             </div>
-          ))}
-        </div>
-      </article>
+          </div>
+        </article>
+      ) : null}
 
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
         <h2 className="font-title text-2xl text-[#d9c179]">
@@ -1418,6 +1876,38 @@ export default function WorkoutBuilderPage() {
           onUpdateExistingSession={handleUpdateExistingSession}
           onDeleteExistingSession={handleDeleteExistingSession}
           onSubmit={handleSubmitSchedule}
+        />
+      ) : null}
+
+      {showTemplatesModal ? (
+        <TemplateLibraryModal
+          templates={templates}
+          loading={loadingTemplates}
+          error={templatesError}
+          previewTemplateId={previewTemplateId}
+          onTogglePreview={(templateId) =>
+            setPreviewTemplateId((current) =>
+              current === templateId ? "" : templateId,
+            )
+          }
+          onInsert={handleInsertTemplate}
+          onClone={(template) => {
+            openCloneTemplateModal(template);
+          }}
+          onClose={closeTemplatesModal}
+        />
+      ) : null}
+
+      {cloneTemplateTarget ? (
+        <CloneTemplateModal
+          template={cloneTemplateTarget}
+          students={students}
+          selectedStudentId={cloneStudentId}
+          onSelectStudent={setCloneStudentId}
+          onClose={closeCloneTemplateModal}
+          onConfirm={handleConfirmCloneTemplate}
+          loading={cloningTemplate}
+          error={cloneTemplateError}
         />
       ) : null}
     </main>

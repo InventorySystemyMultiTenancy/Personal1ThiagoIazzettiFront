@@ -348,6 +348,24 @@ export async function listWorkoutPlans(studentId, tenantId) {
   return Array.isArray(response?.plans) ? response.plans : [];
 }
 
+export async function listWorkoutPlanTemplates(tenantId) {
+  const response = await request("/workout-plans/templates", { tenantId });
+  if (Array.isArray(response?.templates)) return response.templates;
+  return extractListPayload(response);
+}
+
+export async function cloneWorkoutPlanTemplate(templateId, payload, tenantId) {
+  const response = await request(
+    `/workout-plans/templates/${templateId}/clone`,
+    {
+      method: "POST",
+      body: payload,
+      tenantId,
+    },
+  );
+  return response?.plan || response?.data || response;
+}
+
 export async function getWorkoutPlanDetails(planId, tenantId) {
   const response = await request(`/workout-plans/${planId}`, { tenantId });
   return response?.plan || response?.data || response;
