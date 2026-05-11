@@ -23,6 +23,8 @@ import {
   updateWorkoutPlan,
   listCustomExercises,
   createCustomExercise,
+  updateCustomExercise,
+  deleteCustomExercise,
   listWorkoutTemplates,
   createWorkoutTemplate,
   updateWorkoutTemplate,
@@ -822,6 +824,13 @@ export default function WorkoutBuilderPage() {
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState("");
+  const [editingExerciseId, setEditingExerciseId] = useState("");
+  const [showCustomExercises, setShowCustomExercises] = useState(false);
+  const [customExerciseForm, setCustomExerciseForm] = useState({
+    name: "",
+    muscleGroup: "",
+    equipment: "",
+  });
   const [workoutForm, setWorkoutForm] = useState({
     title: "",
     objective: "",
@@ -1282,6 +1291,68 @@ export default function WorkoutBuilderPage() {
         error?.message || "Erro ao deletar template. Tente novamente.",
       );
     }
+  };
+
+  const handleEditCustomExercise = (exercise) => {
+    setEditingExerciseId(exercise.id);
+    setCustomExerciseForm({
+      name: exercise.name,
+      muscleGroup: exercise.muscleGroup,
+      equipment: exercise.equipment,
+    });
+  };
+
+  const handleSaveCustomExercise = async () => {
+    if (
+      !customExerciseForm.name.trim() ||
+      !customExerciseForm.equipment.trim()
+    ) {
+      setMessage("Nome e equipamento são obrigatórios");
+      return;
+    }
+
+    try {
+      const updated = await updateCustomExercise(
+        editingExerciseId,
+        {
+          name: customExerciseForm.name.trim(),
+          muscleGroup: customExerciseForm.muscleGroup,
+          equipment: customExerciseForm.equipment.trim(),
+        },
+        tenantId,
+      );
+      setCustomExercises((prev) =>
+        prev.map((ex) => (ex.id === editingExerciseId ? updated : ex)),
+      );
+      setEditingExerciseId("");
+      setCustomExerciseForm({ name: "", muscleGroup: "", equipment: "" });
+      setMessage("Exercício atualizado com sucesso!");
+    } catch (error) {
+      setMessage(
+        error?.message || "Erro ao atualizar exercício. Tente novamente.",
+      );
+    }
+  };
+
+  const handleDeleteCustomExercise = async (exerciseId) => {
+    if (!window.confirm("Tem certeza que deseja deletar este exercício?")) {
+      return;
+    }
+
+    try {
+      await deleteCustomExercise(exerciseId, tenantId);
+      setCustomExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
+      setMessage("Exercício deletado com sucesso!");
+    } catch (error) {
+      setMessage(
+        error?.message || "Erro ao deletar exercício. Tente novamente.",
+      );
+    }
+  };
+
+  const cancelEditCustomExercise = () => {
+    setEditingExerciseId("");
+    setCustomExerciseForm({ name: "", muscleGroup: "", equipment: "" });
   };
 
   const handleScheduleSessionChange = (sessionId, field, value) => {
@@ -1747,6 +1818,156 @@ export default function WorkoutBuilderPage() {
             ) : null}
           </div>
         </form>
+      </article>
+      <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-title text-2xl text-[#b5f03c]">
+            {t(
+              "WORKOUT_BUILDER_CUSTOM_EXERCISES_TITLE_THIAGOIAZZETTI",
+              "Exercicios Customizados",
+            )}{" "}
+            ({customExercises.length})
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowCustomExercises(!showCustomExercises)}
+            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white/70 transition hover:border-white/20"
+          >
+            {showCustomExercises ? "Ocultar" : "Mostrar"}
+          </button>
+        </div>
+
+        {showCustomExercises && (
+          <div className="mt-5 space-y-3">
+            {customExercises.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-black/30 px-6 py-8 text-center">
+                <Dumbbell className="mx-auto mb-3 text-white/40" size={32} />
+                <p className="text-white/60">
+                  {t(
+                    "WORKOUT_BUILDER_NO_CUSTOM_EXERCISES_THIAGOIAZZETTI",
+                    "Nenhum exercicio customizado criado ainda.",
+                  )}
+                </p>
+              </div>
+            ) : (
+              <>
+                {editingExerciseId ? (
+                  <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                    <h3 className="mb-4 font-semibold text-[#b5f03c]">
+                      Editando exercício
+                    </h3>
+                    <div className="space-y-3">
+                      <label className="block text-sm text-white/70">
+                        Nome
+                        <input
+                          type="text"
+                          value={customExerciseForm.name}
+                          onChange={(e) =>
+                            setCustomExerciseForm((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
+                          className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
+                        />
+                      </label>
+                      <label className="block text-sm text-white/70">
+                        Grupo Muscular
+                        <select
+                          value={customExerciseForm.muscleGroup}
+                          onChange={(e) =>
+                            setCustomExerciseForm((prev) => ({
+                              ...prev,
+                              muscleGroup: e.target.value,
+                            }))
+                          }
+                          className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
+                        >
+                          <option value="">Selecionar</option>
+                          {Object.keys(exerciseLibrary).map((group) => (
+                            <option key={group} value={group}>
+                              {group}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block text-sm text-white/70">
+                        Equipamento
+                        <input
+                          type="text"
+                          value={customExerciseForm.equipment}
+                          onChange={(e) =>
+                            setCustomExerciseForm((prev) => ({
+                              ...prev,
+                              equipment: e.target.value,
+                            }))
+                          }
+                          className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
+                        />
+                      </label>
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveCustomExercise}
+                          className="flex-1 rounded-xl bg-[#b5f03c] px-4 py-2 font-semibold text-black transition hover:brightness-110"
+                        >
+                          Salvar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEditCustomExercise}
+                          className="flex-1 rounded-xl border border-white/10 px-4 py-2 font-semibold text-white/70 transition hover:border-white/20"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                {customExercises.map((exercise) => (
+                  <div
+                    key={exercise.id}
+                    className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                  >
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div className="flex-1">
+                        <p className="font-semibold text-white">
+                          {exercise.name}
+                        </p>
+                        <p className="text-sm text-white/55">
+                          {exercise.muscleGroup}
+                        </p>
+                        <p className="text-xs text-white/40">
+                          {exercise.equipment}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditCustomExercise(exercise)}
+                          className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#b5f03c]"
+                          title="Editar exercício"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteCustomExercise(exercise.id)
+                          }
+                          className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-red-400"
+                          title="Deletar exercício"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
       </article>
 
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
