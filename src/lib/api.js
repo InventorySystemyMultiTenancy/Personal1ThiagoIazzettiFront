@@ -394,6 +394,13 @@ export async function updateWorkoutPlan(planId, payload, tenantId) {
   return response?.plan || response?.data || response;
 }
 
+export async function deleteWorkoutPlan(planId, tenantId) {
+  return request(`/workout-plans/${planId}`, {
+    method: "DELETE",
+    tenantId,
+  });
+}
+
 export async function listWorkoutSessions(tenantId, filters = {}) {
   const params = new URLSearchParams();
   if (filters.alunoId) params.set("alunoId", filters.alunoId);

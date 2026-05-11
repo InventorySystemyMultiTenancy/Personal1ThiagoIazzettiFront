@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import {
   createWorkoutPlan,
+  deleteWorkoutPlan,
   deleteAgendaEvent,
   getWorkoutPlanDetails,
   listStudents,
@@ -1198,6 +1199,7 @@ export default function WorkoutBuilderPage() {
 
   const handleEditWorkout = (workout) => {
     setEditingWorkoutId(workout.id);
+    setEditingTemplateId("");
     setWorkoutForm({
       title: workout.title || "",
       objective: stripPhaseFromObjective(workout.objective),
@@ -1217,6 +1219,25 @@ export default function WorkoutBuilderPage() {
     setMessage(
       `${t("WORKOUT_BUILDER_EDITING_THIAGOIAZZETTI", "Editando treino")}: ${workout.title}`,
     );
+  };
+
+  const handleDeleteWorkout = async (workoutId) => {
+    if (!window.confirm("Tem certeza que deseja deletar este treino?")) {
+      return;
+    }
+
+    try {
+      await deleteWorkoutPlan(workoutId, tenantId);
+      setWorkouts((prev) => prev.filter((workout) => workout.id !== workoutId));
+
+      if (editingWorkoutId === workoutId) {
+        resetWorkoutForm();
+      }
+
+      setMessage("Treino deletado com sucesso!");
+    } catch (error) {
+      setMessage(error?.message || "Erro ao deletar treino. Tente novamente.");
+    }
   };
 
   const handleCloneWorkout = (workout) => {
@@ -2086,6 +2107,7 @@ export default function WorkoutBuilderPage() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleDeleteWorkout(workout.id)}
                       className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-red-400"
                       title="Deletar treino"
                     >
