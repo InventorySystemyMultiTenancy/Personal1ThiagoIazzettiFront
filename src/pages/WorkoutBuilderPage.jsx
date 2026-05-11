@@ -1279,8 +1279,7 @@ export default function WorkoutBuilderPage() {
       setMessage("Template deletado com sucesso!");
     } catch (error) {
       setMessage(
-        error?.message ||
-          "Erro ao deletar template. Tente novamente.",
+        error?.message || "Erro ao deletar template. Tente novamente.",
       );
     }
   };
@@ -2022,6 +2021,8 @@ export default function WorkoutBuilderPage() {
           )}
         </div>
       </article>
+
+      {showExerciseModal && (
         <ExerciseSelector
           exerciseLibrary={mergedExerciseLibrary}
           tenantId={tenantId}
