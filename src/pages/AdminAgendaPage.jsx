@@ -393,6 +393,7 @@ export default function AdminAgendaPage() {
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [creatingGrid, setCreatingGrid] = useState(false);
+  const [eventFilterAlunoId, setEventFilterAlunoId] = useState("");
   const [weeklyGrid, setWeeklyGrid] = useState(() =>
     WEEKDAY_SLOTS.reduce((acc, slot) => {
       acc[slot.key] = {
@@ -974,6 +975,13 @@ export default function AdminAgendaPage() {
     return map;
   }, [events]);
 
+  const filteredEvents = useMemo(() => {
+    if (!eventFilterAlunoId) {
+      return events;
+    }
+    return events.filter((event) => event.alunoId === eventFilterAlunoId);
+  }, [events, eventFilterAlunoId]);
+
   const sessionsByDay = useMemo(() => {
     const map = new Map();
     workoutSessions.forEach((session) => {
@@ -1500,22 +1508,33 @@ export default function AdminAgendaPage() {
         <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
           <h2 className="font-title text-2xl text-[#b5f03c]">
             {t("ADMIN_AGENDA_EVENTS_TITLE_THIAGOIAZZETTI", "Eventos")} (
-            {events.length})
+            {filteredEvents.length})
           </h2>
-          <p className="mt-2 text-sm text-white/60">
-            {selectedStudent
-              ? `${t("ADMIN_AGENDA_SELECTED_STUDENT_THIAGOIAZZETTI", "Aluno selecionado")}: ${selectedStudent.fullName}`
-              : t(
-                  "ADMIN_AGENDA_GENERAL_SCHEDULE_THIAGOIAZZETTI",
-                  "Mostrando agenda geral",
-                )}
-          </p>
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end">
+              <label className="block flex-1 text-sm text-white/70">
+                Filtrar por aluno
+                <select
+                  value={eventFilterAlunoId}
+                  onChange={(e) => setEventFilterAlunoId(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
+                >
+                  <option value="">Todos os alunos</option>
+                  {students.map((student) => (
+                    <option key={student.id} value={student.id}>
+                      {student.fullName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
           <div className="mt-5 space-y-3">
             {loading ? (
               <p className="text-sm text-white/60">
                 {t("ADMIN_AGENDA_LOADING_THIAGOIAZZETTI", "Carregando...")}
               </p>
-            ) : events.length === 0 ? (
+            ) : filteredEvents.length === 0 ? (
               <p className="rounded-2xl border border-white/10 bg-black/30 px-4 py-5 text-sm text-white/65">
                 {t(
                   "ADMIN_AGENDA_EMPTY_THIAGOIAZZETTI",
@@ -1523,7 +1542,7 @@ export default function AdminAgendaPage() {
                 )}
               </p>
             ) : (
-              events.map((event) => (
+              filteredEvents.map((event) => (
                 <div
                   key={event.id}
                   className="rounded-2xl border border-white/10 bg-black/30 p-4"
