@@ -1079,20 +1079,32 @@ export default function AdminAgendaPage() {
                   {dayEvents.slice(0, 3).map((event) => (
                     <div
                       key={event.id}
-                      className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[10px] text-white/80"
+                      className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[10px] text-white/80 flex items-start gap-1"
                     >
-                      <div className="font-semibold">
-                        {new Date(event.startsAt).toLocaleTimeString(
-                          locale || "pt-BR",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          },
-                        )}{" "}
-                        {event.title}
-                      </div>
-                      <div className="text-[9px] text-white/60">
-                        {event.aluno?.fullName || "Aluno"}
+                      <input
+                        type="checkbox"
+                        checked={event.attendanceStatus === "CONFIRMADO"}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleToggleCompletion(event);
+                        }}
+                        className="h-3 w-3 cursor-pointer accent-[#b5f03c] mt-0.5 flex-shrink-0"
+                        title="Marcar como concluído"
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold">
+                          {new Date(event.startsAt).toLocaleTimeString(
+                            locale || "pt-BR",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}{" "}
+                          {event.title}
+                        </div>
+                        <div className="text-[9px] text-white/60">
+                          {event.aluno?.fullName || "Aluno"}
+                        </div>
                       </div>
                     </div>
                   ))}
