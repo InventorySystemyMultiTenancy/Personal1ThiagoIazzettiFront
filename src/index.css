@@ -5,9 +5,9 @@
   font-family: "Manrope", "Inter", system-ui, sans-serif;
   color: #f2f2f2;
   background-color: #090909;
-  --brand-primary: #d9b341;
-  --brand-secondary: #d9c179;
-  --brand-soft: #f2e3b3;
+  --brand-primary: #b5f03c;
+  --brand-secondary: #b5f03c;
+  --brand-soft: #d4f7a0;
   --brand-highlight: #d9a74a;
   --brand-neutral: #f2f2f2;
   color-scheme: dark;
@@ -39,6 +39,19 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+select,
+option,
+optgroup {
+  background-color: #090909;
+  color: #f2f2f2;
+}
+
+select:focus,
+option:checked {
+  background-color: #111111;
+  color: #ffffff;
 }
 
 ::selection {

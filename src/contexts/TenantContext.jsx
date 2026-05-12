@@ -8,6 +8,8 @@ import React, {
 
 const TenantContext = createContext(null);
 
+const ENV_PERSONAL_ID = import.meta.env.VITE_PERSONAL_ID || "";
+
 export function getTenantFromHost() {
   try {
     const host = window?.location?.hostname || "";
@@ -34,11 +36,11 @@ export function getTenantFromHost() {
 }
 
 export function TenantProvider({ initialTenantId, children }) {
-  const detected = initialTenantId || getTenantFromHost() || "";
+  const detected = initialTenantId || getTenantFromHost() || ENV_PERSONAL_ID;
   const [tenantId, setTenantId] = useState(detected);
 
   useEffect(() => {
-    setTenantId(initialTenantId || getTenantFromHost() || "");
+    setTenantId(initialTenantId || getTenantFromHost() || ENV_PERSONAL_ID);
   }, [initialTenantId]);
 
   const value = useMemo(

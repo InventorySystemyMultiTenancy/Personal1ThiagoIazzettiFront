@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { tenantFetch } from "../lib/api.js";
+import { useI18n } from "../contexts/I18nContext.jsx";
 
 const mockSummary = {
   totalAlunos: 48,
@@ -69,6 +70,7 @@ function SummaryCard({ label, value }) {
 
 export default function DashboardPage() {
   const { tenantId } = useTenant();
+  const { t } = useI18n();
   const [summary, setSummary] = useState(mockSummary);
   const [progress, setProgress] = useState(mockProgress);
   const [students, setStudents] = useState(mockStudents);
@@ -128,18 +130,33 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <SummaryCard label="Total de Alunos" value={summary.totalAlunos} />
-        <SummaryCard label="Treinos Hoje" value={summary.treinosHoje} />
-        <SummaryCard label="Faturamento Mes" value={formattedRevenue} />
+        <SummaryCard
+          label={t("DASH_TOTAL_STUDENTS_THIAGOIAZZETTI", "Total de Alunos")}
+          value={summary.totalAlunos}
+        />
+        <SummaryCard
+          label={t("DASH_WORKOUTS_TODAY_THIAGOIAZZETTI", "Treinos Hoje")}
+          value={summary.treinosHoje}
+        />
+        <SummaryCard
+          label={t("DASH_MONTHLY_REVENUE_THIAGOIAZZETTI", "Faturamento Mes")}
+          value={formattedRevenue}
+        />
       </section>
 
       <section className="rounded-premium border border-black/10 bg-white p-5 shadow-soft">
         <div className="mb-4">
           <h2 className="font-title text-2xl text-premium-gold">
-            Evolucao de Cargas
+            {t(
+              "DASH_LOAD_EVOLUTION_TITLE_THIAGOIAZZETTI",
+              "Evolucao de Cargas",
+            )}
           </h2>
           <p className="font-body text-sm text-premium-anthracite/70">
-            Performance media dos alunos nas ultimas semanas.
+            {t(
+              "DASH_LOAD_EVOLUTION_SUBTITLE_THIAGOIAZZETTI",
+              "Performance media dos alunos nas ultimas semanas.",
+            )}
           </p>
         </div>
         <div className="h-72 w-full">
@@ -151,9 +168,9 @@ export default function DashboardPage() {
               <Line
                 type="monotone"
                 dataKey="carga"
-                stroke="#D9B341"
+                stroke="#B5F03C"
                 strokeWidth={3}
-                dot={{ fill: "#D9B341", r: 4 }}
+                dot={{ fill: "#B5F03C", r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -163,13 +180,16 @@ export default function DashboardPage() {
       <section className="rounded-premium border border-black/10 bg-white p-5 shadow-soft">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-title text-2xl text-premium-gold">
-            Gestao de Alunos
+            {t(
+              "DASH_STUDENT_MANAGEMENT_TITLE_THIAGOIAZZETTI",
+              "Gestao de Alunos",
+            )}
           </h2>
           <button
             type="button"
             className="rounded-premium bg-premium-gold px-4 py-2 font-body text-sm font-semibold text-premium-ink shadow-gold hover:brightness-105"
           >
-            Novo Aluno
+            {t("DASH_NEW_STUDENT_BUTTON_THIAGOIAZZETTI", "Novo Aluno")}
           </button>
         </div>
 
@@ -177,10 +197,18 @@ export default function DashboardPage() {
           <table className="min-w-full border-separate border-spacing-y-2">
             <thead>
               <tr className="font-body text-left text-xs uppercase tracking-[0.14em] text-premium-anthracite/60">
-                <th className="px-3 py-2">Aluno</th>
-                <th className="px-3 py-2">Status do Plano</th>
-                <th className="px-3 py-2">Inicio</th>
-                <th className="px-3 py-2">Acao</th>
+                <th className="px-3 py-2">
+                  {t("DASH_COL_STUDENT_THIAGOIAZZETTI", "Aluno")}
+                </th>
+                <th className="px-3 py-2">
+                  {t("DASH_COL_PLAN_STATUS_THIAGOIAZZETTI", "Status do Plano")}
+                </th>
+                <th className="px-3 py-2">
+                  {t("DASH_COL_START_THIAGOIAZZETTI", "Inicio")}
+                </th>
+                <th className="px-3 py-2">
+                  {t("DASH_COL_ACTION_THIAGOIAZZETTI", "Acao")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -212,7 +240,10 @@ export default function DashboardPage() {
                       type="button"
                       className="rounded-premium border border-premium-gold px-3 py-1.5 font-body text-sm font-semibold text-premium-gold hover:bg-premium-gold hover:text-premium-ink"
                     >
-                      Prescrever Treino
+                      {t(
+                        "DASH_PRESCRIBE_WORKOUT_THIAGOIAZZETTI",
+                        "Prescrever Treino",
+                      )}
                     </button>
                   </td>
                 </tr>

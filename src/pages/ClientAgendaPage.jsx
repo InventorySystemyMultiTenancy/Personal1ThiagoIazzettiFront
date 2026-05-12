@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -10,10 +10,91 @@ import {
 } from "lucide-react";
 import { confirmAgendaAttendance, listMyAgendaEvents } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
+import { useI18n } from "../contexts/I18nContext.jsx";
+
+const CLIENT_AGENDA_FALLBACKS = {
+  "en-US": {
+    CLIENT_AGENDA_LABEL_THIAGOIAZZETTI: "Student schedule",
+    CLIENT_AGENDA_TITLE_THIAGOIAZZETTI: "Your schedule and guidance",
+    CLIENT_AGENDA_SUBTITLE_THIAGOIAZZETTI:
+      "Here you can see the appointments your personal trainer registered for you, including workout and diet.",
+    CLIENT_AGENDA_LOADING_THIAGOIAZZETTI: "Loading schedule...",
+    CLIENT_AGENDA_EMPTY_THIAGOIAZZETTI: "No events in schedule yet.",
+    CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI: "events",
+    CLIENT_AGENDA_ERROR_LOAD_THIAGOIAZZETTI: "Could not load schedule",
+    CLIENT_AGENDA_ATTENDANCE_UPDATED_THIAGOIAZZETTI: "Attendance updated",
+    CLIENT_AGENDA_ATTENDANCE_ERROR_THIAGOIAZZETTI:
+      "Could not confirm attendance",
+    CLIENT_AGENDA_CONFIRM_ATTENDANCE_THIAGOIAZZETTI: "Confirm attendance",
+    WEEKDAY_SUN_THIAGOIAZZETTI: "Sun",
+    WEEKDAY_MON_THIAGOIAZZETTI: "Mon",
+    WEEKDAY_TUE_THIAGOIAZZETTI: "Tue",
+    WEEKDAY_WED_THIAGOIAZZETTI: "Wed",
+    WEEKDAY_THU_THIAGOIAZZETTI: "Thu",
+    WEEKDAY_FRI_THIAGOIAZZETTI: "Fri",
+    WEEKDAY_SAT_THIAGOIAZZETTI: "Sat",
+  },
+  "it-IT": {
+    CLIENT_AGENDA_LABEL_THIAGOIAZZETTI: "Agenda studente",
+    CLIENT_AGENDA_TITLE_THIAGOIAZZETTI: "I tuoi orari e indicazioni",
+    CLIENT_AGENDA_SUBTITLE_THIAGOIAZZETTI:
+      "Qui compaiono gli impegni registrati dal tuo personal trainer, inclusi allenamento e dieta.",
+    CLIENT_AGENDA_LOADING_THIAGOIAZZETTI: "Caricamento agenda...",
+    CLIENT_AGENDA_EMPTY_THIAGOIAZZETTI: "Nessun evento in agenda per ora.",
+    CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI: "eventi",
+    CLIENT_AGENDA_ERROR_LOAD_THIAGOIAZZETTI: "Impossibile caricare agenda",
+    CLIENT_AGENDA_ATTENDANCE_UPDATED_THIAGOIAZZETTI: "Presenza aggiornata",
+    CLIENT_AGENDA_ATTENDANCE_ERROR_THIAGOIAZZETTI:
+      "Impossibile confermare la presenza",
+    CLIENT_AGENDA_CONFIRM_ATTENDANCE_THIAGOIAZZETTI: "Conferma presenza",
+    WEEKDAY_SUN_THIAGOIAZZETTI: "Dom",
+    WEEKDAY_MON_THIAGOIAZZETTI: "Lun",
+    WEEKDAY_TUE_THIAGOIAZZETTI: "Mar",
+    WEEKDAY_WED_THIAGOIAZZETTI: "Mer",
+    WEEKDAY_THU_THIAGOIAZZETTI: "Gio",
+    WEEKDAY_FRI_THIAGOIAZZETTI: "Ven",
+    WEEKDAY_SAT_THIAGOIAZZETTI: "Sab",
+  },
+  "es-ES": {
+    CLIENT_AGENDA_LABEL_THIAGOIAZZETTI: "Agenda del alumno",
+    CLIENT_AGENDA_TITLE_THIAGOIAZZETTI: "Tus horarios y orientaciones",
+    CLIENT_AGENDA_SUBTITLE_THIAGOIAZZETTI:
+      "Aqui aparecen los compromisos que tu personal trainer registró para ti, incluyendo entrenamiento y dieta.",
+    CLIENT_AGENDA_LOADING_THIAGOIAZZETTI: "Cargando agenda...",
+    CLIENT_AGENDA_EMPTY_THIAGOIAZZETTI:
+      "No hay eventos en la agenda por ahora.",
+    CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI: "eventos",
+    CLIENT_AGENDA_ERROR_LOAD_THIAGOIAZZETTI: "No fue posible cargar agenda",
+    CLIENT_AGENDA_ATTENDANCE_UPDATED_THIAGOIAZZETTI: "Asistencia actualizada",
+    CLIENT_AGENDA_ATTENDANCE_ERROR_THIAGOIAZZETTI:
+      "No fue posible confirmar asistencia",
+    CLIENT_AGENDA_CONFIRM_ATTENDANCE_THIAGOIAZZETTI: "Confirmar asistencia",
+    WEEKDAY_SUN_THIAGOIAZZETTI: "Dom",
+    WEEKDAY_MON_THIAGOIAZZETTI: "Lun",
+    WEEKDAY_TUE_THIAGOIAZZETTI: "Mar",
+    WEEKDAY_WED_THIAGOIAZZETTI: "Mié",
+    WEEKDAY_THU_THIAGOIAZZETTI: "Jue",
+    WEEKDAY_FRI_THIAGOIAZZETTI: "Vie",
+    WEEKDAY_SAT_THIAGOIAZZETTI: "Sáb",
+  },
+};
+
+function translateClientAgenda(rawT, locale, key, fallback = "") {
+  const remoteValue = rawT(key, "");
+  const localValue = CLIENT_AGENDA_FALLBACKS[locale]?.[key];
+  const isLikelyUntranslated =
+    locale !== "pt-BR" && locale !== "pt-PT" && remoteValue === fallback;
+
+  if (isLikelyUntranslated && localValue) {
+    return localValue;
+  }
+
+  return remoteValue || localValue || fallback || key;
+}
 
 function eventTone(type) {
   if (type === "TREINO")
-    return "border-[#d9b341]/45 bg-[#d9b341]/12 text-[#f2e3b3]";
+    return "border-[#b5f03c]/45 bg-[#b5f03c]/12 text-[#d4f7a0]";
   if (type === "DIETA")
     return "border-emerald-400/45 bg-emerald-500/12 text-emerald-200";
   if (type === "CONSULTA")
@@ -50,6 +131,11 @@ function sameDay(a, b) {
 }
 
 export default function ClientAgendaPage() {
+  const { t: rawT, locale } = useI18n();
+  const t = useCallback(
+    (key, fallback = "") => translateClientAgenda(rawT, locale, key, fallback),
+    [rawT, locale],
+  );
   const { tenantId } = useTenant();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,11 +158,11 @@ export default function ClientAgendaPage() {
 
   const monthLabel = useMemo(
     () =>
-      new Intl.DateTimeFormat("pt-BR", {
+      new Intl.DateTimeFormat(locale || "pt-BR", {
         month: "long",
         year: "numeric",
       }).format(monthCursor),
-    [monthCursor],
+    [monthCursor, locale],
   );
 
   const calendarDays = useMemo(() => {
@@ -100,34 +186,17 @@ export default function ClientAgendaPage() {
         const data = await listMyAgendaEvents(tenantId);
         if (!cancelled) {
           const list = Array.isArray(data) ? data : [];
-          const filtered = list.filter((event) => {
-            const date = new Date(event.startsAt);
-            return (
-              date >=
-                new Date(
-                  monthRange.first.getFullYear(),
-                  monthRange.first.getMonth(),
-                  1,
-                  0,
-                  0,
-                  0,
-                ) &&
-              date <=
-                new Date(
-                  monthRange.first.getFullYear(),
-                  monthRange.first.getMonth() + 1,
-                  31,
-                  23,
-                  59,
-                  59,
-                )
-            );
-          });
-          setEvents(filtered);
+          setEvents(list);
         }
       } catch (error) {
         if (!cancelled) {
-          setMessage(error?.message || "Nao foi possivel carregar agenda");
+          setMessage(
+            error?.message ||
+              t(
+                "CLIENT_AGENDA_ERROR_LOAD_THIAGOIAZZETTI",
+                "Nao foi possivel carregar agenda",
+              ),
+          );
         }
       } finally {
         if (!cancelled) {
@@ -136,12 +205,12 @@ export default function ClientAgendaPage() {
       }
     };
 
-    if (tenantId) load();
+    if (tenantId !== undefined) load();
 
     return () => {
       cancelled = true;
     };
-  }, [tenantId, monthRange.first]);
+  }, []);
 
   const eventsByDay = useMemo(() => {
     const map = new Map();
@@ -164,22 +233,33 @@ export default function ClientAgendaPage() {
       map.get(key).push(event);
     });
     return Array.from(map.entries()).map(([key, items]) => ({
-      dayLabel: new Intl.DateTimeFormat("pt-BR", {
+      dayLabel: new Intl.DateTimeFormat(locale || "pt-BR", {
         weekday: "long",
         day: "2-digit",
         month: "2-digit",
       }).format(new Date(key)),
       items,
     }));
-  }, [events]);
+  }, [events, locale]);
 
   const handleConfirm = async (eventId, status = "CONFIRMADO") => {
     try {
       const updated = await confirmAgendaAttendance(eventId, status, tenantId);
       setEvents((prev) => prev.map((ev) => (ev.id === eventId ? updated : ev)));
-      setMessage("Presenca atualizada");
+      setMessage(
+        t(
+          "CLIENT_AGENDA_ATTENDANCE_UPDATED_THIAGOIAZZETTI",
+          "Presenca atualizada",
+        ),
+      );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel confirmar presenca");
+      setMessage(
+        error?.message ||
+          t(
+            "CLIENT_AGENDA_ATTENDANCE_ERROR_THIAGOIAZZETTI",
+            "Nao foi possivel confirmar presenca",
+          ),
+      );
     }
   };
 
@@ -189,17 +269,22 @@ export default function ClientAgendaPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-              Agenda do aluno
+              {t("CLIENT_AGENDA_LABEL_THIAGOIAZZETTI", "Agenda do aluno")}
             </p>
-            <h1 className="mt-2 font-title text-4xl text-[#f2e3b3]">
-              Seus horarios e orientacoes
+            <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
+              {t(
+                "CLIENT_AGENDA_TITLE_THIAGOIAZZETTI",
+                "Seus horarios e orientacoes",
+              )}
             </h1>
             <p className="mt-3 text-sm text-white/68">
-              Aqui aparecem os compromissos que seu personal cadastrou para
-              voce, incluindo treino e dieta.
+              {t(
+                "CLIENT_AGENDA_SUBTITLE_THIAGOIAZZETTI",
+                "Aqui aparecem os compromissos que seu personal cadastrou para voce, incluindo treino e dieta.",
+              )}
             </p>
           </div>
-          <CalendarDays className="text-[#d9b341]" size={28} />
+          <CalendarDays className="text-[#b5f03c]" size={28} />
         </div>
       </section>
 
@@ -211,11 +296,14 @@ export default function ClientAgendaPage() {
 
       {loading ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
-          Carregando agenda...
+          {t("CLIENT_AGENDA_LOADING_THIAGOIAZZETTI", "Carregando agenda...")}
         </div>
       ) : grouped.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
-          Nenhum evento na agenda por enquanto.
+          {t(
+            "CLIENT_AGENDA_EMPTY_THIAGOIAZZETTI",
+            "Nenhum evento na agenda por enquanto.",
+          )}
         </div>
       ) : (
         <>
@@ -233,7 +321,7 @@ export default function ClientAgendaPage() {
               >
                 <ChevronLeft size={16} />
               </button>
-              <h2 className="font-title text-2xl capitalize text-[#d9c179]">
+              <h2 className="font-title text-2xl capitalize text-[#b5f03c]">
                 {monthLabel}
               </h2>
               <button
@@ -250,7 +338,15 @@ export default function ClientAgendaPage() {
               </button>
             </div>
             <div className="grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-[0.08em] text-white/45">
-              {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map((d) => (
+              {[
+                t("WEEKDAY_SUN_THIAGOIAZZETTI", "Dom"),
+                t("WEEKDAY_MON_THIAGOIAZZETTI", "Seg"),
+                t("WEEKDAY_TUE_THIAGOIAZZETTI", "Ter"),
+                t("WEEKDAY_WED_THIAGOIAZZETTI", "Qua"),
+                t("WEEKDAY_THU_THIAGOIAZZETTI", "Qui"),
+                t("WEEKDAY_FRI_THIAGOIAZZETTI", "Sex"),
+                t("WEEKDAY_SAT_THIAGOIAZZETTI", "Sab"),
+              ].map((d) => (
                 <div key={d}>{d}</div>
               ))}
             </div>
@@ -276,7 +372,7 @@ export default function ClientAgendaPage() {
                           className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[10px] text-white/80"
                         >
                           {new Date(event.startsAt).toLocaleTimeString(
-                            "pt-BR",
+                            locale || "pt-BR",
                             { hour: "2-digit", minute: "2-digit" },
                           )}{" "}
                           {event.title}
@@ -284,7 +380,8 @@ export default function ClientAgendaPage() {
                       ))}
                       {dayEvents.length > 3 ? (
                         <p className="text-[10px] text-white/55">
-                          +{dayEvents.length - 3} eventos
+                          +{dayEvents.length - 3}{" "}
+                          {t("CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI", "eventos")}
                         </p>
                       ) : null}
                     </div>
@@ -299,7 +396,7 @@ export default function ClientAgendaPage() {
               key={group.dayLabel}
               className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6"
             >
-              <h2 className="font-title text-2xl capitalize text-[#d9c179]">
+              <h2 className="font-title text-2xl capitalize text-[#b5f03c]">
                 {group.dayLabel}
               </h2>
               <div className="mt-4 space-y-3">
@@ -351,7 +448,10 @@ export default function ClientAgendaPage() {
                         className="inline-flex items-center gap-2 rounded-lg border border-emerald-400/35 px-3 py-1.5 text-xs text-emerald-200"
                       >
                         <CheckCircle2 size={13} />
-                        Confirmar presenca
+                        {t(
+                          "CLIENT_AGENDA_CONFIRM_ATTENDANCE_THIAGOIAZZETTI",
+                          "Confirmar presenca",
+                        )}
                       </button>
                     </div>
                   </div>

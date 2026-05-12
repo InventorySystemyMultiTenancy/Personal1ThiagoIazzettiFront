@@ -342,13 +342,13 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   const isBusy = effectiveState === "loading" || effectiveState === "submitting";
 
   return (
-    <section className="rounded-[1.75rem] border border-[#d9b341]/20 bg-[radial-gradient(circle_at_top,rgba(217,179,65,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
+    <section className="rounded-[1.75rem] border border-[#b5f03c]/20 bg-[radial-gradient(circle_at_top,rgba(181,240,60,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-white/40">
             Assinatura recorrente
           </p>
-          <h2 className="mt-2 font-title text-3xl text-[#f2e3b3]">
+          <h2 className="mt-2 font-title text-3xl text-[#d4f7a0]">
             Finalizar {plan.name}
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
@@ -360,7 +360,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
           <p className="text-xs uppercase tracking-[0.2em] text-white/45">
             Valor
           </p>
-          <p className="mt-2 font-title text-3xl text-[#d9c179]">
+          <p className="mt-2 font-title text-3xl text-[#b5f03c]">
             {formatCurrency(plan.transactionAmount)}
           </p>
           <p className="mt-1 text-sm text-white/55">{getFrequencyLabel(plan)}</p>
@@ -461,7 +461,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
           <button
             type="submit"
             disabled={isBusy || Boolean(sdkConfigError)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#d9b341] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b5f03c] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isBusy ? (
               <>
@@ -479,7 +479,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
 
         <aside className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-5">
           <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white/70">
-            <div className="flex items-center gap-2 font-semibold text-[#d9c179]">
+            <div className="flex items-center gap-2 font-semibold text-[#b5f03c]">
               <ShieldCheck size={16} />
               Fluxo seguro
             </div>
@@ -516,7 +516,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
 
           {effectiveState === "loading" ? (
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/65">
-              <Loader2 className="animate-spin text-[#d9b341]" size={16} />
+              <Loader2 className="animate-spin text-[#b5f03c]" size={16} />
               Carregando formulario seguro do Mercado Pago...
             </div>
           ) : null}

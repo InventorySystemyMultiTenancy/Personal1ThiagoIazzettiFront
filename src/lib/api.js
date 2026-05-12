@@ -6,11 +6,12 @@ export const SESSION_TOKEN_KEY = "thiago_session_token";
 export const SESSION_USER_KEY = "thiago_session_user";
 
 export class ApiError extends Error {
-  constructor(message, status, code) {
+  constructor(message, status, code, details = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -174,6 +175,7 @@ async function request(path, options = {}) {
       payload.error || payload.message || "Erro ao consultar API",
       response.status,
       payload.code,
+      payload,
     );
   }
 
@@ -301,6 +303,14 @@ export async function listStudentPlans(tenantId) {
   return Array.isArray(response?.plans) ? response.plans : [];
 }
 
+export async function listPublicStudentPlans(tenantId) {
+  const path = tenantId
+    ? `/aluno-plans/public?personalId=${encodeURIComponent(tenantId)}`
+    : "/aluno-plans/public";
+  const response = await request(path, { auth: false });
+  return Array.isArray(response?.plans) ? response.plans : [];
+}
+
 export async function createStudentPlan(payload, tenantId) {
   const response = await request("/aluno-plans", {
     method: "POST",
@@ -354,6 +364,15 @@ export async function listWorkoutPlanTemplates(tenantId) {
   return extractListPayload(response);
 }
 
+export async function createWorkoutPlanTemplate(payload, tenantId) {
+  const response = await request("/workout-plans/templates", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.template || response?.plan || response?.data || response;
+}
+
 export async function cloneWorkoutPlanTemplate(templateId, payload, tenantId) {
   const response = await request(
     `/workout-plans/templates/${templateId}/clone`,
@@ -402,6 +421,13 @@ export async function updateWorkoutPlan(planId, payload, tenantId) {
   });
 
   return response?.plan || response?.data || response;
+}
+
+export async function deleteWorkoutPlan(planId, tenantId) {
+  return request(`/workout-plans/${planId}`, {
+    method: "DELETE",
+    tenantId,
+  });
 }
 
 export async function listAgendaEvents(tenantId, filters = {}) {
@@ -497,4 +523,36 @@ export async function deleteDiet(dietId, tenantId) {
 
 export async function tenantFetch(path, personalId, options = {}) {
   return request(path, { ...options, tenantId: personalId });
+}
+
+// ── Messages ──────────────────────────────────────────────────────────────────
+
+// Personal: list conversation with one aluno
+export async function listMessages(alunoId) {
+  const response = await request(`/messages/${alunoId}`);
+  return Array.isArray(response?.messages) ? response.messages : [];
+}
+
+// Personal: send message to aluno
+export async function sendMessage(alunoId, content) {
+  const response = await request(`/messages/${alunoId}`, {
+    method: "POST",
+    body: { content },
+  });
+  return response?.message || response;
+}
+
+// Aluno: list my conversation
+export async function listMyMessages() {
+  const response = await request("/messages/me");
+  return Array.isArray(response?.messages) ? response.messages : [];
+}
+
+// Aluno: send message to personal
+export async function sendMyMessage(content) {
+  const response = await request("/messages/me", {
+    method: "POST",
+    body: { content },
+  });
+  return response?.message || response;
 }
