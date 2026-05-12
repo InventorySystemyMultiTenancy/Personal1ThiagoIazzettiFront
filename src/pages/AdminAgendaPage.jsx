@@ -376,6 +376,19 @@ function buildDateWithTime(baseDate, timeValue) {
   return nextDate;
 }
 
+function timeToMinutes(timeValue) {
+  if (!timeValue || !String(timeValue).includes(":")) {
+    return null;
+  }
+
+  const [hours, minutes] = String(timeValue).split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+}
+
 export default function AdminAgendaPage() {
   const { t: rawT, locale } = useI18n();
   const t = useCallback(
@@ -791,6 +804,13 @@ export default function AdminAgendaPage() {
       return;
     }
 
+    if (hasWeeklyGridConflicts) {
+      setMessage(
+        "Nao e possivel criar a grade: ha conflito de horario com outro aluno.",
+      );
+      return;
+    }
+
     const fromDate = new Date(
       monthRange.first.getFullYear(),
       monthRange.first.getMonth(),
@@ -869,7 +889,8 @@ export default function AdminAgendaPage() {
         }
       }
 
-      await loadEventsAndSessions(form.alunoId);
+      await loadAllEvents();
+      await loadSessionsForStudent(form.alunoId);
       setMessage(
         `Grade criada: ${createdCount} horários adicionados${conflictCount ? `, ${conflictCount} em conflito` : ""}.`,
       );
@@ -988,6 +1009,74 @@ export default function AdminAgendaPage() {
     const key = selectedDay.toDateString();
     return sessionsByDay.get(key) || [];
   }, [selectedDay, sessionsByDay]);
+
+  const weeklyGridConflicts = useMemo(() => {
+    const conflictsMap = {};
+
+    WEEKDAY_SLOTS.forEach((slot) => {
+      const slotState = weeklyGrid[slot.key];
+      if (!slotState?.enabled) {
+        conflictsMap[slot.key] = { count: 0, names: [] };
+        return;
+      }
+
+      const startMinutes = timeToMinutes(slotState.startsAtTime);
+      const endMinutes =
+        timeToMinutes(slotState.endsAtTime) ??
+        (startMinutes !== null ? startMinutes + 60 : null);
+
+      if (startMinutes === null) {
+        conflictsMap[slot.key] = { count: 0, names: [] };
+        return;
+      }
+
+      const overlapping = events.filter((event) => {
+        if (event.alunoId === form.alunoId) {
+          return false;
+        }
+
+        const eventStart = new Date(event.startsAt);
+        const sameMonth =
+          eventStart.getFullYear() === monthRange.first.getFullYear() &&
+          eventStart.getMonth() === monthRange.first.getMonth();
+        if (!sameMonth || eventStart.getDay() !== slot.dayIndex) {
+          return false;
+        }
+
+        const eventStartMinutes =
+          eventStart.getHours() * 60 + eventStart.getMinutes();
+        const eventEndDate = event.endsAt ? new Date(event.endsAt) : null;
+        const eventEndMinutes = eventEndDate
+          ? eventEndDate.getHours() * 60 + eventEndDate.getMinutes()
+          : eventStartMinutes + 60;
+
+        return !(
+          endMinutes <= eventStartMinutes || startMinutes >= eventEndMinutes
+        );
+      });
+
+      const names = [
+        ...new Set(
+          overlapping.map((event) => event.aluno?.fullName || "Outro aluno"),
+        ),
+      ];
+
+      conflictsMap[slot.key] = {
+        count: overlapping.length,
+        names,
+      };
+    });
+
+    return conflictsMap;
+  }, [weeklyGrid, events, form.alunoId, monthRange.first]);
+
+  const hasWeeklyGridConflicts = useMemo(
+    () =>
+      WEEKDAY_SLOTS.some(
+        (slot) => (weeklyGridConflicts[slot.key]?.count || 0) > 0,
+      ),
+    [weeklyGridConflicts],
+  );
 
   return (
     <main className="space-y-6">
@@ -1361,7 +1450,7 @@ export default function AdminAgendaPage() {
                   <button
                     type="button"
                     onClick={handleCreateMonthlyGrid}
-                    disabled={creatingGrid}
+                    disabled={creatingGrid || hasWeeklyGridConflicts}
                     className="rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-2 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20 disabled:opacity-50"
                   >
                     {creatingGrid ? "Gerando..." : "Criar grade do mês"}
@@ -1375,11 +1464,17 @@ export default function AdminAgendaPage() {
                       startsAtTime: "07:00",
                       endsAtTime: "08:00",
                     };
+                    const slotConflict = weeklyGridConflicts[slot.key] || {
+                      count: 0,
+                      names: [],
+                    };
+                    const hasConflict =
+                      slotState.enabled && slotConflict.count > 0;
 
                     return (
                       <div
                         key={slot.key}
-                        className="grid grid-cols-[auto_1fr_1fr] items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
+                        className={`grid grid-cols-[auto_1fr_1fr] items-center gap-3 rounded-xl border p-3 ${hasConflict ? "border-red-400/50 bg-red-500/10" : "border-white/10 bg-white/5"}`}
                       >
                         <label className="inline-flex items-center gap-2 text-sm text-white/75">
                           <input
@@ -1423,6 +1518,13 @@ export default function AdminAgendaPage() {
                           }
                           className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none disabled:opacity-40"
                         />
+
+                        {hasConflict ? (
+                          <p className="col-span-3 text-xs text-red-300">
+                            Conflito: ja existe horario com{" "}
+                            {slotConflict.names.join(", ")}.
+                          </p>
+                        ) : null}
                       </div>
                     );
                   })}
