@@ -1099,6 +1099,18 @@ export default function AdminAgendaPage() {
                               hour: "2-digit",
                               minute: "2-digit",
                             },
+                          )}
+                          {event.endsAt && (
+                            <>
+                              {" - "}
+                              {new Date(event.endsAt).toLocaleTimeString(
+                                locale || "pt-BR",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </>
                           )}{" "}
                           {event.title}
                         </div>
