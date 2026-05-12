@@ -982,6 +982,17 @@ export default function AdminAgendaPage() {
     return events.filter((event) => event.alunoId === eventFilterAlunoId);
   }, [events, eventFilterAlunoId]);
 
+  const filteredEventsByDay = useMemo(() => {
+    const map = new Map();
+    filteredEvents.forEach((event) => {
+      const key = new Date(event.startsAt).toDateString();
+      const arr = map.get(key) || [];
+      arr.push(event);
+      map.set(key, arr);
+    });
+    return map;
+  }, [filteredEvents]);
+
   const sessionsByDay = useMemo(() => {
     const map = new Map();
     workoutSessions.forEach((session) => {
@@ -1070,7 +1081,7 @@ export default function AdminAgendaPage() {
         <div className="mt-2 grid grid-cols-7 gap-2">
           {calendarDays.map((day) => {
             const key = day.toDateString();
-            const dayEvents = eventsByDay.get(key) || [];
+            const dayEvents = filteredEventsByDay.get(key) || [];
             const daySessions = sessionsByDay.get(key) || [];
             const inMonth = day.getMonth() === monthRange.first.getMonth();
             return (
@@ -1090,14 +1101,19 @@ export default function AdminAgendaPage() {
                       key={event.id}
                       className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[10px] text-white/80"
                     >
-                      {new Date(event.startsAt).toLocaleTimeString(
-                        locale || "pt-BR",
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )}{" "}
-                      {event.title}
+                      <div className="font-semibold">
+                        {new Date(event.startsAt).toLocaleTimeString(
+                          locale || "pt-BR",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )}{" "}
+                        {event.title}
+                      </div>
+                      <div className="text-[9px] text-white/60">
+                        {event.aluno?.fullName || "Aluno"}
+                      </div>
                     </div>
                   ))}
                   {dayEvents.length > 3 ? (
