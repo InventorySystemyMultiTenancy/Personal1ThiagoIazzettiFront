@@ -9,9 +9,12 @@ import {
   AlertCircle,
   CalendarDays,
   Clock3,
+  Bookmark,
+  Play,
 } from "lucide-react";
 import {
   createWorkoutPlan,
+  deleteWorkoutPlan,
   deleteAgendaEvent,
   getWorkoutPlanDetails,
   listStudents,
@@ -19,6 +22,14 @@ import {
   scheduleWorkoutPlan,
   updateAgendaEvent,
   updateWorkoutPlan,
+  listCustomExercises,
+  createCustomExercise,
+  updateCustomExercise,
+  deleteCustomExercise,
+  listWorkoutTemplates,
+  createWorkoutTemplate,
+  updateWorkoutTemplate,
+  deleteWorkoutTemplate,
 } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
@@ -480,11 +491,20 @@ const trainingTemplates = [
   },
 ];
 
-function ExerciseSelector({ onAdd, onClose }) {
+function ExerciseSelector({
+  onAdd,
+  onClose,
+  exerciseLibrary,
+  tenantId,
+  onExerciseCreated,
+}) {
   const { t } = useI18n();
   const [selectedGroup, setSelectedGroup] = useState("Peito");
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     exerciseName: "",
+    equipment: "",
     sets: 3,
     reps: 10,
     restSeconds: 60,
@@ -492,11 +512,53 @@ function ExerciseSelector({ onAdd, onClose }) {
 
   const filteredExercises = exerciseLibrary[selectedGroup] || [];
 
-  const handleAddExercise = (e) => {
+  const handleAddExercise = async (e) => {
     e.preventDefault();
     if (formData.exerciseName.trim()) {
+      // Se for um exercício novo, salvar no backend primeiro
+      if (isCreatingNew && formData.equipment.trim()) {
+        setIsSaving(true);
+        try {
+          const newExercise = await createCustomExercise(
+            {
+              name: formData.exerciseName.trim(),
+              muscleGroup: selectedGroup,
+              equipment: formData.equipment.trim(),
+            },
+            tenantId,
+          );
+          onExerciseCreated?.(newExercise);
+        } catch (error) {
+          console.error("Erro ao salvar exercício customizado:", error);
+        } finally {
+          setIsSaving(false);
+        }
+      }
+
       onAdd(formData);
-      setFormData({ exerciseName: "", sets: 3, reps: 10, restSeconds: 60 });
+      setFormData({
+        exerciseName: "",
+        equipment: "",
+        sets: 3,
+        reps: 10,
+        restSeconds: 60,
+      });
+      setIsCreatingNew(false);
+    }
+  };
+
+  const handleSelectChange = (e) => {
+    const value = e.target.value;
+    if (value === "__create_new__") {
+      setIsCreatingNew(true);
+      setFormData((prev) => ({ ...prev, exerciseName: "", equipment: "" }));
+    } else {
+      setIsCreatingNew(false);
+      setFormData((prev) => ({
+        ...prev,
+        exerciseName: value,
+        equipment: "",
+      }));
     }
   };
 
@@ -546,13 +608,8 @@ function ExerciseSelector({ onAdd, onClose }) {
           <label className="block text-sm text-white/70">
             {t("WORKOUT_MODAL_EXERCISE_LABEL_THIAGOIAZZETTI", "Exercicio")}
             <select
-              value={formData.exerciseName}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  exerciseName: e.target.value,
-                }))
-              }
+              value={isCreatingNew ? "__create_new__" : formData.exerciseName}
+              onChange={handleSelectChange}
               className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
             >
               <option value="">
@@ -566,8 +623,61 @@ function ExerciseSelector({ onAdd, onClose }) {
                   {ex.name} ({ex.equipment})
                 </option>
               ))}
+              <option value="__create_new__" className="font-semibold">
+                +{" "}
+                {t(
+                  "WORKOUT_MODAL_CREATE_NEW_EXERCISE_THIAGOIAZZETTI",
+                  "Criar novo exercicio",
+                )}
+              </option>
             </select>
           </label>
+
+          {isCreatingNew && (
+            <>
+              <label className="block text-sm text-white/70">
+                {t(
+                  "WORKOUT_MODAL_EXERCISE_NAME_THIAGOIAZZETTI",
+                  "Nome do exercicio",
+                )}
+                <input
+                  type="text"
+                  placeholder={t(
+                    "WORKOUT_MODAL_EXERCISE_NAME_PLACEHOLDER_THIAGOIAZZETTI",
+                    "Ex: Flexão com peso",
+                  )}
+                  value={formData.exerciseName}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      exerciseName: e.target.value,
+                    }))
+                  }
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#b5f03c]/50"
+                  autoFocus
+                />
+              </label>
+
+              <label className="block text-sm text-white/70">
+                {t("WORKOUT_MODAL_EQUIPMENT_THIAGOIAZZETTI", "Equipamento")}
+                <input
+                  type="text"
+                  placeholder={t(
+                    "WORKOUT_MODAL_EQUIPMENT_PLACEHOLDER_THIAGOIAZZETTI",
+                    "Ex: Barra, Halteres, Máquina",
+                  )}
+                  value={formData.equipment}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      equipment: e.target.value,
+                    }))
+                  }
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#b5f03c]/50"
+                />
+              </label>
+            </>
+          )}
 
           <div className="grid gap-3 md:grid-cols-3">
             <label className="block text-sm text-white/70">
@@ -628,12 +738,18 @@ function ExerciseSelector({ onAdd, onClose }) {
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-[#b5f03c] px-4 py-3 font-semibold text-black transition hover:brightness-110"
+              disabled={isSaving}
+              className="flex-1 rounded-xl bg-[#b5f03c] px-4 py-3 font-semibold text-black transition hover:brightness-110 disabled:opacity-50"
             >
-              {t(
-                "WORKOUT_MODAL_ADD_EXERCISE_BUTTON_THIAGOIAZZETTI",
-                "Adicionar exercicio",
-              )}
+              {isSaving
+                ? t(
+                    "WORKOUT_MODAL_SAVING_EXERCISE_THIAGOIAZZETTI",
+                    "Salvando...",
+                  )
+                : t(
+                    "WORKOUT_MODAL_ADD_EXERCISE_BUTTON_THIAGOIAZZETTI",
+                    "Adicionar exercicio",
+                  )}
             </button>
             <button
               type="button"
@@ -704,6 +820,18 @@ export default function WorkoutBuilderPage() {
   ]);
   const [updatingSessionId, setUpdatingSessionId] = useState("");
   const [deletingSessionId, setDeletingSessionId] = useState("");
+  const [customExercises, setCustomExercises] = useState([]);
+  const [workoutTemplates, setWorkoutTemplates] = useState([]);
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState("");
+  const [editingExerciseId, setEditingExerciseId] = useState("");
+  const [showCustomExercises, setShowCustomExercises] = useState(false);
+  const [customExerciseForm, setCustomExerciseForm] = useState({
+    name: "",
+    muscleGroup: "",
+    equipment: "",
+  });
   const [workoutForm, setWorkoutForm] = useState({
     title: "",
     objective: "",
@@ -714,6 +842,28 @@ export default function WorkoutBuilderPage() {
     () => students.find((s) => s.id === selectedStudentId) || null,
     [students, selectedStudentId],
   );
+
+  // Mesclar biblioteca de exercícios hardcoded com customizados
+  const mergedExerciseLibrary = useMemo(() => {
+    const merged = { ...exerciseLibrary };
+
+    customExercises.forEach((exercise) => {
+      const group = exercise.muscleGroup;
+      if (!merged[group]) {
+        merged[group] = [];
+      }
+
+      const exists = merged[group].some((ex) => ex.name === exercise.name);
+      if (!exists) {
+        merged[group].push({
+          name: exercise.name,
+          equipment: exercise.equipment,
+        });
+      }
+    });
+
+    return merged;
+  }, [customExercises]);
 
   const toEditableSession = (session, fallbackTitle, index) => ({
     id: session.id || `existing-${index}`,
@@ -783,8 +933,10 @@ export default function WorkoutBuilderPage() {
 
   const resetWorkoutForm = () => {
     setEditingWorkoutId("");
+    setEditingTemplateId("");
     setWorkoutForm({ title: "", objective: "", phase: "Hipertrofia" });
     setCurrentWorkoutExercises([]);
+    setSaveAsTemplate(false);
   };
 
   useEffect(() => {
@@ -798,6 +950,22 @@ export default function WorkoutBuilderPage() {
           setStudents(items);
           if (items.length > 0) {
             setSelectedStudentId((prev) => prev || items[0].id);
+          }
+
+          // Carregar exercícios customizados
+          try {
+            const exercises = await listCustomExercises(tenantId);
+            setCustomExercises(Array.isArray(exercises) ? exercises : []);
+          } catch (error) {
+            console.error("Erro ao carregar exercícios customizados:", error);
+          }
+
+          // Carregar templates de treino
+          try {
+            const templates = await listWorkoutTemplates(tenantId);
+            setWorkoutTemplates(Array.isArray(templates) ? templates : []);
+          } catch (error) {
+            console.error("Erro ao carregar templates de treino:", error);
           }
         }
       } catch (error) {
@@ -908,6 +1076,46 @@ export default function WorkoutBuilderPage() {
 
     setSaving(true);
     try {
+      // Se estamos editando um template, não criar/atualizar treino do aluno
+      if (editingTemplateId) {
+        const templatePayload = {
+          title: workoutForm.title,
+          objective: workoutForm.objective,
+          items: currentWorkoutExercises.map((exercise, index) => ({
+            exerciseName: exercise.exerciseName,
+            sets: Number(exercise.sets),
+            reps: String(exercise.reps),
+            restSeconds: exercise.restSeconds
+              ? Number(exercise.restSeconds)
+              : null,
+            orderIndex: index,
+          })),
+        };
+
+        try {
+          const updatedTemplate = await updateWorkoutTemplate(
+            editingTemplateId,
+            templatePayload,
+            tenantId,
+          );
+          setWorkoutTemplates((prev) =>
+            prev.map((template) =>
+              template.id === editingTemplateId ? updatedTemplate : template,
+            ),
+          );
+          resetWorkoutForm();
+          setMessage("Template atualizado com sucesso!");
+          setSaving(false);
+          return;
+        } catch (error) {
+          setMessage(
+            error?.message || "Erro ao atualizar template. Tente novamente.",
+          );
+          setSaving(false);
+          return;
+        }
+      }
+
       const payload = {
         alunoId: selectedStudentId,
         title: workoutForm.title,
@@ -932,6 +1140,36 @@ export default function WorkoutBuilderPage() {
         : await createWorkoutPlan(payload, tenantId);
 
       const normalized = normalizeWorkoutPlan(persistWorkout);
+
+      // Se marcado "Salvar como template", criar template
+      if (saveAsTemplate && !editingWorkoutId) {
+        try {
+          const templatePayload = {
+            title: workoutForm.title,
+            objective: workoutForm.objective,
+            items: currentWorkoutExercises.map((exercise, index) => ({
+              exerciseName: exercise.exerciseName,
+              sets: Number(exercise.sets),
+              reps: String(exercise.reps),
+              restSeconds: exercise.restSeconds
+                ? Number(exercise.restSeconds)
+                : null,
+              orderIndex: index,
+            })),
+          };
+          const newTemplate = await createWorkoutTemplate(
+            templatePayload,
+            tenantId,
+          );
+          setWorkoutTemplates((prev) => [newTemplate, ...prev]);
+          setSaveAsTemplate(false);
+        } catch (error) {
+          console.error(
+            "Erro ao salvar template:",
+            error?.message || "Template não foi salvo",
+          );
+        }
+      }
 
       setWorkouts((prev) =>
         editingWorkoutId
@@ -961,6 +1199,7 @@ export default function WorkoutBuilderPage() {
 
   const handleEditWorkout = (workout) => {
     setEditingWorkoutId(workout.id);
+    setEditingTemplateId("");
     setWorkoutForm({
       title: workout.title || "",
       objective: stripPhaseFromObjective(workout.objective),
@@ -982,6 +1221,25 @@ export default function WorkoutBuilderPage() {
     );
   };
 
+  const handleDeleteWorkout = async (workoutId) => {
+    if (!window.confirm("Tem certeza que deseja deletar este treino?")) {
+      return;
+    }
+
+    try {
+      await deleteWorkoutPlan(workoutId, tenantId);
+      setWorkouts((prev) => prev.filter((workout) => workout.id !== workoutId));
+
+      if (editingWorkoutId === workoutId) {
+        resetWorkoutForm();
+      }
+
+      setMessage("Treino deletado com sucesso!");
+    } catch (error) {
+      setMessage(error?.message || "Erro ao deletar treino. Tente novamente.");
+    }
+  };
+
   const handleCloneWorkout = (workout) => {
     setWorkoutForm({
       title: `${workout.title} (Cópia)`,
@@ -998,6 +1256,124 @@ export default function WorkoutBuilderPage() {
       id: Math.random().toString(36).substr(2, 9),
     }));
     setCurrentWorkoutExercises(exercisesWithIds);
+  };
+
+  const handleUseTemplate = (template) => {
+    setWorkoutForm({
+      title: template.title,
+      objective: template.objective,
+      phase: "Hipertrofia", // Default phase
+    });
+    const templatesExercises = Array.isArray(template.items)
+      ? template.items
+      : [];
+    const exercisesWithIds = templatesExercises.map((ex) => ({
+      ...ex,
+      id: Math.random().toString(36).substr(2, 9),
+    }));
+    setCurrentWorkoutExercises(exercisesWithIds);
+    setSaveAsTemplate(false);
+    // Scroll para o topo do formulário
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleEditTemplate = (template) => {
+    setWorkoutForm({
+      title: template.title,
+      objective: template.objective,
+      phase: "Hipertrofia",
+    });
+    const templatesExercises = Array.isArray(template.items)
+      ? template.items
+      : [];
+    const exercisesWithIds = templatesExercises.map((ex) => ({
+      ...ex,
+      id: Math.random().toString(36).substr(2, 9),
+    }));
+    setCurrentWorkoutExercises(exercisesWithIds);
+    setEditingTemplateId(template.id);
+    setSaveAsTemplate(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDeleteTemplate = async (templateId) => {
+    if (!window.confirm("Tem certeza que deseja deletar este template?")) {
+      return;
+    }
+
+    try {
+      await deleteWorkoutTemplate(templateId, tenantId);
+      setWorkoutTemplates((prev) =>
+        prev.filter((template) => template.id !== templateId),
+      );
+      setMessage("Template deletado com sucesso!");
+    } catch (error) {
+      setMessage(
+        error?.message || "Erro ao deletar template. Tente novamente.",
+      );
+    }
+  };
+
+  const handleEditCustomExercise = (exercise) => {
+    setEditingExerciseId(exercise.id);
+    setCustomExerciseForm({
+      name: exercise.name,
+      muscleGroup: exercise.muscleGroup,
+      equipment: exercise.equipment,
+    });
+  };
+
+  const handleSaveCustomExercise = async () => {
+    if (
+      !customExerciseForm.name.trim() ||
+      !customExerciseForm.equipment.trim()
+    ) {
+      setMessage("Nome e equipamento são obrigatórios");
+      return;
+    }
+
+    try {
+      const updated = await updateCustomExercise(
+        editingExerciseId,
+        {
+          name: customExerciseForm.name.trim(),
+          muscleGroup: customExerciseForm.muscleGroup,
+          equipment: customExerciseForm.equipment.trim(),
+        },
+        tenantId,
+      );
+      setCustomExercises((prev) =>
+        prev.map((ex) => (ex.id === editingExerciseId ? updated : ex)),
+      );
+      setEditingExerciseId("");
+      setCustomExerciseForm({ name: "", muscleGroup: "", equipment: "" });
+      setMessage("Exercício atualizado com sucesso!");
+    } catch (error) {
+      setMessage(
+        error?.message || "Erro ao atualizar exercício. Tente novamente.",
+      );
+    }
+  };
+
+  const handleDeleteCustomExercise = async (exerciseId) => {
+    if (!window.confirm("Tem certeza que deseja deletar este exercício?")) {
+      return;
+    }
+
+    try {
+      await deleteCustomExercise(exerciseId, tenantId);
+      setCustomExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
+      setMessage("Exercício deletado com sucesso!");
+    } catch (error) {
+      setMessage(
+        error?.message || "Erro ao deletar exercício. Tente novamente.",
+      );
+    }
+  };
+
+  const cancelEditCustomExercise = () => {
+    setEditingExerciseId("");
+    setCustomExerciseForm({ name: "", muscleGroup: "", equipment: "" });
   };
 
   const handleScheduleSessionChange = (sessionId, field, value) => {
@@ -1400,6 +1776,19 @@ export default function WorkoutBuilderPage() {
             </div>
           </div>
 
+          <label className="inline-flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70 transition hover:border-white/20">
+            <input
+              type="checkbox"
+              checked={saveAsTemplate}
+              onChange={(e) => setSaveAsTemplate(e.target.checked)}
+              className="h-4 w-4 rounded border border-white/30 bg-white/5"
+            />
+            {t(
+              "WORKOUT_BUILDER_SAVE_AS_TEMPLATE_THIAGOIAZZETTI",
+              "Salvar como template",
+            )}
+          </label>
+
           <div className="flex flex-wrap gap-3 pt-4">
             <button
               type="button"
@@ -1415,23 +1804,28 @@ export default function WorkoutBuilderPage() {
 
             <button
               type="submit"
-              disabled={saving || !selectedStudentId}
+              disabled={saving || (!selectedStudentId && !editingTemplateId)}
               className="flex-1 rounded-xl bg-[#b5f03c] px-6 py-3 font-semibold text-black transition hover:brightness-110 md:flex-none"
             >
               {saving
                 ? t("DIET_FORM_SAVING_THIAGOIAZZETTI", "Salvando...")
-                : editingWorkoutId
+                : editingTemplateId
                   ? t(
-                      "WORKOUT_BUILDER_UPDATE_BTN_THIAGOIAZZETTI",
-                      "Atualizar Treino",
+                      "WORKOUT_BUILDER_UPDATE_TEMPLATE_BTN_THIAGOIAZZETTI",
+                      "Atualizar Template",
                     )
-                  : t(
-                      "WORKOUT_BUILDER_SAVE_BTN_THIAGOIAZZETTI",
-                      "Salvar Treino",
-                    )}
+                  : editingWorkoutId
+                    ? t(
+                        "WORKOUT_BUILDER_UPDATE_BTN_THIAGOIAZZETTI",
+                        "Atualizar Treino",
+                      )
+                    : t(
+                        "WORKOUT_BUILDER_SAVE_BTN_THIAGOIAZZETTI",
+                        "Salvar Treino",
+                      )}
             </button>
 
-            {editingWorkoutId ? (
+            {editingWorkoutId || editingTemplateId ? (
               <button
                 type="button"
                 onClick={resetWorkoutForm}
@@ -1445,6 +1839,156 @@ export default function WorkoutBuilderPage() {
             ) : null}
           </div>
         </form>
+      </article>
+      <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-title text-2xl text-[#b5f03c]">
+            {t(
+              "WORKOUT_BUILDER_CUSTOM_EXERCISES_TITLE_THIAGOIAZZETTI",
+              "Exercicios Customizados",
+            )}{" "}
+            ({customExercises.length})
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowCustomExercises(!showCustomExercises)}
+            className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white/70 transition hover:border-white/20"
+          >
+            {showCustomExercises ? "Ocultar" : "Mostrar"}
+          </button>
+        </div>
+
+        {showCustomExercises && (
+          <div className="mt-5 space-y-3">
+            {customExercises.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-black/30 px-6 py-8 text-center">
+                <Dumbbell className="mx-auto mb-3 text-white/40" size={32} />
+                <p className="text-white/60">
+                  {t(
+                    "WORKOUT_BUILDER_NO_CUSTOM_EXERCISES_THIAGOIAZZETTI",
+                    "Nenhum exercicio customizado criado ainda.",
+                  )}
+                </p>
+              </div>
+            ) : (
+              <>
+                {editingExerciseId ? (
+                  <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                    <h3 className="mb-4 font-semibold text-[#b5f03c]">
+                      Editando exercício
+                    </h3>
+                    <div className="space-y-3">
+                      <label className="block text-sm text-white/70">
+                        Nome
+                        <input
+                          type="text"
+                          value={customExerciseForm.name}
+                          onChange={(e) =>
+                            setCustomExerciseForm((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
+                          className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
+                        />
+                      </label>
+                      <label className="block text-sm text-white/70">
+                        Grupo Muscular
+                        <select
+                          value={customExerciseForm.muscleGroup}
+                          onChange={(e) =>
+                            setCustomExerciseForm((prev) => ({
+                              ...prev,
+                              muscleGroup: e.target.value,
+                            }))
+                          }
+                          className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
+                        >
+                          <option value="">Selecionar</option>
+                          {Object.keys(exerciseLibrary).map((group) => (
+                            <option key={group} value={group}>
+                              {group}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block text-sm text-white/70">
+                        Equipamento
+                        <input
+                          type="text"
+                          value={customExerciseForm.equipment}
+                          onChange={(e) =>
+                            setCustomExerciseForm((prev) => ({
+                              ...prev,
+                              equipment: e.target.value,
+                            }))
+                          }
+                          className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
+                        />
+                      </label>
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveCustomExercise}
+                          className="flex-1 rounded-xl bg-[#b5f03c] px-4 py-2 font-semibold text-black transition hover:brightness-110"
+                        >
+                          Salvar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEditCustomExercise}
+                          className="flex-1 rounded-xl border border-white/10 px-4 py-2 font-semibold text-white/70 transition hover:border-white/20"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                {customExercises.map((exercise) => (
+                  <div
+                    key={exercise.id}
+                    className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                  >
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div className="flex-1">
+                        <p className="font-semibold text-white">
+                          {exercise.name}
+                        </p>
+                        <p className="text-sm text-white/55">
+                          {exercise.muscleGroup}
+                        </p>
+                        <p className="text-xs text-white/40">
+                          {exercise.equipment}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditCustomExercise(exercise)}
+                          className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#b5f03c]"
+                          title="Editar exercício"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteCustomExercise(exercise.id)
+                          }
+                          className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-red-400"
+                          title="Deletar exercício"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
       </article>
 
       <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
@@ -1563,6 +2107,7 @@ export default function WorkoutBuilderPage() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleDeleteWorkout(workout.id)}
                       className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-red-400"
                       title="Deletar treino"
                     >
@@ -1632,10 +2177,104 @@ export default function WorkoutBuilderPage() {
         </div>
       </article>
 
+      <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
+        <h2 className="font-title text-2xl text-[#b5f03c]">
+          {t(
+            "WORKOUT_BUILDER_TEMPLATES_TITLE_THIAGOIAZZETTI",
+            "Templates de Treino",
+          )}{" "}
+          ({workoutTemplates.length})
+        </h2>
+
+        <div className="mt-5 space-y-3">
+          {workoutTemplates.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-black/30 px-6 py-8 text-center">
+              <Bookmark className="mx-auto mb-3 text-white/40" size={32} />
+              <p className="text-white/60">
+                {t(
+                  "WORKOUT_BUILDER_NO_TEMPLATES_THIAGOIAZZETTI",
+                  "Nenhum template criado ainda. Marque a opcao 'Salvar como template' ao criar um treino!",
+                )}
+              </p>
+            </div>
+          ) : (
+            workoutTemplates.map((template) => (
+              <div
+                key={template.id}
+                className="rounded-2xl border border-white/10 bg-black/30 p-4"
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="flex-1">
+                    <p className="font-semibold text-white">{template.title}</p>
+                    <p className="mt-1 text-sm text-white/55">
+                      {template.objective}
+                    </p>
+                    {template.items && (
+                      <p className="mt-1 text-xs text-white/40">
+                        {template.items.length}{" "}
+                        {t(
+                          "WORKOUT_BUILDER_EXERCISES_COUNT_THIAGOIAZZETTI",
+                          "exercicios",
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleUseTemplate(template)}
+                      className="rounded-lg border border-[#b5f03c]/50 bg-[#b5f03c]/10 p-2 text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
+                      title="Usar template"
+                    >
+                      <Play size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleEditTemplate(template)}
+                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#b5f03c]"
+                      title="Editar template"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTemplate(template.id)}
+                      className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-red-400"
+                      title="Deletar template"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {template.items && template.items.length > 0 && (
+                  <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                    {template.items.map((exercise, index) => (
+                      <div key={index} className="text-sm text-white/70">
+                        <span className="font-semibold text-white">
+                          {exercise.exerciseName}
+                        </span>{" "}
+                        • {exercise.sets}x{exercise.reps}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </article>
+
       {showExerciseModal && (
         <ExerciseSelector
+          exerciseLibrary={mergedExerciseLibrary}
+          tenantId={tenantId}
           onAdd={handleAddExerciseToWorkout}
           onClose={() => setShowExerciseModal(false)}
+          onExerciseCreated={(exercise) => {
+            // Adicionar o novo exercício ao estado de customExercises
+            setCustomExercises((prev) => [...prev, exercise]);
+          }}
         />
       )}
 

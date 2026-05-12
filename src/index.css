@@ -59,6 +59,45 @@ option:checked {
   color: #ffffff;
 }
 
+/* Fix select and option visibility */
+select {
+  color-scheme: dark;
+  color: #f2f2f2;
+  background-color: #111111;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+select option {
+  background-color: #1a1a1a;
+  color: #f2f2f2;
+}
+
+select option:checked {
+  background: linear-gradient(#b5f03c, #b5f03c);
+  background-color: #b5f03c;
+  color: #090909;
+}
+
+/* Fallback for better contrast */
+input[type="date"],
+input[type="time"],
+input[type="email"],
+input[type="text"],
+input[type="tel"],
+input[type="number"] {
+  color-scheme: dark;
+}
+
+@layer components {
+  .select-dark {
+    @apply bg-[#111] text-white border border-white/10;
+  }
+
+  .select-dark option {
+    @apply bg-[#1a1a1a] text-white;
+  }
+}
+
 @layer utilities {
   .font-title {
     font-family: "Cormorant Garamond", serif;

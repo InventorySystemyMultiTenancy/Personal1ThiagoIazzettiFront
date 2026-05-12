@@ -14,6 +14,7 @@ import {
   deleteAgendaEvent,
   listAgendaEvents,
   listStudents,
+  listWorkoutSessions,
   listWorkoutPlans,
   updateAgendaEvent,
 } from "../lib/api.js";
@@ -333,12 +334,59 @@ function formatDateTime(value) {
   }).format(d);
 }
 
+function formatDurationSeconds(durationSeconds) {
+  const total = Math.max(0, Number(durationSeconds || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function sameDay(a, b) {
   return (
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
+}
+
+const WEEKDAY_SLOTS = [
+  { key: "SUN", label: "Dom", dayIndex: 0 },
+  { key: "MON", label: "Seg", dayIndex: 1 },
+  { key: "TUE", label: "Ter", dayIndex: 2 },
+  { key: "WED", label: "Qua", dayIndex: 3 },
+  { key: "THU", label: "Qui", dayIndex: 4 },
+  { key: "FRI", label: "Sex", dayIndex: 5 },
+  { key: "SAT", label: "Sab", dayIndex: 6 },
+];
+
+function buildDateWithTime(baseDate, timeValue) {
+  if (!timeValue || !String(timeValue).includes(":")) {
+    return null;
+  }
+
+  const [hours, minutes] = String(timeValue).split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return null;
+  }
+
+  const nextDate = new Date(baseDate);
+  nextDate.setHours(hours, minutes, 0, 0);
+  return nextDate;
+}
+
+function timeToMinutes(timeValue) {
+  if (!timeValue || !String(timeValue).includes(":")) {
+    return null;
+  }
+
+  const [hours, minutes] = String(timeValue).split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
 }
 
 export default function AdminAgendaPage() {
@@ -352,9 +400,23 @@ export default function AdminAgendaPage() {
   const [message, setMessage] = useState("");
   const [students, setStudents] = useState([]);
   const [events, setEvents] = useState([]);
+  const [workoutSessions, setWorkoutSessions] = useState([]);
   const [workouts, setWorkouts] = useState([]);
   const [editingId, setEditingId] = useState("");
   const [monthCursor, setMonthCursor] = useState(() => new Date());
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
+  const [creatingGrid, setCreatingGrid] = useState(false);
+  const [eventFilterAlunoId, setEventFilterAlunoId] = useState("");
+  const [weeklyGrid, setWeeklyGrid] = useState(() =>
+    WEEKDAY_SLOTS.reduce((acc, slot) => {
+      acc[slot.key] = {
+        enabled: false,
+        startsAtTime: "07:00",
+        endsAtTime: "08:00",
+      };
+      return acc;
+    }, {}),
+  );
 
   const [form, setForm] = useState({
     alunoId: "",
@@ -409,9 +471,41 @@ export default function AdminAgendaPage() {
     });
   }, [monthRange]);
 
-  const loadEvents = async (alunoId) => {
-    const data = await listAgendaEvents(tenantId, {
-      alunoId: alunoId || undefined,
+  const loadAllEvents = async () => {
+    const fromDate = new Date(
+      monthRange.first.getFullYear(),
+      monthRange.first.getMonth(),
+      1,
+      0,
+      0,
+      0,
+    );
+    const toDate = new Date(
+      monthRange.first.getFullYear(),
+      monthRange.first.getMonth() + 1,
+      31,
+      23,
+      59,
+      59,
+    );
+
+    const filters = {
+      from: fromDate.toISOString(),
+      to: toDate.toISOString(),
+    };
+
+    const eventsData = await listAgendaEvents(tenantId, filters);
+    setEvents(Array.isArray(eventsData) ? eventsData : []);
+  };
+
+  const loadSessionsForStudent = async (alunoId) => {
+    if (!alunoId) {
+      setWorkoutSessions([]);
+      return;
+    }
+
+    const sessionsData = await listWorkoutSessions(tenantId, {
+      alunoId,
       from: new Date(
         monthRange.first.getFullYear(),
         monthRange.first.getMonth(),
@@ -429,7 +523,7 @@ export default function AdminAgendaPage() {
         59,
       ).toISOString(),
     });
-    setEvents(Array.isArray(data) ? data : []);
+    setWorkoutSessions(Array.isArray(sessionsData) ? sessionsData : []);
   };
 
   useEffect(() => {
@@ -449,7 +543,7 @@ export default function AdminAgendaPage() {
         const firstId = normalizedStudents[0]?.id || "";
         if (firstId) {
           setForm((prev) => ({ ...prev, alunoId: prev.alunoId || firstId }));
-          const [allEvents, studentWorkouts] = await Promise.all([
+          const [allEvents, studentWorkouts, sessions] = await Promise.all([
             listAgendaEvents(tenantId, {
               from: new Date(
                 monthRange.first.getFullYear(),
@@ -469,10 +563,30 @@ export default function AdminAgendaPage() {
               ).toISOString(),
             }),
             listWorkoutPlans(firstId, tenantId),
+            listWorkoutSessions(tenantId, {
+              alunoId: firstId,
+              from: new Date(
+                monthRange.first.getFullYear(),
+                monthRange.first.getMonth(),
+                1,
+                0,
+                0,
+                0,
+              ).toISOString(),
+              to: new Date(
+                monthRange.first.getFullYear(),
+                monthRange.first.getMonth() + 1,
+                31,
+                23,
+                59,
+                59,
+              ).toISOString(),
+            }),
           ]);
           if (cancelled) return;
           setEvents(Array.isArray(allEvents) ? allEvents : []);
           setWorkouts(Array.isArray(studentWorkouts) ? studentWorkouts : []);
+          setWorkoutSessions(Array.isArray(sessions) ? sessions : []);
         }
       } catch (error) {
         if (!cancelled) {
@@ -500,8 +614,13 @@ export default function AdminAgendaPage() {
 
   useEffect(() => {
     if (!tenantId) return;
-    loadEvents(form.alunoId).catch(() => {});
-  }, [monthRange.first.getMonth(), monthRange.first.getFullYear()]);
+    loadAllEvents().catch(() => {});
+    loadSessionsForStudent(form.alunoId).catch(() => {});
+  }, [
+    monthRange.first.getMonth(),
+    monthRange.first.getFullYear(),
+    form.alunoId,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -513,9 +632,9 @@ export default function AdminAgendaPage() {
       }
 
       try {
-        const [studentWorkouts, studentEvents] = await Promise.all([
+        const [studentWorkouts, sessions] = await Promise.all([
           listWorkoutPlans(form.alunoId, tenantId),
-          listAgendaEvents(tenantId, {
+          listWorkoutSessions(tenantId, {
             alunoId: form.alunoId,
             from: new Date(
               monthRange.first.getFullYear(),
@@ -537,11 +656,12 @@ export default function AdminAgendaPage() {
         ]);
         if (!cancelled) {
           setWorkouts(Array.isArray(studentWorkouts) ? studentWorkouts : []);
-          setEvents(Array.isArray(studentEvents) ? studentEvents : []);
+          setWorkoutSessions(Array.isArray(sessions) ? sessions : []);
         }
       } catch (_error) {
         if (!cancelled) {
           setWorkouts([]);
+          setWorkoutSessions([]);
         }
       }
     };
@@ -570,6 +690,24 @@ export default function AdminAgendaPage() {
     }));
   };
 
+  const checkTimeConflicts = (startsAt, endsAt, excludeEventId = null) => {
+    const start = new Date(startsAt);
+    const end = endsAt ? new Date(endsAt) : new Date(start.getTime() + 3600000);
+
+    const conflicts = events.filter((ev) => {
+      if (excludeEventId && ev.id === excludeEventId) return false;
+
+      const evStart = new Date(ev.startsAt);
+      const evEnd = ev.endsAt
+        ? new Date(ev.endsAt)
+        : new Date(evStart.getTime() + 3600000);
+
+      return !(end <= evStart || start >= evEnd);
+    });
+
+    return conflicts;
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -580,6 +718,17 @@ export default function AdminAgendaPage() {
           "ADMIN_AGENDA_REQUIRED_FIELDS_THIAGOIAZZETTI",
           "Aluno, titulo e horario inicial sao obrigatorios",
         ),
+      );
+      return;
+    }
+
+    const conflicts = checkTimeConflicts(form.startsAt, form.endsAt, editingId);
+    if (conflicts.length > 0) {
+      const conflictNames = conflicts
+        .map((c) => c.aluno?.fullName || c.title)
+        .join(", ");
+      setMessage(
+        `Conflito de horário! Já existe treino agendado: ${conflictNames}`,
       );
       return;
     }
@@ -620,12 +769,137 @@ export default function AdminAgendaPage() {
         );
       }
       resetForm();
-      await loadEvents(form.alunoId);
+      await loadAllEvents();
+      await loadSessionsForStudent(form.alunoId);
     } catch (error) {
       setMessage(
         error?.message ||
           t("ADMIN_AGENDA_SAVE_ERROR_THIAGOIAZZETTI", "Falha ao salvar evento"),
       );
+    }
+  };
+
+  const handleWeeklyGridChange = (slotKey, field, value) => {
+    setWeeklyGrid((current) => ({
+      ...current,
+      [slotKey]: {
+        ...current[slotKey],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleCreateMonthlyGrid = async () => {
+    if (!form.alunoId || !form.title.trim()) {
+      setMessage("Selecione aluno e título para gerar a grade.");
+      return;
+    }
+
+    const enabledSlots = WEEKDAY_SLOTS.filter(
+      (slot) => weeklyGrid[slot.key]?.enabled,
+    );
+
+    if (enabledSlots.length === 0) {
+      setMessage("Marque pelo menos um dia da semana para gerar a grade.");
+      return;
+    }
+
+    if (hasWeeklyGridConflicts) {
+      setMessage(
+        "Nao e possivel criar a grade: ha conflito de horario com outro aluno.",
+      );
+      return;
+    }
+
+    const fromDate = new Date(
+      monthRange.first.getFullYear(),
+      monthRange.first.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
+    const toDate = new Date(
+      monthRange.first.getFullYear(),
+      monthRange.first.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+
+    const eventsToCreate = [];
+
+    for (
+      let cursor = new Date(fromDate);
+      cursor <= toDate;
+      cursor.setDate(cursor.getDate() + 1)
+    ) {
+      const dayIndex = cursor.getDay();
+      const daySlot = enabledSlots.find((slot) => slot.dayIndex === dayIndex);
+      if (!daySlot) {
+        continue;
+      }
+
+      const config = weeklyGrid[daySlot.key];
+      const startsAt = buildDateWithTime(cursor, config?.startsAtTime);
+      const endsAt = buildDateWithTime(cursor, config?.endsAtTime);
+
+      if (!startsAt) {
+        continue;
+      }
+
+      eventsToCreate.push({
+        alunoId: form.alunoId,
+        title: form.title.trim(),
+        description: form.description || null,
+        type: form.type,
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt ? endsAt.toISOString() : null,
+        workoutPlanId: form.workoutPlanId || null,
+        dietNotes: form.dietNotes || null,
+        recurrence: "NONE",
+        recurrenceUntil: null,
+        attendanceStatus: form.attendanceStatus,
+      });
+    }
+
+    if (eventsToCreate.length === 0) {
+      setMessage("Nenhum horário válido encontrado para criar a grade.");
+      return;
+    }
+
+    setCreatingGrid(true);
+    let createdCount = 0;
+    let conflictCount = 0;
+
+    try {
+      for (const payload of eventsToCreate) {
+        try {
+          await createAgendaEvent(payload, tenantId);
+          createdCount += 1;
+        } catch (error) {
+          if (error?.status === 409) {
+            conflictCount += 1;
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      await loadAllEvents();
+      await loadSessionsForStudent(form.alunoId);
+      setMessage(
+        `Grade criada: ${createdCount} horários adicionados${conflictCount ? `, ${conflictCount} em conflito` : ""}.`,
+      );
+    } catch (error) {
+      setMessage(
+        error?.message || "Não foi possível criar a grade de horários.",
+      );
+    } finally {
+      setCreatingGrid(false);
     }
   };
 
@@ -646,6 +920,24 @@ export default function AdminAgendaPage() {
         : "",
       attendanceStatus: event.attendanceStatus || "PENDENTE",
     });
+  };
+
+  const handleToggleCompletion = async (event) => {
+    const newStatus =
+      event.attendanceStatus === "CONFIRMADO" ? "PENDENTE" : "CONFIRMADO";
+    const payload = {
+      ...event,
+      attendanceStatus: newStatus,
+    };
+
+    try {
+      const updated = await updateAgendaEvent(event.id, payload, tenantId);
+      setEvents((prev) =>
+        prev.map((ev) => (ev.id === event.id ? updated : ev)),
+      );
+    } catch (error) {
+      setMessage(error?.message || "Erro ao marcar como concluído.");
+    }
   };
 
   const handleDelete = async (eventId) => {
@@ -683,6 +975,108 @@ export default function AdminAgendaPage() {
     });
     return map;
   }, [events]);
+
+  const filteredEvents = useMemo(() => {
+    if (!eventFilterAlunoId) {
+      return events;
+    }
+    return events.filter((event) => event.alunoId === eventFilterAlunoId);
+  }, [events, eventFilterAlunoId]);
+
+  const filteredEventsByDay = useMemo(() => {
+    const map = new Map();
+    filteredEvents.forEach((event) => {
+      const key = new Date(event.startsAt).toDateString();
+      const arr = map.get(key) || [];
+      arr.push(event);
+      map.set(key, arr);
+    });
+    return map;
+  }, [filteredEvents]);
+
+  const sessionsByDay = useMemo(() => {
+    const map = new Map();
+    workoutSessions.forEach((session) => {
+      const key = new Date(session.startedAt).toDateString();
+      const arr = map.get(key) || [];
+      arr.push(session);
+      map.set(key, arr);
+    });
+    return map;
+  }, [workoutSessions]);
+
+  const selectedDaySessions = useMemo(() => {
+    const key = selectedDay.toDateString();
+    return sessionsByDay.get(key) || [];
+  }, [selectedDay, sessionsByDay]);
+
+  const weeklyGridConflicts = useMemo(() => {
+    const conflictsMap = {};
+
+    WEEKDAY_SLOTS.forEach((slot) => {
+      const slotState = weeklyGrid[slot.key];
+      if (!slotState?.enabled) {
+        conflictsMap[slot.key] = { count: 0, names: [] };
+        return;
+      }
+
+      const startMinutes = timeToMinutes(slotState.startsAtTime);
+      const endMinutes =
+        timeToMinutes(slotState.endsAtTime) ??
+        (startMinutes !== null ? startMinutes + 60 : null);
+
+      if (startMinutes === null) {
+        conflictsMap[slot.key] = { count: 0, names: [] };
+        return;
+      }
+
+      const overlapping = events.filter((event) => {
+        if (event.alunoId === form.alunoId) {
+          return false;
+        }
+
+        const eventStart = new Date(event.startsAt);
+        const sameMonth =
+          eventStart.getFullYear() === monthRange.first.getFullYear() &&
+          eventStart.getMonth() === monthRange.first.getMonth();
+        if (!sameMonth || eventStart.getDay() !== slot.dayIndex) {
+          return false;
+        }
+
+        const eventStartMinutes =
+          eventStart.getHours() * 60 + eventStart.getMinutes();
+        const eventEndDate = event.endsAt ? new Date(event.endsAt) : null;
+        const eventEndMinutes = eventEndDate
+          ? eventEndDate.getHours() * 60 + eventEndDate.getMinutes()
+          : eventStartMinutes + 60;
+
+        return !(
+          endMinutes <= eventStartMinutes || startMinutes >= eventEndMinutes
+        );
+      });
+
+      const names = [
+        ...new Set(
+          overlapping.map((event) => event.aluno?.fullName || "Outro aluno"),
+        ),
+      ];
+
+      conflictsMap[slot.key] = {
+        count: overlapping.length,
+        names,
+      };
+    });
+
+    return conflictsMap;
+  }, [weeklyGrid, events, form.alunoId, monthRange.first]);
+
+  const hasWeeklyGridConflicts = useMemo(
+    () =>
+      WEEKDAY_SLOTS.some(
+        (slot) => (weeklyGridConflicts[slot.key]?.count || 0) > 0,
+      ),
+    [weeklyGridConflicts],
+  );
 
   return (
     <main className="space-y-6">
@@ -756,11 +1150,13 @@ export default function AdminAgendaPage() {
         <div className="mt-2 grid grid-cols-7 gap-2">
           {calendarDays.map((day) => {
             const key = day.toDateString();
-            const dayEvents = eventsByDay.get(key) || [];
+            const dayEvents = filteredEventsByDay.get(key) || [];
+            const daySessions = sessionsByDay.get(key) || [];
             const inMonth = day.getMonth() === monthRange.first.getMonth();
             return (
               <div
                 key={key}
+                onClick={() => setSelectedDay(day)}
                 className={`min-h-28 rounded-xl border p-2 ${inMonth ? "border-white/15 bg-black/25" : "border-white/5 bg-black/10"}`}
               >
                 <p
@@ -772,16 +1168,45 @@ export default function AdminAgendaPage() {
                   {dayEvents.slice(0, 3).map((event) => (
                     <div
                       key={event.id}
-                      className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[10px] text-white/80"
+                      className="rounded-md border border-white/10 bg-white/5 px-1.5 py-1 text-[10px] text-white/80 flex items-start gap-1"
                     >
-                      {new Date(event.startsAt).toLocaleTimeString(
-                        locale || "pt-BR",
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )}{" "}
-                      {event.title}
+                      <input
+                        type="checkbox"
+                        checked={event.attendanceStatus === "CONFIRMADO"}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleToggleCompletion(event);
+                        }}
+                        className="h-3 w-3 cursor-pointer accent-[#b5f03c] mt-0.5 flex-shrink-0"
+                        title="Marcar como concluído"
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold">
+                          {new Date(event.startsAt).toLocaleTimeString(
+                            locale || "pt-BR",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
+                          {event.endsAt && (
+                            <>
+                              {" - "}
+                              {new Date(event.endsAt).toLocaleTimeString(
+                                locale || "pt-BR",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </>
+                          )}{" "}
+                          {event.title}
+                        </div>
+                        <div className="text-[9px] text-white/60">
+                          {event.aluno?.fullName || "Aluno"}
+                        </div>
+                      </div>
                     </div>
                   ))}
                   {dayEvents.length > 3 ? (
@@ -790,10 +1215,37 @@ export default function AdminAgendaPage() {
                       {t("CLIENT_AGENDA_EVENTS_THIAGOIAZZETTI", "eventos")}
                     </p>
                   ) : null}
+                  {daySessions.length > 0 ? (
+                    <p className="text-[10px] text-emerald-200">
+                      {daySessions.length} treino(s) concluido(s)
+                    </p>
+                  ) : null}
                 </div>
               </div>
             );
           })}
+        </div>
+      </section>
+
+      <section className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
+        <h3 className="font-title text-lg text-[#b5f03c]">
+          Filtrar Calendário por Aluno
+        </h3>
+        <div className="mt-4">
+          <select
+            value={eventFilterAlunoId}
+            onChange={(e) => setEventFilterAlunoId(e.target.value)}
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+          >
+            <option value="">
+              📅 Todos os alunos (mostrar todos os eventos)
+            </option>
+            {students.map((student) => (
+              <option key={student.id} value={student.id}>
+                👤 {student.fullName}
+              </option>
+            ))}
+          </select>
         </div>
       </section>
 
@@ -905,30 +1357,34 @@ export default function AdminAgendaPage() {
                 className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
               />
             </label>
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="block text-sm text-white/70">
-                {t("ADMIN_AGENDA_START_LABEL_THIAGOIAZZETTI", "Inicio")}
-                <input
-                  type="datetime-local"
-                  value={form.startsAt}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, startsAt: e.target.value }))
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                />
-              </label>
-              <label className="block text-sm text-white/70">
-                {t("ADMIN_AGENDA_END_LABEL_THIAGOIAZZETTI", "Fim")}
-                <input
-                  type="datetime-local"
-                  value={form.endsAt}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, endsAt: e.target.value }))
-                  }
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                />
-              </label>
-            </div>
+
+            {form.recurrence === "NONE" && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="block text-sm text-white/70">
+                  {t("ADMIN_AGENDA_START_LABEL_THIAGOIAZZETTI", "Inicio")}
+                  <input
+                    type="datetime-local"
+                    value={form.startsAt}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, startsAt: e.target.value }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
+                  />
+                </label>
+                <label className="block text-sm text-white/70">
+                  {t("ADMIN_AGENDA_END_LABEL_THIAGOIAZZETTI", "Fim")}
+                  <input
+                    type="datetime-local"
+                    value={form.endsAt}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, endsAt: e.target.value }))
+                    }
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
+                  />
+                </label>
+              </div>
+            )}
+
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-sm text-white/70">
                 {t(
@@ -978,6 +1434,104 @@ export default function AdminAgendaPage() {
                 />
               </label>
             </div>
+
+            {form.recurrence !== "NONE" && (
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      Grade semanal de horários
+                    </p>
+                    <p className="text-xs text-white/55">
+                      Marque os dias e horários para gerar a grade do mês
+                      selecionado.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateMonthlyGrid}
+                    disabled={creatingGrid || hasWeeklyGridConflicts}
+                    className="rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-2 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20 disabled:opacity-50"
+                  >
+                    {creatingGrid ? "Gerando..." : "Criar grade do mês"}
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  {WEEKDAY_SLOTS.map((slot) => {
+                    const slotState = weeklyGrid[slot.key] || {
+                      enabled: false,
+                      startsAtTime: "07:00",
+                      endsAtTime: "08:00",
+                    };
+                    const slotConflict = weeklyGridConflicts[slot.key] || {
+                      count: 0,
+                      names: [],
+                    };
+                    const hasConflict =
+                      slotState.enabled && slotConflict.count > 0;
+
+                    return (
+                      <div
+                        key={slot.key}
+                        className={`grid grid-cols-[auto_1fr_1fr] items-center gap-3 rounded-xl border p-3 ${hasConflict ? "border-red-400/50 bg-red-500/10" : "border-white/10 bg-white/5"}`}
+                      >
+                        <label className="inline-flex items-center gap-2 text-sm text-white/75">
+                          <input
+                            type="checkbox"
+                            checked={slotState.enabled}
+                            onChange={(e) =>
+                              handleWeeklyGridChange(
+                                slot.key,
+                                "enabled",
+                                e.target.checked,
+                              )
+                            }
+                          />
+                          {slot.label}
+                        </label>
+
+                        <input
+                          type="time"
+                          value={slotState.startsAtTime}
+                          disabled={!slotState.enabled}
+                          onChange={(e) =>
+                            handleWeeklyGridChange(
+                              slot.key,
+                              "startsAtTime",
+                              e.target.value,
+                            )
+                          }
+                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none disabled:opacity-40"
+                        />
+
+                        <input
+                          type="time"
+                          value={slotState.endsAtTime}
+                          disabled={!slotState.enabled}
+                          onChange={(e) =>
+                            handleWeeklyGridChange(
+                              slot.key,
+                              "endsAtTime",
+                              e.target.value,
+                            )
+                          }
+                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none disabled:opacity-40"
+                        />
+
+                        {hasConflict ? (
+                          <p className="col-span-3 text-xs text-red-300">
+                            Conflito: ja existe horario com{" "}
+                            {slotConflict.names.join(", ")}.
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <label className="block text-sm text-white/70">
               {t(
                 "ADMIN_AGENDA_RELATED_WORKOUT_THIAGOIAZZETTI",
@@ -1051,23 +1605,61 @@ export default function AdminAgendaPage() {
 
         <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
           <h2 className="font-title text-2xl text-[#b5f03c]">
-            {t("ADMIN_AGENDA_EVENTS_TITLE_THIAGOIAZZETTI", "Eventos")} (
-            {events.length})
+            Historico de treino do dia (
+            {selectedDay.toLocaleDateString("pt-BR")})
           </h2>
-          <p className="mt-2 text-sm text-white/60">
-            {selectedStudent
-              ? `${t("ADMIN_AGENDA_SELECTED_STUDENT_THIAGOIAZZETTI", "Aluno selecionado")}: ${selectedStudent.fullName}`
-              : t(
-                  "ADMIN_AGENDA_GENERAL_SCHEDULE_THIAGOIAZZETTI",
-                  "Mostrando agenda geral",
-                )}
-          </p>
+          <div className="mt-4 space-y-3">
+            {selectedDaySessions.length === 0 ? (
+              <p className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-sm text-white/60">
+                Nenhum treino finalizado neste dia.
+              </p>
+            ) : (
+              selectedDaySessions.map((session) => (
+                <div
+                  key={session.id}
+                  className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                >
+                  <p className="font-semibold text-white">
+                    {session.workoutPlan?.title || "Treino"}
+                  </p>
+                  <p className="mt-1 text-sm text-white/60">
+                    Duracao: {formatDurationSeconds(session.durationSeconds)}
+                  </p>
+                  <p className="text-xs text-white/45">
+                    Inicio: {formatDateTime(session.startedAt)}
+                  </p>
+                  <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                    {(session.items || []).map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/75"
+                      >
+                        <p className="font-semibold text-white">
+                          {item.exerciseName}
+                        </p>
+                        <p className="text-white/60">
+                          Cargas: {item.loadNotes || "-"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </article>
+
+        <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
+          <h2 className="font-title text-2xl text-[#b5f03c]">
+            {t("ADMIN_AGENDA_EVENTS_TITLE_THIAGOIAZZETTI", "Eventos")} (
+            {filteredEvents.length})
+          </h2>
           <div className="mt-5 space-y-3">
             {loading ? (
               <p className="text-sm text-white/60">
                 {t("ADMIN_AGENDA_LOADING_THIAGOIAZZETTI", "Carregando...")}
               </p>
-            ) : events.length === 0 ? (
+            ) : filteredEvents.length === 0 ? (
               <p className="rounded-2xl border border-white/10 bg-black/30 px-4 py-5 text-sm text-white/65">
                 {t(
                   "ADMIN_AGENDA_EMPTY_THIAGOIAZZETTI",
@@ -1075,24 +1667,39 @@ export default function AdminAgendaPage() {
                 )}
               </p>
             ) : (
-              events.map((event) => (
+              filteredEvents.map((event) => (
                 <div
                   key={event.id}
                   className="rounded-2xl border border-white/10 bg-black/30 p-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold ${eventTone(event.type)}`}
-                      >
-                        {event.type}
-                      </span>
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold ${attendanceTone(event.attendanceStatus)}`}
-                      >
-                        {event.attendanceStatus}
-                      </span>
-                      <p className="font-semibold text-white">{event.title}</p>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <input
+                          type="checkbox"
+                          checked={event.attendanceStatus === "CONFIRMADO"}
+                          onChange={() => handleToggleCompletion(event)}
+                          className="h-5 w-5 cursor-pointer accent-[#b5f03c]"
+                          title="Marcar como concluído"
+                        />
+                        <span
+                          className={`rounded-full border px-3 py-1 text-xs font-semibold ${eventTone(event.type)}`}
+                        >
+                          {event.type}
+                        </span>
+                        <span
+                          className={`rounded-full border px-3 py-1 text-xs font-semibold ${attendanceTone(event.attendanceStatus)}`}
+                        >
+                          {event.attendanceStatus}
+                        </span>
+                        <p className="font-semibold text-white">
+                          {event.title}
+                        </p>
+                      </div>
+                      <p className="text-xs text-white/50 flex items-center gap-1">
+                        <User size={12} className="text-white/30" />
+                        {event.aluno?.fullName || "Aluno desconhecido"}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button

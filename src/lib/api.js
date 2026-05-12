@@ -430,6 +430,43 @@ export async function deleteWorkoutPlan(planId, tenantId) {
   });
 }
 
+export async function listWorkoutSessions(tenantId, filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.alunoId) params.set("alunoId", filters.alunoId);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const response = await request(`/workout-sessions${query}`, { tenantId });
+  return Array.isArray(response?.sessions) ? response.sessions : [];
+}
+
+export async function listMyWorkoutSessions(tenantId, filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const response = await request(`/workout-sessions/me${query}`, { tenantId });
+  return Array.isArray(response?.sessions) ? response.sessions : [];
+}
+
+export async function startWorkoutSession(payload, tenantId) {
+  const response = await request("/workout-sessions/start", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.session || response;
+}
+
+export async function finishWorkoutSession(payload, tenantId) {
+  const response = await request("/workout-sessions/finish", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.session || response;
+}
+
 export async function listAgendaEvents(tenantId, filters = {}) {
   const params = new URLSearchParams();
   if (filters.alunoId) params.set("alunoId", filters.alunoId);
@@ -555,4 +592,76 @@ export async function sendMyMessage(content) {
     body: { content },
   });
   return response?.message || response;
+}
+
+// ── Custom Exercises ──────────────────────────────────────────────────────────
+
+export async function listCustomExercises(tenantId) {
+  const response = await request("/custom-exercises", { tenantId });
+  return Array.isArray(response?.exercises) ? response.exercises : [];
+}
+
+export async function listCustomExercisesByGroup(muscleGroup, tenantId) {
+  const response = await request(
+    `/custom-exercises/by-group?muscleGroup=${encodeURIComponent(muscleGroup)}`,
+    { tenantId },
+  );
+  return Array.isArray(response?.exercises) ? response.exercises : [];
+}
+
+export async function createCustomExercise(payload, tenantId) {
+  const response = await request("/custom-exercises", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.exercise || response;
+}
+
+export async function updateCustomExercise(exerciseId, payload, tenantId) {
+  const response = await request(`/custom-exercises/${exerciseId}`, {
+    method: "PATCH",
+    body: payload,
+    tenantId,
+  });
+  return response?.exercise || response;
+}
+
+export async function deleteCustomExercise(exerciseId, tenantId) {
+  return request(`/custom-exercises/${exerciseId}`, {
+    method: "DELETE",
+    tenantId,
+  });
+}
+
+// ── Workout Templates ─────────────────────────────────────────────────────────
+
+export async function listWorkoutTemplates(tenantId) {
+  const response = await request("/workout-plans/templates", { tenantId });
+  return Array.isArray(response?.templates) ? response.templates : [];
+}
+
+export async function createWorkoutTemplate(payload, tenantId) {
+  const response = await request("/workout-plans/templates", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.template || response;
+}
+
+export async function updateWorkoutTemplate(templateId, payload, tenantId) {
+  const response = await request(`/workout-plans/templates/${templateId}`, {
+    method: "PATCH",
+    body: payload,
+    tenantId,
+  });
+  return response?.template || response;
+}
+
+export async function deleteWorkoutTemplate(templateId, tenantId) {
+  return request(`/workout-plans/templates/${templateId}`, {
+    method: "DELETE",
+    tenantId,
+  });
 }

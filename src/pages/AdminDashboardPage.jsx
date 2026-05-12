@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3,
   Dumbbell,
@@ -209,6 +209,7 @@ function extractApiFieldErrors(error) {
 
 export default function AdminDashboardPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { tenantId } = useTenant();
   const { t, locale } = useI18n();
   const [students, setStudents] = useState([]);
@@ -1538,7 +1539,22 @@ export default function AdminDashboardPage() {
                   return (
                     <div
                       key={student.id}
-                      className={`rounded-xl border px-4 py-4 transition-all duration-200 hover:bg-white/[0.02] ${billingStatus.cardClass}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        navigate(`/admin/alunos/${student.id}/treinos`, {
+                          state: { studentName: student.fullName },
+                        })
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          navigate(`/admin/alunos/${student.id}/treinos`, {
+                            state: { studentName: student.fullName },
+                          });
+                        }
+                      }}
+                      className={`cursor-pointer rounded-xl border px-4 py-4 transition-all duration-200 hover:bg-white/[0.02] ${billingStatus.cardClass}`}
                     >
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
@@ -1564,7 +1580,10 @@ export default function AdminDashboardPage() {
                           </span>
                           <button
                             type="button"
-                            onClick={() => startEditStudent(student)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              startEditStudent(student);
+                            }}
                             className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-[#b5f03c]/30 hover:text-[#b5f03c]"
                           >
                             <Edit2 size={13} />
