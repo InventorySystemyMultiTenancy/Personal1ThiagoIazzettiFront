@@ -619,27 +619,8 @@ export default function AdminAgendaPage() {
       }
 
       try {
-        const [studentWorkouts, studentEvents, sessions] = await Promise.all([
+        const [studentWorkouts, sessions] = await Promise.all([
           listWorkoutPlans(form.alunoId, tenantId),
-          listAgendaEvents(tenantId, {
-            alunoId: form.alunoId,
-            from: new Date(
-              monthRange.first.getFullYear(),
-              monthRange.first.getMonth(),
-              1,
-              0,
-              0,
-              0,
-            ).toISOString(),
-            to: new Date(
-              monthRange.first.getFullYear(),
-              monthRange.first.getMonth() + 1,
-              31,
-              23,
-              59,
-              59,
-            ).toISOString(),
-          }),
           listWorkoutSessions(tenantId, {
             alunoId: form.alunoId,
             from: new Date(
@@ -662,7 +643,6 @@ export default function AdminAgendaPage() {
         ]);
         if (!cancelled) {
           setWorkouts(Array.isArray(studentWorkouts) ? studentWorkouts : []);
-          setEvents(Array.isArray(studentEvents) ? studentEvents : []);
           setWorkoutSessions(Array.isArray(sessions) ? sessions : []);
         }
       } catch (_error) {
