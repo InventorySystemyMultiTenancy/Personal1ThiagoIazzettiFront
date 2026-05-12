@@ -11,7 +11,6 @@ import {
   TrendingUp,
   AlertCircle,
   Plus,
-  ChevronRight,
   Edit2,
   Trash2,
   Send,
@@ -22,6 +21,7 @@ import {
   createStudentPlan,
   formatCurrency,
   formatDate,
+  listAgendaEvents,
   listDiets,
   listStudentPlans,
   listStudents,
@@ -140,12 +140,11 @@ function todayInputValue() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function createWorkoutScheduleDay(seed = Date.now()) {
-  return {
-    id: `day-${seed}-${Math.random().toString(36).slice(2, 7)}`,
-    weekday: "MONDAY",
-    time: "08:00",
-  };
+function addDaysInputValue(dateValue, days) {
+  const date = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+  if (Number.isNaN(date.getTime())) return todayInputValue();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 function createWorkoutItem(seed = Date.now()) {
@@ -155,25 +154,63 @@ function createWorkoutItem(seed = Date.now()) {
     sets: "",
     reps: "",
     restSeconds: "",
+    notes: "",
   };
 }
 
-function createStudentWorkoutDraft(seed = Date.now()) {
+function createTrainingScheduleSlot(weekday = "MONDAY", time = "08:00") {
+  const seed = Date.now();
   return {
-    id: `workout-${seed}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `slot-${seed}-${Math.random().toString(36).slice(2, 7)}`,
+    weekday,
+    time,
     mode: "template",
     templateId: "",
     title: "",
     objective: "",
     saveAsTemplate: false,
     items: [createWorkoutItem(seed)],
-    schedule: {
-      startsOn: todayInputValue(),
-      recurrenceUntil: "",
-      durationMinutes: 60,
-      days: [createWorkoutScheduleDay(seed)],
-    },
   };
+}
+
+function createTrainingScheduleDraft() {
+  const startsOn = todayInputValue();
+  return {
+    startsOn,
+    recurrenceUntil: "",
+    durationMinutes: 60,
+    days: [],
+  };
+}
+
+const AGENDA_TIME_OPTIONS = [
+  "06:00",
+  "07:00",
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+  "19:00",
+  "20:00",
+  "21:00",
+];
+
+function dateToWeekdayValue(date) {
+  return WEEKDAY_OPTIONS[date.getDay()]?.value || "MONDAY";
+}
+
+function eventToAgendaKey(event) {
+  const date = new Date(event?.startsAt || event?.startAt || event?.start);
+  if (Number.isNaN(date.getTime())) return "";
+  const time = date.toTimeString().slice(0, 5);
+  return `${dateToWeekdayValue(date)}-${time}`;
 }
 
 function normalizeApiFieldName(fieldName) {
@@ -216,6 +253,9 @@ export default function AdminDashboardPage() {
   const [plans, setPlans] = useState([]);
   const [workoutTemplates, setWorkoutTemplates] = useState([]);
   const [loadingWorkoutTemplates, setLoadingWorkoutTemplates] = useState(false);
+  const [agendaOpen, setAgendaOpen] = useState(false);
+  const [occupiedAgenda, setOccupiedAgenda] = useState([]);
+  const [loadingAgenda, setLoadingAgenda] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [studentFormErrors, setStudentFormErrors] = useState({});
@@ -239,7 +279,7 @@ export default function AdminDashboardPage() {
     birthDate: "",
     alunoPlanId: "",
     planDueDate: "",
-    workoutPlans: [],
+    trainingSchedule: createTrainingScheduleDraft(),
   });
   const [newPlanForm, setNewPlanForm] = useState({
     name: "",
@@ -254,131 +294,113 @@ export default function AdminDashboardPage() {
         : ""
     }`;
 
-  const updateStudentWorkout = (workoutId, changes) => {
+  const updateTrainingSchedule = (changes) => {
     setNewStudentForm((prev) => ({
       ...prev,
-      workoutPlans: prev.workoutPlans.map((workout) =>
-        workout.id === workoutId ? { ...workout, ...changes } : workout,
-      ),
+      trainingSchedule: { ...prev.trainingSchedule, ...changes },
     }));
   };
 
-  const updateStudentWorkoutSchedule = (workoutId, changes) => {
+  const updateTrainingSlot = (slotId, changes) => {
     setNewStudentForm((prev) => ({
       ...prev,
-      workoutPlans: prev.workoutPlans.map((workout) =>
-        workout.id === workoutId
-          ? { ...workout, schedule: { ...workout.schedule, ...changes } }
-          : workout,
-      ),
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        days: prev.trainingSchedule.days.map((slot) =>
+          slot.id === slotId ? { ...slot, ...changes } : slot,
+        ),
+      },
     }));
   };
 
-  const updateStudentWorkoutDay = (workoutId, dayId, changes) => {
+  const updateTrainingSlotItem = (slotId, itemId, changes) => {
     setNewStudentForm((prev) => ({
       ...prev,
-      workoutPlans: prev.workoutPlans.map((workout) =>
-        workout.id === workoutId
-          ? {
-              ...workout,
-              schedule: {
-                ...workout.schedule,
-                days: workout.schedule.days.map((day) =>
-                  day.id === dayId ? { ...day, ...changes } : day,
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        days: prev.trainingSchedule.days.map((slot) =>
+          slot.id === slotId
+            ? {
+                ...slot,
+                items: slot.items.map((item) =>
+                  item.id === itemId ? { ...item, ...changes } : item,
                 ),
-              },
-            }
-          : workout,
-      ),
+              }
+            : slot,
+        ),
+      },
     }));
   };
 
-  const updateStudentWorkoutItem = (workoutId, itemId, changes) => {
+  const addTrainingSlot = (weekday = "MONDAY", time = "08:00") => {
+    const key = `${weekday}-${time}`;
+    const alreadySelected = newStudentForm.trainingSchedule.days.some(
+      (slot) => `${slot.weekday}-${slot.time}` === key,
+    );
+    const occupied = occupiedAgenda.some((slot) => slot.key === key);
+
+    if (alreadySelected || occupied) {
+      setMessage(
+        occupied
+          ? "Horario ocupado na agenda. Escolha outro slot."
+          : "Esse horario ja foi selecionado.",
+      );
+      return;
+    }
+
     setNewStudentForm((prev) => ({
       ...prev,
-      workoutPlans: prev.workoutPlans.map((workout) =>
-        workout.id === workoutId
-          ? {
-              ...workout,
-              items: workout.items.map((item) =>
-                item.id === itemId ? { ...item, ...changes } : item,
-              ),
-            }
-          : workout,
-      ),
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        recurrenceUntil:
+          prev.trainingSchedule.recurrenceUntil ||
+          addDaysInputValue(prev.trainingSchedule.startsOn, 28),
+        days: [
+          ...prev.trainingSchedule.days,
+          createTrainingScheduleSlot(weekday, time),
+        ],
+      },
     }));
   };
 
-  const addStudentWorkout = () => {
+  const removeTrainingSlot = (slotId) => {
     setNewStudentForm((prev) => ({
       ...prev,
-      workoutPlans: [...prev.workoutPlans, createStudentWorkoutDraft()],
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        days: prev.trainingSchedule.days.filter((slot) => slot.id !== slotId),
+      },
     }));
   };
 
-  const removeStudentWorkout = (workoutId) => {
+  const addTrainingSlotItem = (slotId) => {
     setNewStudentForm((prev) => ({
       ...prev,
-      workoutPlans: prev.workoutPlans.filter((workout) => workout.id !== workoutId),
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        days: prev.trainingSchedule.days.map((slot) =>
+          slot.id === slotId
+            ? { ...slot, items: [...slot.items, createWorkoutItem()] }
+            : slot,
+        ),
+      },
     }));
   };
 
-  const addStudentWorkoutDay = (workoutId) => {
+  const removeTrainingSlotItem = (slotId, itemId) => {
     setNewStudentForm((prev) => ({
       ...prev,
-      workoutPlans: prev.workoutPlans.map((workout) =>
-        workout.id === workoutId
-          ? {
-              ...workout,
-              schedule: {
-                ...workout.schedule,
-                days: [...workout.schedule.days, createWorkoutScheduleDay()],
-              },
-            }
-          : workout,
-      ),
-    }));
-  };
-
-  const removeStudentWorkoutDay = (workoutId, dayId) => {
-    setNewStudentForm((prev) => ({
-      ...prev,
-      workoutPlans: prev.workoutPlans.map((workout) =>
-        workout.id === workoutId
-          ? {
-              ...workout,
-              schedule: {
-                ...workout.schedule,
-                days: workout.schedule.days.filter((day) => day.id !== dayId),
-              },
-            }
-          : workout,
-      ),
-    }));
-  };
-
-  const addStudentWorkoutItem = (workoutId) => {
-    setNewStudentForm((prev) => ({
-      ...prev,
-      workoutPlans: prev.workoutPlans.map((workout) =>
-        workout.id === workoutId
-          ? { ...workout, items: [...workout.items, createWorkoutItem()] }
-          : workout,
-      ),
-    }));
-  };
-
-  const removeStudentWorkoutItem = (workoutId, itemId) => {
-    setNewStudentForm((prev) => ({
-      ...prev,
-      workoutPlans: prev.workoutPlans.map((workout) =>
-        workout.id === workoutId
-          ? {
-              ...workout,
-              items: workout.items.filter((item) => item.id !== itemId),
-            }
-          : workout,
-      ),
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        days: prev.trainingSchedule.days.map((slot) =>
+          slot.id === slotId
+            ? {
+                ...slot,
+                items: slot.items.filter((item) => item.id !== itemId),
+              }
+            : slot,
+        ),
+      },
     }));
   };
 
@@ -395,6 +417,32 @@ export default function AdminDashboardPage() {
       return [];
     } finally {
       setLoadingWorkoutTemplates(false);
+    }
+  };
+
+  const loadOccupiedAgenda = async () => {
+    if (!tenantId) return [];
+    const from = newStudentForm.trainingSchedule.startsOn || todayInputValue();
+    const to =
+      newStudentForm.trainingSchedule.recurrenceUntil ||
+      addDaysInputValue(from, 28);
+
+    setLoadingAgenda(true);
+    try {
+      const events = await listAgendaEvents(tenantId, { from, to });
+      const occupied = (Array.isArray(events) ? events : [])
+        .map((event) => ({
+          key: eventToAgendaKey(event),
+          title: event?.title || event?.aluno?.fullName || "Ocupado",
+        }))
+        .filter((event) => event.key);
+      setOccupiedAgenda(occupied);
+      return occupied;
+    } catch (error) {
+      setMessage(error?.message || "Nao foi possivel carregar a agenda ocupada");
+      return [];
+    } finally {
+      setLoadingAgenda(false);
     }
   };
 
@@ -515,22 +563,45 @@ export default function AdminDashboardPage() {
     ];
   }, [plans, students, t]);
 
-  const validateStudentWorkoutPlans = () => {
+  const validateTrainingSchedule = () => {
     const errors = {};
+    const schedule = newStudentForm.trainingSchedule;
 
-    newStudentForm.workoutPlans.forEach((workout, workoutIndex) => {
-      const prefix = `workoutPlans.${workoutIndex}`;
+    if (schedule.days.length === 0) {
+      return errors;
+    }
 
-      if (workout.mode === "template" && !workout.templateId) {
+    if (!schedule.startsOn) {
+      errors["trainingSchedule.startsOn"] = true;
+    }
+    if (!schedule.recurrenceUntil) {
+      errors["trainingSchedule.recurrenceUntil"] = true;
+    }
+    if (!Number(schedule.durationMinutes)) {
+      errors["trainingSchedule.durationMinutes"] = true;
+    }
+
+    schedule.days.forEach((slot, slotIndex) => {
+      const prefix = `trainingSchedule.days.${slotIndex}`;
+
+      if (!slot.weekday) {
+        errors[`${prefix}.weekday`] = true;
+      }
+      if (!slot.time) {
+        errors[`${prefix}.time`] = true;
+      }
+      if (occupiedAgenda.some((occupied) => occupied.key === `${slot.weekday}-${slot.time}`)) {
+        errors[`${prefix}.time`] = true;
+      }
+      if (slot.mode === "template" && !slot.templateId) {
         errors[`${prefix}.templateId`] = true;
       }
+      if (slot.mode === "custom" && !slot.title.trim()) {
+        errors[`${prefix}.title`] = true;
+      }
 
-      if (workout.mode === "custom") {
-        if (!workout.title.trim()) {
-          errors[`${prefix}.title`] = true;
-        }
-
-        workout.items.forEach((item, itemIndex) => {
+      if (slot.mode === "custom") {
+        slot.items.forEach((item, itemIndex) => {
           if (!item.exerciseName.trim()) {
             errors[`${prefix}.items.${itemIndex}.exerciseName`] = true;
           }
@@ -542,66 +613,45 @@ export default function AdminDashboardPage() {
           }
         });
       }
-
-      if (!workout.schedule.startsOn) {
-        errors[`${prefix}.schedule.startsOn`] = true;
-      }
-      if (!workout.schedule.recurrenceUntil) {
-        errors[`${prefix}.schedule.recurrenceUntil`] = true;
-      }
-      if (!Number(workout.schedule.durationMinutes)) {
-        errors[`${prefix}.schedule.durationMinutes`] = true;
-      }
-      if (workout.schedule.days.length === 0) {
-        errors[`${prefix}.schedule.days`] = true;
-      }
-
-      workout.schedule.days.forEach((day, dayIndex) => {
-        if (!day.weekday) {
-          errors[`${prefix}.schedule.days.${dayIndex}.weekday`] = true;
-        }
-        if (!day.time) {
-          errors[`${prefix}.schedule.days.${dayIndex}.time`] = true;
-        }
-      });
     });
 
     return errors;
   };
 
-  const buildStudentWorkoutPlansPayload = () =>
-    newStudentForm.workoutPlans.map((workout) => {
-      const schedule = {
-        startsOn: workout.schedule.startsOn,
-        recurrenceUntil: workout.schedule.recurrenceUntil,
-        durationMinutes: Number(workout.schedule.durationMinutes) || 60,
-        days: workout.schedule.days.map((day) => ({
-          weekday: day.weekday,
-          time: day.time,
-        })),
-      };
+  const buildTrainingSchedulePayload = () => {
+    const schedule = newStudentForm.trainingSchedule;
+    if (schedule.days.length === 0) return undefined;
 
-      if (workout.mode === "template") {
+    return {
+      startsOn: schedule.startsOn,
+      recurrenceUntil: schedule.recurrenceUntil,
+      durationMinutes: Number(schedule.durationMinutes) || 60,
+      days: schedule.days.map((slot) => {
+        if (slot.mode === "template") {
+          return {
+            weekday: slot.weekday,
+            time: slot.time,
+            templateId: slot.templateId,
+          };
+        }
+
         return {
-          templateId: workout.templateId,
-          schedule,
+          weekday: slot.weekday,
+          time: slot.time,
+          title: slot.title.trim(),
+          objective: slot.objective.trim(),
+          saveAsTemplate: Boolean(slot.saveAsTemplate),
+          items: slot.items.map((item) => ({
+            exerciseName: item.exerciseName.trim(),
+            sets: Number(item.sets),
+            reps: String(item.reps).trim(),
+            restSeconds: item.restSeconds ? Number(item.restSeconds) : null,
+            notes: item.notes || "",
+          })),
         };
-      }
-
-      return {
-        title: workout.title.trim(),
-        objective: workout.objective.trim(),
-        saveAsTemplate: Boolean(workout.saveAsTemplate),
-        items: workout.items.map((item, index) => ({
-          exerciseName: item.exerciseName.trim(),
-          sets: Number(item.sets),
-          reps: String(item.reps).trim(),
-          restSeconds: item.restSeconds ? Number(item.restSeconds) : null,
-          orderIndex: index,
-        })),
-        schedule,
-      };
-    });
+      }),
+    };
+  };
 
   const handleCreateStudent = async (e) => {
     e.preventDefault();
@@ -614,12 +664,14 @@ export default function AdminDashboardPage() {
       nextErrors.email = true;
     }
 
-    Object.assign(nextErrors, validateStudentWorkoutPlans());
+    Object.assign(nextErrors, validateTrainingSchedule());
 
     if (Object.keys(nextErrors).length > 0) {
       setStudentFormErrors(nextErrors);
       setMessage(
-        Object.keys(nextErrors).some((field) => field.startsWith("workoutPlans"))
+        Object.keys(nextErrors).some((field) =>
+          field.startsWith("trainingSchedule"),
+        )
           ? "Revise os campos destacados em treinos e horarios."
           : t(
               "ADMIN_DASH_STUDENT_REQUIRED_THIAGOIAZZETTI",
@@ -636,6 +688,7 @@ export default function AdminDashboardPage() {
         await loadWorkoutTemplates();
       }
 
+      const trainingSchedule = buildTrainingSchedulePayload();
       const created = await createStudent(
         {
           fullName: newStudentForm.fullName,
@@ -645,7 +698,7 @@ export default function AdminDashboardPage() {
           alunoPlanId: newStudentForm.alunoPlanId || null,
           planDueDate: newStudentForm.planDueDate || null,
           isActive: true,
-          workoutPlans: buildStudentWorkoutPlansPayload(),
+          ...(trainingSchedule ? { trainingSchedule } : {}),
         },
         tenantId,
       );
@@ -657,8 +710,10 @@ export default function AdminDashboardPage() {
         birthDate: "",
         alunoPlanId: "",
         planDueDate: "",
-        workoutPlans: [],
+        trainingSchedule: createTrainingScheduleDraft(),
       });
+      setAgendaOpen(false);
+      setOccupiedAgenda([]);
       setMessage(
         `${t("ADMIN_DASH_STUDENT_CREATED_THIAGOIAZZETTI", "Aluno criado com sucesso")}: ${created.fullName}`,
       );
@@ -674,7 +729,7 @@ export default function AdminDashboardPage() {
           ...current,
           fullName: !newStudentForm.fullName.trim(),
           email: !newStudentForm.email.trim(),
-          ...validateStudentWorkoutPlans(),
+          ...validateTrainingSchedule(),
           ...apiFieldErrors,
         }));
         setMessage(
@@ -1110,362 +1165,388 @@ export default function AdminDashboardPage() {
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-[#b5f03c]">
-                      Treinos e horarios
+                      Agenda de treinos
                     </h3>
                     <p className="mt-1 text-xs text-white/45">
-                      Crie treinos junto com o aluno usando templates ou um treino novo.
+                      Selecione slots livres e vincule cada horario a um template ou treino simples.
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={loadWorkoutTemplates}
-                      disabled={loadingWorkoutTemplates}
-                      className="rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white/55 transition hover:border-white/20 disabled:opacity-50"
-                    >
-                      {loadingWorkoutTemplates ? "Carregando..." : "Atualizar templates"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={addStudentWorkout}
-                      className="inline-flex items-center gap-2 rounded-lg border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
-                    >
-                      <Plus size={14} />
-                      Adicionar treino
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAgendaOpen((current) => !current);
+                      if (!agendaOpen) {
+                        loadWorkoutTemplates();
+                        loadOccupiedAgenda();
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
+                  >
+                    <Calendar size={14} />
+                    {agendaOpen ? "Ocultar agenda" : "Abrir agenda"}
+                  </button>
                 </div>
 
-                {newStudentForm.workoutPlans.length === 0 ? (
-                  <p className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-sm text-white/45">
-                    Nenhum treino adicionado para criar junto com o aluno.
-                  </p>
-                ) : null}
-
-                <div className="mt-4 space-y-4">
-                  {newStudentForm.workoutPlans.map((workout, workoutIndex) => {
-                    const prefix = `workoutPlans.${workoutIndex}`;
-
-                    return (
-                      <div
-                        key={workout.id}
-                        className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/45">
-                            Treino {workoutIndex + 1}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => removeStudentWorkout(workout.id)}
-                            className="rounded-lg border border-white/[0.07] p-2 text-white/45 transition hover:text-red-300"
-                            title="Remover treino"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-
-                        <div className="mt-4 grid gap-3 md:grid-cols-2">
-                          <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                            Tipo
-                            <select
-                              value={workout.mode}
-                              onChange={(event) =>
-                                updateStudentWorkout(workout.id, {
-                                  mode: event.target.value,
-                                })
-                              }
-                              className="mt-2 w-full rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40"
-                            >
-                              <option value="template">Usar template existente</option>
-                              <option value="custom">Criar treino novo</option>
-                            </select>
-                          </label>
-
-                          {workout.mode === "template" ? (
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                              Template
-                              <select
-                                value={workout.templateId}
-                                onChange={(event) =>
-                                  updateStudentWorkout(workout.id, {
-                                    templateId: event.target.value,
-                                  })
-                                }
-                                className={fieldClass(
-                                  `${prefix}.templateId`,
-                                  "mt-2 w-full rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
-                                )}
-                              >
-                                <option value="">Selecione um template</option>
-                                {workoutTemplates.map((template) => (
-                                  <option key={template.id} value={template.id}>
-                                    {template.title || template.name || "Template"}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          ) : (
-                            <>
-                              <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                                Titulo
-                                <input
-                                  type="text"
-                                  value={workout.title}
-                                  onChange={(event) =>
-                                    updateStudentWorkout(workout.id, {
-                                      title: event.target.value,
-                                    })
-                                  }
-                                  className={fieldClass(
-                                    `${prefix}.title`,
-                                    "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
-                                  )}
-                                  placeholder="Ex: Peito e costas"
-                                />
-                              </label>
-                              <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                                Objetivo
-                                <input
-                                  type="text"
-                                  value={workout.objective}
-                                  onChange={(event) =>
-                                    updateStudentWorkout(workout.id, {
-                                      objective: event.target.value,
-                                    })
-                                  }
-                                  className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
-                                  placeholder="Ex: Hipertrofia"
-                                />
-                              </label>
-                              <label className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-black/20 px-3 py-3 text-sm text-white/65 md:col-span-2">
-                                <input
-                                  type="checkbox"
-                                  checked={workout.saveAsTemplate}
-                                  onChange={(event) =>
-                                    updateStudentWorkout(workout.id, {
-                                      saveAsTemplate: event.target.checked,
-                                    })
-                                  }
-                                />
-                                Salvar esse treino na biblioteca
-                              </label>
-                            </>
+                {agendaOpen ? (
+                  <div className="mt-4 space-y-4">
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                        Inicio
+                        <input
+                          type="date"
+                          value={newStudentForm.trainingSchedule.startsOn}
+                          onChange={(event) =>
+                            updateTrainingSchedule({ startsOn: event.target.value })
+                          }
+                          className={fieldClass(
+                            "trainingSchedule.startsOn",
+                            "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
                           )}
-                        </div>
+                        />
+                      </label>
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                        Recorrencia ate
+                        <input
+                          type="date"
+                          value={newStudentForm.trainingSchedule.recurrenceUntil}
+                          onChange={(event) =>
+                            updateTrainingSchedule({
+                              recurrenceUntil: event.target.value,
+                            })
+                          }
+                          className={fieldClass(
+                            "trainingSchedule.recurrenceUntil",
+                            "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
+                          )}
+                        />
+                      </label>
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                        Duracao
+                        <input
+                          type="number"
+                          min="1"
+                          value={newStudentForm.trainingSchedule.durationMinutes}
+                          onChange={(event) =>
+                            updateTrainingSchedule({
+                              durationMinutes: event.target.value,
+                            })
+                          }
+                          className={fieldClass(
+                            "trainingSchedule.durationMinutes",
+                            "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
+                          )}
+                        />
+                      </label>
+                    </div>
 
-                        {workout.mode === "custom" ? (
-                          <div className="mt-4 space-y-3">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                                Exercicios
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => addStudentWorkoutItem(workout.id)}
-                                className="rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-semibold text-white/55 transition hover:border-white/20"
-                              >
-                                Adicionar exercicio
-                              </button>
+                    <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+                      <div className="min-w-[760px]">
+                        <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-white/[0.07] bg-white/[0.03]">
+                          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
+                            Hora
+                          </div>
+                          {WEEKDAY_OPTIONS.map((day) => (
+                            <div
+                              key={day.value}
+                              className="px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/35"
+                            >
+                              {day.label.slice(0, 3)}
                             </div>
-                            {workout.items.map((item, itemIndex) => (
-                              <div
-                                key={item.id}
-                                className="grid gap-3 rounded-xl border border-white/[0.07] bg-black/20 p-3 md:grid-cols-[2fr_1fr_1fr_1fr_auto]"
-                              >
-                                <input
-                                  type="text"
-                                  value={item.exerciseName}
-                                  onChange={(event) =>
-                                    updateStudentWorkoutItem(workout.id, item.id, {
-                                      exerciseName: event.target.value,
-                                    })
-                                  }
-                                  className={fieldClass(
-                                    `${prefix}.items.${itemIndex}.exerciseName`,
-                                    "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
-                                  )}
-                                  placeholder="Exercicio"
-                                />
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={item.sets}
-                                  onChange={(event) =>
-                                    updateStudentWorkoutItem(workout.id, item.id, {
-                                      sets: event.target.value,
-                                    })
-                                  }
-                                  className={fieldClass(
-                                    `${prefix}.items.${itemIndex}.sets`,
-                                    "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
-                                  )}
-                                  placeholder="Series"
-                                />
-                                <input
-                                  type="text"
-                                  value={item.reps}
-                                  onChange={(event) =>
-                                    updateStudentWorkoutItem(workout.id, item.id, {
-                                      reps: event.target.value,
-                                    })
-                                  }
-                                  className={fieldClass(
-                                    `${prefix}.items.${itemIndex}.reps`,
-                                    "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
-                                  )}
-                                  placeholder="Reps"
-                                />
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={item.restSeconds}
-                                  onChange={(event) =>
-                                    updateStudentWorkoutItem(workout.id, item.id, {
-                                      restSeconds: event.target.value,
-                                    })
-                                  }
-                                  className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
-                                  placeholder="Descanso"
-                                />
+                          ))}
+                        </div>
+                        {AGENDA_TIME_OPTIONS.map((time) => (
+                          <div
+                            key={time}
+                            className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-white/[0.05] last:border-b-0"
+                          >
+                            <div className="px-3 py-2 text-xs font-semibold text-white/45">
+                              {time}
+                            </div>
+                            {WEEKDAY_OPTIONS.map((day) => {
+                              const key = `${day.value}-${time}`;
+                              const occupied = occupiedAgenda.some(
+                                (slot) => slot.key === key,
+                              );
+                              const selected =
+                                newStudentForm.trainingSchedule.days.some(
+                                  (slot) =>
+                                    `${slot.weekday}-${slot.time}` === key,
+                                );
+                              return (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  disabled={occupied || loadingAgenda}
+                                  onClick={() => addTrainingSlot(day.value, time)}
+                                  className={`m-1 min-h-9 rounded-lg border px-2 text-[11px] font-semibold transition ${
+                                    occupied
+                                      ? "cursor-not-allowed border-red-400/30 bg-red-500/10 text-red-200/60"
+                                      : selected
+                                        ? "border-[#b5f03c]/60 bg-[#b5f03c]/15 text-[#b5f03c]"
+                                        : "border-white/[0.07] bg-white/[0.03] text-white/45 hover:border-[#b5f03c]/35 hover:text-white"
+                                  }`}
+                                  title={occupied ? "Horario ocupado" : "Selecionar horario"}
+                                >
+                                  {occupied ? "Ocupado" : selected ? "Selecionado" : "Livre"}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={loadOccupiedAgenda}
+                        disabled={loadingAgenda}
+                        className="rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white/55 transition hover:border-white/20 disabled:opacity-50"
+                      >
+                        {loadingAgenda ? "Carregando..." : "Atualizar agenda"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={loadWorkoutTemplates}
+                        disabled={loadingWorkoutTemplates}
+                        className="rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white/55 transition hover:border-white/20 disabled:opacity-50"
+                      >
+                        {loadingWorkoutTemplates ? "Carregando..." : "Atualizar templates"}
+                      </button>
+                    </div>
+
+                    {newStudentForm.trainingSchedule.days.length === 0 ? (
+                      <p className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-sm text-white/45">
+                        Nenhum horario selecionado.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {newStudentForm.trainingSchedule.days.map((slot, slotIndex) => {
+                          const prefix = `trainingSchedule.days.${slotIndex}`;
+                          const weekdayLabel =
+                            WEEKDAY_OPTIONS.find((day) => day.value === slot.weekday)
+                              ?.label || slot.weekday;
+
+                          return (
+                            <div
+                              key={slot.id}
+                              className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-bold text-white/75">
+                                    {weekdayLabel} as {slot.time}
+                                  </p>
+                                  <p className="mt-1 text-xs text-white/35">
+                                    Configure o treino deste slot.
+                                  </p>
+                                </div>
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    removeStudentWorkoutItem(workout.id, item.id)
-                                  }
+                                  onClick={() => removeTrainingSlot(slot.id)}
                                   className="rounded-lg border border-white/[0.07] p-2 text-white/45 transition hover:text-red-300"
-                                  title="Remover exercicio"
+                                  title="Remover horario"
                                 >
                                   <Trash2 size={14} />
                                 </button>
                               </div>
-                            ))}
-                          </div>
-                        ) : null}
 
-                        <div className="mt-4 grid gap-3 md:grid-cols-3">
-                          <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                            Inicio
-                            <input
-                              type="date"
-                              value={workout.schedule.startsOn}
-                              onChange={(event) =>
-                                updateStudentWorkoutSchedule(workout.id, {
-                                  startsOn: event.target.value,
-                                })
-                              }
-                              className={fieldClass(
-                                `${prefix}.schedule.startsOn`,
-                                "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
-                              )}
-                            />
-                          </label>
-                          <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                            Recorrencia ate
-                            <input
-                              type="date"
-                              value={workout.schedule.recurrenceUntil}
-                              onChange={(event) =>
-                                updateStudentWorkoutSchedule(workout.id, {
-                                  recurrenceUntil: event.target.value,
-                                })
-                              }
-                              className={fieldClass(
-                                `${prefix}.schedule.recurrenceUntil`,
-                                "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
-                              )}
-                            />
-                          </label>
-                          <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                            Duracao em minutos
-                            <input
-                              type="number"
-                              min="1"
-                              value={workout.schedule.durationMinutes}
-                              onChange={(event) =>
-                                updateStudentWorkoutSchedule(workout.id, {
-                                  durationMinutes: event.target.value,
-                                })
-                              }
-                              className={fieldClass(
-                                `${prefix}.schedule.durationMinutes`,
-                                "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
-                              )}
-                            />
-                          </label>
-                        </div>
+                              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                                  Tipo
+                                  <select
+                                    value={slot.mode}
+                                    onChange={(event) =>
+                                      updateTrainingSlot(slot.id, {
+                                        mode: event.target.value,
+                                      })
+                                    }
+                                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40"
+                                  >
+                                    <option value="template">
+                                      Usar template existente
+                                    </option>
+                                    <option value="custom">Criar treino novo</option>
+                                  </select>
+                                </label>
 
-                        <div className="mt-4 space-y-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-                              Dias e horarios
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => addStudentWorkoutDay(workout.id)}
-                              className="rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-semibold text-white/55 transition hover:border-white/20"
-                            >
-                              Adicionar horario
-                            </button>
-                          </div>
-                          {studentFormErrors[`${prefix}.schedule.days`] ? (
-                            <p className="text-xs text-red-300">
-                              Adicione pelo menos um dia e horario.
-                            </p>
-                          ) : null}
-                          {workout.schedule.days.map((day, dayIndex) => (
-                            <div
-                              key={day.id}
-                              className="grid gap-3 rounded-xl border border-white/[0.07] bg-black/20 p-3 md:grid-cols-[1fr_1fr_auto]"
-                            >
-                              <select
-                                value={day.weekday}
-                                onChange={(event) =>
-                                  updateStudentWorkoutDay(workout.id, day.id, {
-                                    weekday: event.target.value,
-                                  })
-                                }
-                                className={fieldClass(
-                                  `${prefix}.schedule.days.${dayIndex}.weekday`,
-                                  "rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
+                                {slot.mode === "template" ? (
+                                  <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                                    Template
+                                    <select
+                                      value={slot.templateId}
+                                      onChange={(event) =>
+                                        updateTrainingSlot(slot.id, {
+                                          templateId: event.target.value,
+                                        })
+                                      }
+                                      className={fieldClass(
+                                        `${prefix}.templateId`,
+                                        "mt-2 w-full rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
+                                      )}
+                                    >
+                                      <option value="">Selecione um template</option>
+                                      {workoutTemplates.map((template) => (
+                                        <option key={template.id} value={template.id}>
+                                          {template.title ||
+                                            template.name ||
+                                            "Template"}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                ) : (
+                                  <>
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                                      Titulo
+                                      <input
+                                        type="text"
+                                        value={slot.title}
+                                        onChange={(event) =>
+                                          updateTrainingSlot(slot.id, {
+                                            title: event.target.value,
+                                          })
+                                        }
+                                        className={fieldClass(
+                                          `${prefix}.title`,
+                                          "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
+                                        )}
+                                        placeholder="Ex: Treino novo"
+                                      />
+                                    </label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                                      Objetivo
+                                      <input
+                                        type="text"
+                                        value={slot.objective}
+                                        onChange={(event) =>
+                                          updateTrainingSlot(slot.id, {
+                                            objective: event.target.value,
+                                          })
+                                        }
+                                        className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
+                                        placeholder="Ex: Hipertrofia"
+                                      />
+                                    </label>
+                                    <label className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-black/20 px-3 py-3 text-sm text-white/65 md:col-span-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={slot.saveAsTemplate}
+                                        onChange={(event) =>
+                                          updateTrainingSlot(slot.id, {
+                                            saveAsTemplate: event.target.checked,
+                                          })
+                                        }
+                                      />
+                                      Salvar esse treino na biblioteca
+                                    </label>
+                                  </>
                                 )}
-                              >
-                                {WEEKDAY_OPTIONS.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-                              <input
-                                type="time"
-                                value={day.time}
-                                onChange={(event) =>
-                                  updateStudentWorkoutDay(workout.id, day.id, {
-                                    time: event.target.value,
-                                  })
-                                }
-                                className={fieldClass(
-                                  `${prefix}.schedule.days.${dayIndex}.time`,
-                                  "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
-                                )}
-                              />
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  removeStudentWorkoutDay(workout.id, day.id)
-                                }
-                                className="rounded-lg border border-white/[0.07] p-2 text-white/45 transition hover:text-red-300"
-                                title="Remover horario"
-                              >
-                                <Trash2 size={14} />
-                              </button>
+                              </div>
+
+                              {slot.mode === "custom" ? (
+                                <div className="mt-4 space-y-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                                      Exercicios
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => addTrainingSlotItem(slot.id)}
+                                      className="rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-semibold text-white/55 transition hover:border-white/20"
+                                    >
+                                      Adicionar exercicio
+                                    </button>
+                                  </div>
+                                  {slot.items.map((item, itemIndex) => (
+                                    <div
+                                      key={item.id}
+                                      className="grid gap-3 rounded-xl border border-white/[0.07] bg-black/20 p-3 md:grid-cols-[2fr_1fr_1fr_1fr_auto]"
+                                    >
+                                      <input
+                                        type="text"
+                                        value={item.exerciseName}
+                                        onChange={(event) =>
+                                          updateTrainingSlotItem(
+                                            slot.id,
+                                            item.id,
+                                            { exerciseName: event.target.value },
+                                          )
+                                        }
+                                        className={fieldClass(
+                                          `${prefix}.items.${itemIndex}.exerciseName`,
+                                          "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
+                                        )}
+                                        placeholder="Exercicio"
+                                      />
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={item.sets}
+                                        onChange={(event) =>
+                                          updateTrainingSlotItem(
+                                            slot.id,
+                                            item.id,
+                                            { sets: event.target.value },
+                                          )
+                                        }
+                                        className={fieldClass(
+                                          `${prefix}.items.${itemIndex}.sets`,
+                                          "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
+                                        )}
+                                        placeholder="Series"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={item.reps}
+                                        onChange={(event) =>
+                                          updateTrainingSlotItem(
+                                            slot.id,
+                                            item.id,
+                                            { reps: event.target.value },
+                                          )
+                                        }
+                                        className={fieldClass(
+                                          `${prefix}.items.${itemIndex}.reps`,
+                                          "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
+                                        )}
+                                        placeholder="Reps"
+                                      />
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={item.restSeconds}
+                                        onChange={(event) =>
+                                          updateTrainingSlotItem(
+                                            slot.id,
+                                            item.id,
+                                            { restSeconds: event.target.value },
+                                          )
+                                        }
+                                        className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
+                                        placeholder="Descanso"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          removeTrainingSlotItem(slot.id, item.id)
+                                        }
+                                        className="rounded-lg border border-white/[0.07] p-2 text-white/45 transition hover:text-red-300"
+                                        title="Remover exercicio"
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
+                  </div>
+                ) : null}
               </section>
 
               <button
