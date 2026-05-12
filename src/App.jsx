@@ -13,6 +13,7 @@ import ClientWorkoutsPage from "./pages/ClientWorkoutsPage.jsx";
 import AdminAgendaPage from "./pages/AdminAgendaPage.jsx";
 import ClientAgendaPage from "./pages/ClientAgendaPage.jsx";
 import AdminDietPage from "./pages/AdminDietPage.jsx";
+import StudentWorkoutHistoryPage from "./pages/StudentWorkoutHistoryPage.jsx";
 
 function RouteFallback() {
   return (
@@ -71,6 +72,10 @@ export default function App() {
               <Route element={<RequireRole role="PERSONAL" />}>
                 <Route path="/admin" element={<AdminDashboardPage />} />
                 <Route path="/admin/alunos" element={<AdminDashboardPage />} />
+                <Route
+                  path="/admin/alunos/:studentId/treinos"
+                  element={<StudentWorkoutHistoryPage />}
+                />
                 <Route
                   path="/admin/planos"
                   element={<PlansPage mode="admin" />}
