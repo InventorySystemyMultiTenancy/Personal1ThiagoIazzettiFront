@@ -457,9 +457,41 @@ export default function AdminAgendaPage() {
     });
   }, [monthRange]);
 
-  const loadEventsAndSessions = async (alunoId) => {
+  const loadAllEvents = async () => {
+    const fromDate = new Date(
+      monthRange.first.getFullYear(),
+      monthRange.first.getMonth(),
+      1,
+      0,
+      0,
+      0,
+    );
+    const toDate = new Date(
+      monthRange.first.getFullYear(),
+      monthRange.first.getMonth() + 1,
+      31,
+      23,
+      59,
+      59,
+    );
+
     const filters = {
-      alunoId: alunoId || undefined,
+      from: fromDate.toISOString(),
+      to: toDate.toISOString(),
+    };
+
+    const eventsData = await listAgendaEvents(tenantId, filters);
+    setEvents(Array.isArray(eventsData) ? eventsData : []);
+  };
+
+  const loadSessionsForStudent = async (alunoId) => {
+    if (!alunoId) {
+      setWorkoutSessions([]);
+      return;
+    }
+
+    const sessionsData = await listWorkoutSessions(tenantId, {
+      alunoId,
       from: new Date(
         monthRange.first.getFullYear(),
         monthRange.first.getMonth(),
@@ -476,14 +508,7 @@ export default function AdminAgendaPage() {
         59,
         59,
       ).toISOString(),
-    };
-
-    const [eventsData, sessionsData] = await Promise.all([
-      listAgendaEvents(tenantId, filters),
-      listWorkoutSessions(tenantId, filters),
-    ]);
-
-    setEvents(Array.isArray(eventsData) ? eventsData : []);
+    });
     setWorkoutSessions(Array.isArray(sessionsData) ? sessionsData : []);
   };
 
@@ -575,8 +600,13 @@ export default function AdminAgendaPage() {
 
   useEffect(() => {
     if (!tenantId) return;
-    loadEventsAndSessions(form.alunoId).catch(() => {});
-  }, [monthRange.first.getMonth(), monthRange.first.getFullYear()]);
+    loadAllEvents().catch(() => {});
+    loadSessionsForStudent(form.alunoId).catch(() => {});
+  }, [
+    monthRange.first.getMonth(),
+    monthRange.first.getFullYear(),
+    form.alunoId,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -666,6 +696,24 @@ export default function AdminAgendaPage() {
     }));
   };
 
+  const checkTimeConflicts = (startsAt, endsAt, excludeEventId = null) => {
+    const start = new Date(startsAt);
+    const end = endsAt ? new Date(endsAt) : new Date(start.getTime() + 3600000);
+
+    const conflicts = events.filter((ev) => {
+      if (excludeEventId && ev.id === excludeEventId) return false;
+
+      const evStart = new Date(ev.startsAt);
+      const evEnd = ev.endsAt
+        ? new Date(ev.endsAt)
+        : new Date(evStart.getTime() + 3600000);
+
+      return !(end <= evStart || start >= evEnd);
+    });
+
+    return conflicts;
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -676,6 +724,17 @@ export default function AdminAgendaPage() {
           "ADMIN_AGENDA_REQUIRED_FIELDS_THIAGOIAZZETTI",
           "Aluno, titulo e horario inicial sao obrigatorios",
         ),
+      );
+      return;
+    }
+
+    const conflicts = checkTimeConflicts(form.startsAt, form.endsAt, editingId);
+    if (conflicts.length > 0) {
+      const conflictNames = conflicts
+        .map((c) => c.aluno?.fullName || c.title)
+        .join(", ");
+      setMessage(
+        `Conflito de horário! Já existe treino agendado: ${conflictNames}`,
       );
       return;
     }
@@ -716,7 +775,8 @@ export default function AdminAgendaPage() {
         );
       }
       resetForm();
-      await loadEventsAndSessions(form.alunoId);
+      await loadAllEvents();
+      await loadSessionsForStudent(form.alunoId);
     } catch (error) {
       setMessage(
         error?.message ||
@@ -858,6 +918,24 @@ export default function AdminAgendaPage() {
         : "",
       attendanceStatus: event.attendanceStatus || "PENDENTE",
     });
+  };
+
+  const handleToggleCompletion = async (event) => {
+    const newStatus =
+      event.attendanceStatus === "CONFIRMADO" ? "PENDENTE" : "CONFIRMADO";
+    const payload = {
+      ...event,
+      attendanceStatus: newStatus,
+    };
+
+    try {
+      const updated = await updateAgendaEvent(event.id, payload, tenantId);
+      setEvents((prev) =>
+        prev.map((ev) => (ev.id === event.id ? updated : ev)),
+      );
+    } catch (error) {
+      setMessage(error?.message || "Erro ao marcar como concluído.");
+    }
   };
 
   const handleDelete = async (eventId) => {
@@ -1451,18 +1529,33 @@ export default function AdminAgendaPage() {
                   className="rounded-2xl border border-white/10 bg-black/30 p-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold ${eventTone(event.type)}`}
-                      >
-                        {event.type}
-                      </span>
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold ${attendanceTone(event.attendanceStatus)}`}
-                      >
-                        {event.attendanceStatus}
-                      </span>
-                      <p className="font-semibold text-white">{event.title}</p>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <input
+                          type="checkbox"
+                          checked={event.attendanceStatus === "CONFIRMADO"}
+                          onChange={() => handleToggleCompletion(event)}
+                          className="h-5 w-5 cursor-pointer accent-[#b5f03c]"
+                          title="Marcar como concluído"
+                        />
+                        <span
+                          className={`rounded-full border px-3 py-1 text-xs font-semibold ${eventTone(event.type)}`}
+                        >
+                          {event.type}
+                        </span>
+                        <span
+                          className={`rounded-full border px-3 py-1 text-xs font-semibold ${attendanceTone(event.attendanceStatus)}`}
+                        >
+                          {event.attendanceStatus}
+                        </span>
+                        <p className="font-semibold text-white">
+                          {event.title}
+                        </p>
+                      </div>
+                      <p className="text-xs text-white/50 flex items-center gap-1">
+                        <User size={12} className="text-white/30" />
+                        {event.aluno?.fullName || "Aluno desconhecido"}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
