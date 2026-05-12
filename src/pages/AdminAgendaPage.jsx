@@ -1118,6 +1118,28 @@ export default function AdminAgendaPage() {
         </div>
       </section>
 
+      <section className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
+        <h3 className="font-title text-lg text-[#b5f03c]">
+          Filtrar Calendário por Aluno
+        </h3>
+        <div className="mt-4">
+          <select
+            value={eventFilterAlunoId}
+            onChange={(e) => setEventFilterAlunoId(e.target.value)}
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+          >
+            <option value="">
+              📅 Todos os alunos (mostrar todos os eventos)
+            </option>
+            {students.map((student) => (
+              <option key={student.id} value={student.id}>
+                👤 {student.fullName}
+              </option>
+            ))}
+          </select>
+        </div>
+      </section>
+
       <section className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
         <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
           <h2 className="font-title text-2xl text-[#b5f03c]">
@@ -1510,25 +1532,6 @@ export default function AdminAgendaPage() {
             {t("ADMIN_AGENDA_EVENTS_TITLE_THIAGOIAZZETTI", "Eventos")} (
             {filteredEvents.length})
           </h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex flex-col gap-2 md:flex-row md:items-end">
-              <label className="block flex-1 text-sm text-white/70">
-                Filtrar por aluno
-                <select
-                  value={eventFilterAlunoId}
-                  onChange={(e) => setEventFilterAlunoId(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none"
-                >
-                  <option value="">Todos os alunos</option>
-                  {students.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      {student.fullName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </div>
           <div className="mt-5 space-y-3">
             {loading ? (
               <p className="text-sm text-white/60">
