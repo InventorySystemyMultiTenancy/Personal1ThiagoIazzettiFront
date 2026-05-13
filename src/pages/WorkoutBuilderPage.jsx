@@ -508,6 +508,7 @@ function ExerciseSelector({
     sets: 3,
     reps: 10,
     restSeconds: 60,
+    videoUrl: "",
   });
 
   const filteredExercises = exerciseLibrary[selectedGroup] || [];
@@ -542,6 +543,7 @@ function ExerciseSelector({
         sets: 3,
         reps: 10,
         restSeconds: 60,
+        videoUrl: "",
       });
       setIsCreatingNew(false);
     }
@@ -551,13 +553,19 @@ function ExerciseSelector({
     const value = e.target.value;
     if (value === "__create_new__") {
       setIsCreatingNew(true);
-      setFormData((prev) => ({ ...prev, exerciseName: "", equipment: "" }));
+      setFormData((prev) => ({
+        ...prev,
+        exerciseName: "",
+        equipment: "",
+        videoUrl: "",
+      }));
     } else {
       setIsCreatingNew(false);
       setFormData((prev) => ({
         ...prev,
         exerciseName: value,
         equipment: "",
+        videoUrl: "",
       }));
     }
   };
@@ -679,6 +687,25 @@ function ExerciseSelector({
             </>
           )}
 
+          <label className="block text-sm text-white/70">
+            {t(
+              "WORKOUT_MODAL_VIDEO_URL_LABEL_THIAGOIAZZETTI",
+              "Link do video (opcional)",
+            )}
+            <input
+              type="url"
+              placeholder="https://youtube.com/watch?v=..."
+              value={formData.videoUrl}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  videoUrl: e.target.value,
+                }))
+              }
+              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#b5f03c]/50"
+            />
+          </label>
+
           <div className="grid gap-3 md:grid-cols-3">
             <label className="block text-sm text-white/70">
               {t("WORKOUT_MODAL_SETS_LABEL_THIAGOIAZZETTI", "Series")}
@@ -786,6 +813,20 @@ function WorkoutItem({ exercise, onRemove }) {
         >
           <Edit2 size={16} />
         </button>
+        {exercise.videoUrl ? (
+          <a
+            href={exercise.videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t(
+              "WORKOUT_ITEM_WATCH_VIDEO_THIAGOIAZZETTI",
+              "Ver video do exercicio",
+            )}
+            className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:border-[#b5f03c]/50 hover:text-[#b5f03c]"
+          >
+            <Play size={16} />
+          </a>
+        ) : null}
         <button
           type="button"
           onClick={() => onRemove(exercise.id)}
@@ -1131,6 +1172,7 @@ export default function WorkoutBuilderPage() {
           restSeconds: exercise.restSeconds
             ? Number(exercise.restSeconds)
             : null,
+          videoUrl: exercise.videoUrl || null,
           orderIndex: index,
         })),
       };

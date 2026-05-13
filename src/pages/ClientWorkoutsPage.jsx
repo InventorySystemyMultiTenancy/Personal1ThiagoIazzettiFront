@@ -55,9 +55,26 @@ function WorkoutExerciseList({ items, planId, notesByPlan, onLoadNoteChange }) {
               <span className="font-semibold text-white">
                 {item.exerciseName}
               </span>
-              <span>
-                {item.sets}x{item.reps}
-              </span>
+              <div className="flex items-center gap-3">
+                <span>
+                  {item.sets}x{item.reps}
+                </span>
+                {item.videoUrl ? (
+                  <a
+                    href={item.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={t(
+                      "CLIENT_WORKOUTS_WATCH_VIDEO_THIAGOIAZZETTI",
+                      "Ver video do exercicio",
+                    )}
+                    className="flex items-center gap-1 rounded-lg border border-[#b5f03c]/40 px-2 py-1 text-xs text-[#b5f03c] transition hover:bg-[#b5f03c]/10"
+                  >
+                    <Play size={12} />
+                    {t("CLIENT_WORKOUTS_VIDEO_LABEL_THIAGOIAZZETTI", "Video")}
+                  </a>
+                ) : null}
+              </div>
             </div>
             <p className="mt-1 text-white/50">
               {t("CLIENT_DASH_REST_LABEL_THIAGOIAZZETTI", "Descanso")}:{" "}
