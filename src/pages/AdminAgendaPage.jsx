@@ -16,6 +16,7 @@ import {
   listStudents,
   listWorkoutSessions,
   listWorkoutPlans,
+  reviewAgendaChangeRequest,
   updateAgendaEvent,
 } from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
@@ -965,6 +966,30 @@ export default function AdminAgendaPage() {
     }
   };
 
+  const handleReviewRequest = async (event, decision) => {
+    try {
+      const response = await reviewAgendaChangeRequest(
+        event.id,
+        decision,
+        tenantId,
+      );
+      if (response?.deleted) {
+        setEvents((prev) => prev.filter((ev) => ev.id !== event.id));
+      } else if (response?.event) {
+        setEvents((prev) =>
+          prev.map((ev) => (ev.id === event.id ? response.event : ev)),
+        );
+      }
+      setMessage(
+        decision === "APPROVE"
+          ? "Solicitacao aprovada com sucesso."
+          : "Solicitacao recusada.",
+      );
+    } catch (error) {
+      setMessage(error?.message || "Nao foi possivel revisar solicitacao.");
+    }
+  };
+
   const eventsByDay = useMemo(() => {
     const map = new Map();
     events.forEach((event) => {
@@ -1752,6 +1777,38 @@ export default function AdminAgendaPage() {
                     <p className="mt-2 text-sm text-white/60">
                       {event.description}
                     </p>
+                  ) : null}
+                  {event.changeRequestStatus === "PENDING" ? (
+                    <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-500/10 p-3">
+                      <p className="text-xs font-semibold text-amber-200">
+                        Solicitacao pendente do aluno:{" "}
+                        {event.changeRequestType === "RESCHEDULE"
+                          ? "Remarcacao"
+                          : "Cancelamento"}
+                      </p>
+                      {event.proposedStartsAt ? (
+                        <p className="mt-1 text-xs text-amber-100/85">
+                          Novo horario proposto:{" "}
+                          {formatDateTime(event.proposedStartsAt)}
+                        </p>
+                      ) : null}
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleReviewRequest(event, "APPROVE")}
+                          className="rounded-lg border border-emerald-400/35 px-3 py-1.5 text-xs text-emerald-200"
+                        >
+                          Aprovar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleReviewRequest(event, "REJECT")}
+                          className="rounded-lg border border-red-400/35 px-3 py-1.5 text-xs text-red-200"
+                        >
+                          Recusar
+                        </button>
+                      </div>
+                    </div>
                   ) : null}
                 </div>
               ))

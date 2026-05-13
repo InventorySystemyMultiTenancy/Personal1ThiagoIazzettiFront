@@ -520,6 +520,32 @@ export async function confirmAgendaAttendance(
   return response?.event || response;
 }
 
+export async function requestAgendaCancel(eventId, reason, tenantId) {
+  const response = await request(`/agenda/${eventId}/request-cancel`, {
+    method: "PATCH",
+    body: { reason },
+    tenantId,
+  });
+  return response?.event || response;
+}
+
+export async function requestAgendaReschedule(eventId, payload, tenantId) {
+  const response = await request(`/agenda/${eventId}/request-reschedule`, {
+    method: "PATCH",
+    body: payload,
+    tenantId,
+  });
+  return response?.event || response;
+}
+
+export async function reviewAgendaChangeRequest(eventId, decision, tenantId) {
+  return request(`/agenda/${eventId}/review-request`, {
+    method: "PATCH",
+    body: { decision },
+    tenantId,
+  });
+}
+
 export async function listDiets(tenantId, filters = {}) {
   const params = new URLSearchParams();
   if (filters.alunoId) params.set("alunoId", filters.alunoId);

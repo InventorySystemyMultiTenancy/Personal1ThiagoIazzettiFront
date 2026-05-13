@@ -1,14 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
+  CalendarClock,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock3,
   Dumbbell,
   Salad,
+  XCircle,
 } from "lucide-react";
-import { confirmAgendaAttendance, listMyAgendaEvents } from "../lib/api.js";
+import {
+  confirmAgendaAttendance,
+  listMyAgendaEvents,
+  requestAgendaCancel,
+  requestAgendaReschedule,
+} from "../lib/api.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
 
@@ -122,6 +129,16 @@ function attendanceTone(status) {
   return "border-amber-300/40 bg-amber-400/10 text-amber-100";
 }
 
+const STUDENT_CHANGE_DEADLINE_HOURS = 2;
+
+function toDateTimeInputValue(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (v) => String(v).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function sameDay(a, b) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -141,6 +158,8 @@ export default function ClientAgendaPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [monthCursor, setMonthCursor] = useState(() => new Date());
+  const [rescheduleEventId, setRescheduleEventId] = useState("");
+  const [rescheduleStartsAt, setRescheduleStartsAt] = useState("");
 
   const monthRange = useMemo(() => {
     const first = new Date(
@@ -260,6 +279,90 @@ export default function ClientAgendaPage() {
             "Nao foi possivel confirmar presenca",
           ),
       );
+    }
+  };
+
+  const canRequestChange = (event) => {
+    if (!event?.startsAt) return false;
+    if (event.changeRequestStatus === "PENDING") return false;
+    const startsAt = new Date(event.startsAt);
+    if (Number.isNaN(startsAt.getTime())) return false;
+    const cutoff = STUDENT_CHANGE_DEADLINE_HOURS * 60 * 60 * 1000;
+    return startsAt.getTime() - Date.now() >= cutoff;
+  };
+
+  const handleRequestCancel = async (event) => {
+    if (!canRequestChange(event)) {
+      setMessage(
+        "Cancelamento so pode ser solicitado com no minimo 2h de antecedencia.",
+      );
+      return;
+    }
+
+    const reason =
+      window.prompt("Motivo do cancelamento (opcional):", "") || "";
+    try {
+      const updated = await requestAgendaCancel(event.id, reason, tenantId);
+      setEvents((prev) =>
+        prev.map((ev) => (ev.id === event.id ? updated : ev)),
+      );
+      setMessage(
+        "Solicitacao de cancelamento enviada para aprovacao do personal.",
+      );
+    } catch (error) {
+      setMessage(error?.message || "Nao foi possivel solicitar cancelamento.");
+    }
+  };
+
+  const openReschedule = (event) => {
+    setRescheduleEventId(event.id);
+    setRescheduleStartsAt(toDateTimeInputValue(event.startsAt));
+  };
+
+  const handleRequestReschedule = async (event) => {
+    if (!canRequestChange(event)) {
+      setMessage(
+        "Remarcacao so pode ser solicitada com no minimo 2h de antecedencia.",
+      );
+      return;
+    }
+
+    const nextStart = new Date(rescheduleStartsAt);
+    if (!rescheduleStartsAt || Number.isNaN(nextStart.getTime())) {
+      setMessage("Informe um novo horario valido para remarcacao.");
+      return;
+    }
+
+    const currentStart = new Date(event.startsAt);
+    const currentEnd = event.endsAt ? new Date(event.endsAt) : null;
+    const durationMs =
+      currentEnd && !Number.isNaN(currentEnd.getTime())
+        ? currentEnd.getTime() - currentStart.getTime()
+        : null;
+    const proposedEndsAt =
+      durationMs && durationMs > 0
+        ? new Date(nextStart.getTime() + durationMs).toISOString()
+        : null;
+
+    try {
+      const updated = await requestAgendaReschedule(
+        event.id,
+        {
+          proposedStartsAt: nextStart.toISOString(),
+          proposedEndsAt,
+        },
+        tenantId,
+      );
+      setEvents((prev) =>
+        prev.map((ev) => (ev.id === event.id ? updated : ev)),
+      );
+      setRescheduleEventId("");
+      setRescheduleStartsAt("");
+      setMessage(
+        "Solicitacao de remarcacao enviada para aprovacao do personal.",
+      );
+    } catch (error) {
+      setMessage(error?.message || "Nao foi possivel solicitar remarcacao.");
     }
   };
 
@@ -441,6 +544,19 @@ export default function ClientAgendaPage() {
                         {event.description}
                       </p>
                     ) : null}
+                    {event.changeRequestStatus === "PENDING" ? (
+                      <p className="mt-2 text-xs text-amber-200">
+                        Solicitacao pendente:{" "}
+                        {event.changeRequestType === "RESCHEDULE"
+                          ? "Remarcacao"
+                          : "Cancelamento"}
+                      </p>
+                    ) : null}
+                    {event.changeRequestStatus === "REJECTED" ? (
+                      <p className="mt-2 text-xs text-red-200">
+                        Solicitacao anterior recusada pelo personal.
+                      </p>
+                    ) : null}
                     <div className="mt-3 flex gap-2">
                       <button
                         type="button"
@@ -453,7 +569,61 @@ export default function ClientAgendaPage() {
                           "Confirmar presenca",
                         )}
                       </button>
+                      {canRequestChange(event) ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleRequestCancel(event)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-red-400/35 px-3 py-1.5 text-xs text-red-200"
+                          >
+                            <XCircle size={13} />
+                            Cancelar aula
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openReschedule(event)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-sky-400/35 px-3 py-1.5 text-xs text-sky-200"
+                          >
+                            <CalendarClock size={13} />
+                            Remarcar
+                          </button>
+                        </>
+                      ) : null}
                     </div>
+                    {rescheduleEventId === event.id ? (
+                      <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                        <label className="text-xs text-white/70">
+                          Novo horario (mesma semana)
+                          <input
+                            type="datetime-local"
+                            value={rescheduleStartsAt}
+                            onChange={(e) =>
+                              setRescheduleStartsAt(e.target.value)
+                            }
+                            className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
+                          />
+                        </label>
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleRequestReschedule(event)}
+                            className="rounded-lg border border-sky-400/35 px-3 py-1.5 text-xs text-sky-200"
+                          >
+                            Enviar remarcacao
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRescheduleEventId("");
+                              setRescheduleStartsAt("");
+                            }}
+                            className="rounded-lg border border-white/20 px-3 py-1.5 text-xs text-white/70"
+                          >
+                            Fechar
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
