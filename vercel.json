@@ -3,6 +3,10 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/i18n-api/(.*)",
+      "destination": "https://tradudor-i8n-languages.onrender.com/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

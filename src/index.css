@@ -41,6 +41,19 @@ a {
   text-decoration: none;
 }
 
+select,
+option,
+optgroup {
+  background-color: #090909;
+  color: #f2f2f2;
+}
+
+select:focus,
+option:checked {
+  background-color: #111111;
+  color: #ffffff;
+}
+
 ::selection {
   background: rgba(217, 179, 65, 0.32);
   color: #ffffff;

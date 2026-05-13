@@ -24,10 +24,7 @@ const SUPPORTED_LOCALES = [
 const I18nContext = createContext(null);
 
 function getApiBaseUrl() {
-  return (
-    import.meta.env.VITE_I18N_API_URL ||
-    "https://tradudor-i8n-languages.onrender.com"
-  ).replace(/\/$/, "");
+  return (import.meta.env.VITE_I18N_API_URL || "/i18n-api").replace(/\/$/, "");
 }
 
 function getStoredLocale() {

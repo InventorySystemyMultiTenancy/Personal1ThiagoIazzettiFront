@@ -6,11 +6,12 @@ export const SESSION_TOKEN_KEY = "thiago_session_token";
 export const SESSION_USER_KEY = "thiago_session_user";
 
 export class ApiError extends Error {
-  constructor(message, status, code) {
+  constructor(message, status, code, details = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -174,6 +175,7 @@ async function request(path, options = {}) {
       payload.error || payload.message || "Erro ao consultar API",
       response.status,
       payload.code,
+      payload,
     );
   }
 
@@ -354,6 +356,33 @@ export async function listWorkoutPlans(studentId, tenantId) {
   const query = studentId ? `?alunoId=${encodeURIComponent(studentId)}` : "";
   const response = await request(`/workout-plans${query}`, { tenantId });
   return Array.isArray(response?.plans) ? response.plans : [];
+}
+
+export async function listWorkoutPlanTemplates(tenantId) {
+  const response = await request("/workout-plans/templates", { tenantId });
+  if (Array.isArray(response?.templates)) return response.templates;
+  return extractListPayload(response);
+}
+
+export async function createWorkoutPlanTemplate(payload, tenantId) {
+  const response = await request("/workout-plans/templates", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.template || response?.plan || response?.data || response;
+}
+
+export async function cloneWorkoutPlanTemplate(templateId, payload, tenantId) {
+  const response = await request(
+    `/workout-plans/templates/${templateId}/clone`,
+    {
+      method: "POST",
+      body: payload,
+      tenantId,
+    },
+  );
+  return response?.plan || response?.data || response;
 }
 
 export async function getWorkoutPlanDetails(planId, tenantId) {

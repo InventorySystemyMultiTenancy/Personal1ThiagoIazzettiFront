@@ -11,7 +11,6 @@ import {
   TrendingUp,
   AlertCircle,
   Plus,
-  ChevronRight,
   Edit2,
   Trash2,
   Send,
@@ -22,9 +21,11 @@ import {
   createStudentPlan,
   formatCurrency,
   formatDate,
+  listAgendaEvents,
   listDiets,
   listStudentPlans,
   listStudents,
+  listWorkoutPlanTemplates,
   listWorkoutPlans,
   updateStudent,
   listMessages,
@@ -125,6 +126,124 @@ function parseForwardMessage(content) {
   }
 }
 
+const WEEKDAY_OPTIONS = [
+  { value: "SUNDAY", label: "Domingo" },
+  { value: "MONDAY", label: "Segunda" },
+  { value: "TUESDAY", label: "Terca" },
+  { value: "WEDNESDAY", label: "Quarta" },
+  { value: "THURSDAY", label: "Quinta" },
+  { value: "FRIDAY", label: "Sexta" },
+  { value: "SATURDAY", label: "Sabado" },
+];
+
+function todayInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addDaysInputValue(dateValue, days) {
+  const date = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+  if (Number.isNaN(date.getTime())) return todayInputValue();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function createWorkoutItem(seed = Date.now()) {
+  return {
+    id: `item-${seed}-${Math.random().toString(36).slice(2, 7)}`,
+    exerciseName: "",
+    sets: "",
+    reps: "",
+    restSeconds: "",
+    notes: "",
+  };
+}
+
+function createTrainingScheduleSlot(weekday = "MONDAY", time = "08:00") {
+  const seed = Date.now();
+  return {
+    id: `slot-${seed}-${Math.random().toString(36).slice(2, 7)}`,
+    weekday,
+    time,
+    mode: "template",
+    templateId: "",
+    title: "",
+    objective: "",
+    saveAsTemplate: false,
+    items: [createWorkoutItem(seed)],
+  };
+}
+
+function createTrainingScheduleDraft() {
+  const startsOn = todayInputValue();
+  return {
+    startsOn,
+    recurrenceUntil: "",
+    durationMinutes: 60,
+    days: [],
+  };
+}
+
+const AGENDA_TIME_OPTIONS = [
+  "06:00",
+  "07:00",
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+  "19:00",
+  "20:00",
+  "21:00",
+];
+
+function dateToWeekdayValue(date) {
+  return WEEKDAY_OPTIONS[date.getDay()]?.value || "MONDAY";
+}
+
+function eventToAgendaKey(event) {
+  const date = new Date(event?.startsAt || event?.startAt || event?.start);
+  if (Number.isNaN(date.getTime())) return "";
+  const time = date.toTimeString().slice(0, 5);
+  return `${dateToWeekdayValue(date)}-${time}`;
+}
+
+function normalizeApiFieldName(fieldName) {
+  return String(fieldName || "").replace(/\[(\d+)\]/g, ".$1");
+}
+
+function extractApiFieldErrors(error) {
+  const details = error?.details || {};
+  const fields = details.fields || details.invalidFields || details.errors || [];
+  const errors = {};
+
+  if (Array.isArray(fields)) {
+    fields.forEach((field) => {
+      const name =
+        typeof field === "string"
+          ? field
+          : field?.path || field?.field || field?.name || "";
+      if (name) {
+        errors[normalizeApiFieldName(name)] = true;
+      }
+    });
+    return errors;
+  }
+
+  if (fields && typeof fields === "object") {
+    Object.keys(fields).forEach((field) => {
+      errors[normalizeApiFieldName(field)] = true;
+    });
+  }
+
+  return errors;
+}
+
 export default function AdminDashboardPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -132,8 +251,14 @@ export default function AdminDashboardPage() {
   const { t, locale } = useI18n();
   const [students, setStudents] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [workoutTemplates, setWorkoutTemplates] = useState([]);
+  const [loadingWorkoutTemplates, setLoadingWorkoutTemplates] = useState(false);
+  const [agendaOpen, setAgendaOpen] = useState(false);
+  const [occupiedAgenda, setOccupiedAgenda] = useState([]);
+  const [loadingAgenda, setLoadingAgenda] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [studentFormErrors, setStudentFormErrors] = useState({});
   const [activeTab, setActiveTab] = useState("visao-geral");
   const [editingStudentId, setEditingStudentId] = useState("");
   const [editStudentForm, setEditStudentForm] = useState({
@@ -154,6 +279,7 @@ export default function AdminDashboardPage() {
     birthDate: "",
     alunoPlanId: "",
     planDueDate: "",
+    trainingSchedule: createTrainingScheduleDraft(),
   });
   const [newPlanForm, setNewPlanForm] = useState({
     name: "",
@@ -161,20 +287,183 @@ export default function AdminDashboardPage() {
     monthlyPriceCents: 0,
   });
 
+  const fieldClass = (fieldName, className) =>
+    `${className} ${
+      studentFormErrors[fieldName]
+        ? "border-red-400/70 focus:border-red-400"
+        : ""
+    }`;
+
+  const updateTrainingSchedule = (changes) => {
+    setNewStudentForm((prev) => ({
+      ...prev,
+      trainingSchedule: { ...prev.trainingSchedule, ...changes },
+    }));
+  };
+
+  const updateTrainingSlot = (slotId, changes) => {
+    setNewStudentForm((prev) => ({
+      ...prev,
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        days: prev.trainingSchedule.days.map((slot) =>
+          slot.id === slotId ? { ...slot, ...changes } : slot,
+        ),
+      },
+    }));
+  };
+
+  const updateTrainingSlotItem = (slotId, itemId, changes) => {
+    setNewStudentForm((prev) => ({
+      ...prev,
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        days: prev.trainingSchedule.days.map((slot) =>
+          slot.id === slotId
+            ? {
+                ...slot,
+                items: slot.items.map((item) =>
+                  item.id === itemId ? { ...item, ...changes } : item,
+                ),
+              }
+            : slot,
+        ),
+      },
+    }));
+  };
+
+  const addTrainingSlot = (weekday = "MONDAY", time = "08:00") => {
+    const key = `${weekday}-${time}`;
+    const alreadySelected = newStudentForm.trainingSchedule.days.some(
+      (slot) => `${slot.weekday}-${slot.time}` === key,
+    );
+    const occupied = occupiedAgenda.some((slot) => slot.key === key);
+
+    if (alreadySelected || occupied) {
+      setMessage(
+        occupied
+          ? "Horario ocupado na agenda. Escolha outro slot."
+          : "Esse horario ja foi selecionado.",
+      );
+      return;
+    }
+
+    setNewStudentForm((prev) => ({
+      ...prev,
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        recurrenceUntil:
+          prev.trainingSchedule.recurrenceUntil ||
+          addDaysInputValue(prev.trainingSchedule.startsOn, 28),
+        days: [
+          ...prev.trainingSchedule.days,
+          createTrainingScheduleSlot(weekday, time),
+        ],
+      },
+    }));
+  };
+
+  const removeTrainingSlot = (slotId) => {
+    setNewStudentForm((prev) => ({
+      ...prev,
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        days: prev.trainingSchedule.days.filter((slot) => slot.id !== slotId),
+      },
+    }));
+  };
+
+  const addTrainingSlotItem = (slotId) => {
+    setNewStudentForm((prev) => ({
+      ...prev,
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        days: prev.trainingSchedule.days.map((slot) =>
+          slot.id === slotId
+            ? { ...slot, items: [...slot.items, createWorkoutItem()] }
+            : slot,
+        ),
+      },
+    }));
+  };
+
+  const removeTrainingSlotItem = (slotId, itemId) => {
+    setNewStudentForm((prev) => ({
+      ...prev,
+      trainingSchedule: {
+        ...prev.trainingSchedule,
+        days: prev.trainingSchedule.days.map((slot) =>
+          slot.id === slotId
+            ? {
+                ...slot,
+                items: slot.items.filter((item) => item.id !== itemId),
+              }
+            : slot,
+        ),
+      },
+    }));
+  };
+
+  const loadWorkoutTemplates = async () => {
+    if (!tenantId) return [];
+    setLoadingWorkoutTemplates(true);
+    try {
+      const templates = await listWorkoutPlanTemplates(tenantId);
+      const items = Array.isArray(templates) ? templates : [];
+      setWorkoutTemplates(items);
+      return items;
+    } catch (error) {
+      setMessage(error?.message || "Nao foi possivel carregar templates de treino");
+      return [];
+    } finally {
+      setLoadingWorkoutTemplates(false);
+    }
+  };
+
+  const loadOccupiedAgenda = async () => {
+    if (!tenantId) return [];
+    const from = newStudentForm.trainingSchedule.startsOn || todayInputValue();
+    const to =
+      newStudentForm.trainingSchedule.recurrenceUntil ||
+      addDaysInputValue(from, 28);
+
+    setLoadingAgenda(true);
+    try {
+      const events = await listAgendaEvents(tenantId, { from, to });
+      const occupied = (Array.isArray(events) ? events : [])
+        .map((event) => ({
+          key: eventToAgendaKey(event),
+          title: event?.title || event?.aluno?.fullName || "Ocupado",
+        }))
+        .filter((event) => event.key);
+      setOccupiedAgenda(occupied);
+      return occupied;
+    } catch (error) {
+      setMessage(error?.message || "Nao foi possivel carregar a agenda ocupada");
+      return [];
+    } finally {
+      setLoadingAgenda(false);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
       setLoading(true);
       try {
-        const [studentsResult, plansResult] = await Promise.all([
+        const [studentsResult, plansResult, templatesResult] = await Promise.all([
           listStudents(tenantId),
           listStudentPlans(tenantId),
+          listWorkoutPlanTemplates(tenantId).catch(() => []),
         ]);
 
         if (!cancelled) {
           setStudents(Array.isArray(studentsResult) ? studentsResult : []);
           setPlans(Array.isArray(plansResult) ? plansResult : []);
+          setWorkoutTemplates(
+            Array.isArray(templatesResult) ? templatesResult : [],
+          );
         }
       } catch (error) {
         if (!cancelled) {
@@ -274,19 +563,132 @@ export default function AdminDashboardPage() {
     ];
   }, [plans, students, t]);
 
+  const validateTrainingSchedule = () => {
+    const errors = {};
+    const schedule = newStudentForm.trainingSchedule;
+
+    if (schedule.days.length === 0) {
+      return errors;
+    }
+
+    if (!schedule.startsOn) {
+      errors["trainingSchedule.startsOn"] = true;
+    }
+    if (!schedule.recurrenceUntil) {
+      errors["trainingSchedule.recurrenceUntil"] = true;
+    }
+    if (!Number(schedule.durationMinutes)) {
+      errors["trainingSchedule.durationMinutes"] = true;
+    }
+
+    schedule.days.forEach((slot, slotIndex) => {
+      const prefix = `trainingSchedule.days.${slotIndex}`;
+
+      if (!slot.weekday) {
+        errors[`${prefix}.weekday`] = true;
+      }
+      if (!slot.time) {
+        errors[`${prefix}.time`] = true;
+      }
+      if (occupiedAgenda.some((occupied) => occupied.key === `${slot.weekday}-${slot.time}`)) {
+        errors[`${prefix}.time`] = true;
+      }
+      if (slot.mode === "template" && !slot.templateId) {
+        errors[`${prefix}.templateId`] = true;
+      }
+      if (slot.mode === "custom" && !slot.title.trim()) {
+        errors[`${prefix}.title`] = true;
+      }
+
+      if (slot.mode === "custom") {
+        slot.items.forEach((item, itemIndex) => {
+          if (!item.exerciseName.trim()) {
+            errors[`${prefix}.items.${itemIndex}.exerciseName`] = true;
+          }
+          if (!Number(item.sets)) {
+            errors[`${prefix}.items.${itemIndex}.sets`] = true;
+          }
+          if (!String(item.reps || "").trim()) {
+            errors[`${prefix}.items.${itemIndex}.reps`] = true;
+          }
+        });
+      }
+    });
+
+    return errors;
+  };
+
+  const buildTrainingSchedulePayload = () => {
+    const schedule = newStudentForm.trainingSchedule;
+    if (schedule.days.length === 0) return undefined;
+
+    return {
+      startsOn: schedule.startsOn,
+      recurrenceUntil: schedule.recurrenceUntil,
+      durationMinutes: Number(schedule.durationMinutes) || 60,
+      days: schedule.days.map((slot) => {
+        if (slot.mode === "template") {
+          return {
+            weekday: slot.weekday,
+            time: slot.time,
+            templateId: slot.templateId,
+          };
+        }
+
+        return {
+          weekday: slot.weekday,
+          time: slot.time,
+          title: slot.title.trim(),
+          objective: slot.objective.trim(),
+          saveAsTemplate: Boolean(slot.saveAsTemplate),
+          items: slot.items.map((item) => ({
+            exerciseName: item.exerciseName.trim(),
+            sets: Number(item.sets),
+            reps: String(item.reps).trim(),
+            restSeconds: item.restSeconds ? Number(item.restSeconds) : null,
+            notes: item.notes || "",
+          })),
+        };
+      }),
+    };
+  };
+
   const handleCreateStudent = async (e) => {
     e.preventDefault();
-    if (!newStudentForm.fullName.trim() || !newStudentForm.email.trim()) {
+    const nextErrors = {};
+
+    if (!newStudentForm.fullName.trim()) {
+      nextErrors.fullName = true;
+    }
+    if (!newStudentForm.email.trim()) {
+      nextErrors.email = true;
+    }
+
+    Object.assign(nextErrors, validateTrainingSchedule());
+
+    if (Object.keys(nextErrors).length > 0) {
+      setStudentFormErrors(nextErrors);
       setMessage(
-        t(
-          "ADMIN_DASH_STUDENT_REQUIRED_THIAGOIAZZETTI",
-          "Nome e email sao obrigatorios",
-        ),
+        Object.keys(nextErrors).some((field) =>
+          field.startsWith("trainingSchedule"),
+        )
+          ? "Revise os campos destacados em treinos e horarios."
+          : t(
+              "ADMIN_DASH_STUDENT_REQUIRED_THIAGOIAZZETTI",
+              "Nome e email sao obrigatorios",
+            ),
       );
       return;
     }
 
+    setStudentFormErrors({});
+
     try {
+      if (workoutTemplates.length === 0) {
+        await loadWorkoutTemplates();
+      }
+
+      const trainingSchedule = buildTrainingSchedulePayload();
       const created = await createStudent(
         {
           fullName: newStudentForm.fullName,
@@ -295,6 +697,8 @@ export default function AdminDashboardPage() {
           birthDate: newStudentForm.birthDate || null,
           alunoPlanId: newStudentForm.alunoPlanId || null,
           planDueDate: newStudentForm.planDueDate || null,
+          isActive: true,
+          ...(trainingSchedule ? { trainingSchedule } : {}),
         },
         tenantId,
       );
@@ -306,11 +710,35 @@ export default function AdminDashboardPage() {
         birthDate: "",
         alunoPlanId: "",
         planDueDate: "",
+        trainingSchedule: createTrainingScheduleDraft(),
       });
+      setAgendaOpen(false);
+      setOccupiedAgenda([]);
       setMessage(
         `${t("ADMIN_DASH_STUDENT_CREATED_THIAGOIAZZETTI", "Aluno criado com sucesso")}: ${created.fullName}`,
       );
     } catch (error) {
+      if (error?.status === 409) {
+        setMessage("Conflito de agenda: ja existe treino no horario escolhido.");
+        return;
+      }
+
+      if (error?.status === 400) {
+        const apiFieldErrors = extractApiFieldErrors(error);
+        setStudentFormErrors((current) => ({
+          ...current,
+          fullName: !newStudentForm.fullName.trim(),
+          email: !newStudentForm.email.trim(),
+          ...validateTrainingSchedule(),
+          ...apiFieldErrors,
+        }));
+        setMessage(
+          error?.message ||
+            "Revise os campos destacados antes de criar o aluno.",
+        );
+        return;
+      }
+
       setMessage(
         error?.message ||
           t(
@@ -623,7 +1051,10 @@ export default function AdminDashboardPage() {
                         fullName: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
+                    className={fieldClass(
+                      "fullName",
+                      "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
+                    )}
                     placeholder={t(
                       "ADMIN_DASH_NAME_PLACEHOLDER_THIAGOIAZZETTI",
                       "Ex: Joao Silva",
@@ -642,7 +1073,10 @@ export default function AdminDashboardPage() {
                         email: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
+                    className={fieldClass(
+                      "email",
+                      "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
+                    )}
                     placeholder="joao@email.com"
                   />
                 </label>
@@ -726,6 +1160,395 @@ export default function AdminDashboardPage() {
                   </select>
                 </label>
               </div>
+
+              <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#b5f03c]">
+                      Agenda de treinos
+                    </h3>
+                    <p className="mt-1 text-xs text-white/45">
+                      Selecione slots livres e vincule cada horario a um template ou treino simples.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAgendaOpen((current) => !current);
+                      if (!agendaOpen) {
+                        loadWorkoutTemplates();
+                        loadOccupiedAgenda();
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
+                  >
+                    <Calendar size={14} />
+                    {agendaOpen ? "Ocultar agenda" : "Abrir agenda"}
+                  </button>
+                </div>
+
+                {agendaOpen ? (
+                  <div className="mt-4 space-y-4">
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                        Inicio
+                        <input
+                          type="date"
+                          value={newStudentForm.trainingSchedule.startsOn}
+                          onChange={(event) =>
+                            updateTrainingSchedule({ startsOn: event.target.value })
+                          }
+                          className={fieldClass(
+                            "trainingSchedule.startsOn",
+                            "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
+                          )}
+                        />
+                      </label>
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                        Recorrencia ate
+                        <input
+                          type="date"
+                          value={newStudentForm.trainingSchedule.recurrenceUntil}
+                          onChange={(event) =>
+                            updateTrainingSchedule({
+                              recurrenceUntil: event.target.value,
+                            })
+                          }
+                          className={fieldClass(
+                            "trainingSchedule.recurrenceUntil",
+                            "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
+                          )}
+                        />
+                      </label>
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                        Duracao
+                        <input
+                          type="number"
+                          min="1"
+                          value={newStudentForm.trainingSchedule.durationMinutes}
+                          onChange={(event) =>
+                            updateTrainingSchedule({
+                              durationMinutes: event.target.value,
+                            })
+                          }
+                          className={fieldClass(
+                            "trainingSchedule.durationMinutes",
+                            "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
+                          )}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+                      <div className="min-w-[760px]">
+                        <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-white/[0.07] bg-white/[0.03]">
+                          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
+                            Hora
+                          </div>
+                          {WEEKDAY_OPTIONS.map((day) => (
+                            <div
+                              key={day.value}
+                              className="px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/35"
+                            >
+                              {day.label.slice(0, 3)}
+                            </div>
+                          ))}
+                        </div>
+                        {AGENDA_TIME_OPTIONS.map((time) => (
+                          <div
+                            key={time}
+                            className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-white/[0.05] last:border-b-0"
+                          >
+                            <div className="px-3 py-2 text-xs font-semibold text-white/45">
+                              {time}
+                            </div>
+                            {WEEKDAY_OPTIONS.map((day) => {
+                              const key = `${day.value}-${time}`;
+                              const occupied = occupiedAgenda.some(
+                                (slot) => slot.key === key,
+                              );
+                              const selected =
+                                newStudentForm.trainingSchedule.days.some(
+                                  (slot) =>
+                                    `${slot.weekday}-${slot.time}` === key,
+                                );
+                              return (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  disabled={occupied || loadingAgenda}
+                                  onClick={() => addTrainingSlot(day.value, time)}
+                                  className={`m-1 min-h-9 rounded-lg border px-2 text-[11px] font-semibold transition ${
+                                    occupied
+                                      ? "cursor-not-allowed border-red-400/30 bg-red-500/10 text-red-200/60"
+                                      : selected
+                                        ? "border-[#b5f03c]/60 bg-[#b5f03c]/15 text-[#b5f03c]"
+                                        : "border-white/[0.07] bg-white/[0.03] text-white/45 hover:border-[#b5f03c]/35 hover:text-white"
+                                  }`}
+                                  title={occupied ? "Horario ocupado" : "Selecionar horario"}
+                                >
+                                  {occupied ? "Ocupado" : selected ? "Selecionado" : "Livre"}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={loadOccupiedAgenda}
+                        disabled={loadingAgenda}
+                        className="rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white/55 transition hover:border-white/20 disabled:opacity-50"
+                      >
+                        {loadingAgenda ? "Carregando..." : "Atualizar agenda"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={loadWorkoutTemplates}
+                        disabled={loadingWorkoutTemplates}
+                        className="rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white/55 transition hover:border-white/20 disabled:opacity-50"
+                      >
+                        {loadingWorkoutTemplates ? "Carregando..." : "Atualizar templates"}
+                      </button>
+                    </div>
+
+                    {newStudentForm.trainingSchedule.days.length === 0 ? (
+                      <p className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-sm text-white/45">
+                        Nenhum horario selecionado.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {newStudentForm.trainingSchedule.days.map((slot, slotIndex) => {
+                          const prefix = `trainingSchedule.days.${slotIndex}`;
+                          const weekdayLabel =
+                            WEEKDAY_OPTIONS.find((day) => day.value === slot.weekday)
+                              ?.label || slot.weekday;
+
+                          return (
+                            <div
+                              key={slot.id}
+                              className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-bold text-white/75">
+                                    {weekdayLabel} as {slot.time}
+                                  </p>
+                                  <p className="mt-1 text-xs text-white/35">
+                                    Configure o treino deste slot.
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeTrainingSlot(slot.id)}
+                                  className="rounded-lg border border-white/[0.07] p-2 text-white/45 transition hover:text-red-300"
+                                  title="Remover horario"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+
+                              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                                  Tipo
+                                  <select
+                                    value={slot.mode}
+                                    onChange={(event) =>
+                                      updateTrainingSlot(slot.id, {
+                                        mode: event.target.value,
+                                      })
+                                    }
+                                    className="mt-2 w-full rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40"
+                                  >
+                                    <option value="template">
+                                      Usar template existente
+                                    </option>
+                                    <option value="custom">Criar treino novo</option>
+                                  </select>
+                                </label>
+
+                                {slot.mode === "template" ? (
+                                  <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                                    Template
+                                    <select
+                                      value={slot.templateId}
+                                      onChange={(event) =>
+                                        updateTrainingSlot(slot.id, {
+                                          templateId: event.target.value,
+                                        })
+                                      }
+                                      className={fieldClass(
+                                        `${prefix}.templateId`,
+                                        "mt-2 w-full rounded-lg border border-white/[0.07] bg-[#111] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40",
+                                      )}
+                                    >
+                                      <option value="">Selecione um template</option>
+                                      {workoutTemplates.map((template) => (
+                                        <option key={template.id} value={template.id}>
+                                          {template.title ||
+                                            template.name ||
+                                            "Template"}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                ) : (
+                                  <>
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                                      Titulo
+                                      <input
+                                        type="text"
+                                        value={slot.title}
+                                        onChange={(event) =>
+                                          updateTrainingSlot(slot.id, {
+                                            title: event.target.value,
+                                          })
+                                        }
+                                        className={fieldClass(
+                                          `${prefix}.title`,
+                                          "mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
+                                        )}
+                                        placeholder="Ex: Treino novo"
+                                      />
+                                    </label>
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                                      Objetivo
+                                      <input
+                                        type="text"
+                                        value={slot.objective}
+                                        onChange={(event) =>
+                                          updateTrainingSlot(slot.id, {
+                                            objective: event.target.value,
+                                          })
+                                        }
+                                        className="mt-2 w-full rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
+                                        placeholder="Ex: Hipertrofia"
+                                      />
+                                    </label>
+                                    <label className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-black/20 px-3 py-3 text-sm text-white/65 md:col-span-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={slot.saveAsTemplate}
+                                        onChange={(event) =>
+                                          updateTrainingSlot(slot.id, {
+                                            saveAsTemplate: event.target.checked,
+                                          })
+                                        }
+                                      />
+                                      Salvar esse treino na biblioteca
+                                    </label>
+                                  </>
+                                )}
+                              </div>
+
+                              {slot.mode === "custom" ? (
+                                <div className="mt-4 space-y-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
+                                      Exercicios
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => addTrainingSlotItem(slot.id)}
+                                      className="rounded-lg border border-white/[0.07] px-3 py-2 text-xs font-semibold text-white/55 transition hover:border-white/20"
+                                    >
+                                      Adicionar exercicio
+                                    </button>
+                                  </div>
+                                  {slot.items.map((item, itemIndex) => (
+                                    <div
+                                      key={item.id}
+                                      className="grid gap-3 rounded-xl border border-white/[0.07] bg-black/20 p-3 md:grid-cols-[2fr_1fr_1fr_1fr_auto]"
+                                    >
+                                      <input
+                                        type="text"
+                                        value={item.exerciseName}
+                                        onChange={(event) =>
+                                          updateTrainingSlotItem(
+                                            slot.id,
+                                            item.id,
+                                            { exerciseName: event.target.value },
+                                          )
+                                        }
+                                        className={fieldClass(
+                                          `${prefix}.items.${itemIndex}.exerciseName`,
+                                          "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
+                                        )}
+                                        placeholder="Exercicio"
+                                      />
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={item.sets}
+                                        onChange={(event) =>
+                                          updateTrainingSlotItem(
+                                            slot.id,
+                                            item.id,
+                                            { sets: event.target.value },
+                                          )
+                                        }
+                                        className={fieldClass(
+                                          `${prefix}.items.${itemIndex}.sets`,
+                                          "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
+                                        )}
+                                        placeholder="Series"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={item.reps}
+                                        onChange={(event) =>
+                                          updateTrainingSlotItem(
+                                            slot.id,
+                                            item.id,
+                                            { reps: event.target.value },
+                                          )
+                                        }
+                                        className={fieldClass(
+                                          `${prefix}.items.${itemIndex}.reps`,
+                                          "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40",
+                                        )}
+                                        placeholder="Reps"
+                                      />
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={item.restSeconds}
+                                        onChange={(event) =>
+                                          updateTrainingSlotItem(
+                                            slot.id,
+                                            item.id,
+                                            { restSeconds: event.target.value },
+                                          )
+                                        }
+                                        className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition placeholder:text-white/20 focus:border-[#b5f03c]/40"
+                                        placeholder="Descanso"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          removeTrainingSlotItem(slot.id, item.id)
+                                        }
+                                        className="rounded-lg border border-white/[0.07] p-2 text-white/45 transition hover:text-red-300"
+                                        title="Remover exercicio"
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </section>
+
               <button
                 type="submit"
                 className="flex items-center gap-2 rounded-lg bg-[#b5f03c] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
