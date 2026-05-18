@@ -89,6 +89,8 @@ export default function PhysicalAssessmentPage() {
   const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [showEvolutionPhotos, setShowEvolutionPhotos] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileDraft, setProfileDraft] = useState(null);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [form, setForm] = useState({
     date: getTodayInBrazil(),
     weight: "",
@@ -116,6 +118,13 @@ export default function PhysicalAssessmentPage() {
   const profilePhoto = profile?.photo || profile?.photoUrl || null;
   const profileName =
     profile?.fullName || profile?.name || user?.email || "Aluno";
+  const currentProfileDraft = profileDraft || {
+    name: profile?.name || profile?.fullName || "",
+    birthdate: getDateInputValue(profile?.birthdate || profile?.birthDate),
+    gender: profile?.gender || "",
+    photo: profile?.photo || profile?.photoUrl || "",
+  };
+  const draftPhoto = currentProfileDraft.photo || profilePhoto;
   const showProfileForm =
     Boolean(profile) && (!profile.profileCompleted || isEditingProfile);
   const selectedPhotos = Array.isArray(selectedAssessment?.photos)
@@ -247,34 +256,43 @@ export default function PhysicalAssessmentPage() {
     });
   }
 
-  function handleProfileChange(changes) {
-    const updated = { ...(profile || {}), ...changes };
+  function handleProfileDraftChange(changes) {
+    setProfileDraft((current) => ({
+      ...currentProfileDraft,
+      ...(current || {}),
+      ...changes,
+    }));
+  }
+
+  async function handleSaveProfile() {
+    const updated = { ...(profile || {}), ...currentProfileDraft };
     const profileCompleted =
       updated.profileCompleted || isInitialProfileComplete(updated);
-    setProfile({ ...updated, profileCompleted });
 
-    // persist to backend
-    (async () => {
-      try {
-        const payload = {
-          fullName: updated.name || updated.fullName || undefined,
-          birthDate: updated.birthdate || updated.birthDate || undefined,
-          gender: updated.gender || undefined,
-          photoUrl: updated.photo || updated.photoUrl || undefined,
-          profileCompleted,
-        };
+    const payload = {
+      fullName: updated.name || updated.fullName || undefined,
+      birthDate: updated.birthdate || updated.birthDate || undefined,
+      gender: updated.gender || undefined,
+      photoUrl: updated.photo || updated.photoUrl || undefined,
+      profileCompleted,
+    };
 
-        if (isPersonal && selectedStudentId) {
-          const saved = await updateStudent(selectedStudentId, payload);
-          setProfile(saved || { ...updated, profileCompleted });
-        } else {
-          const saved = await updateMyProfile(payload);
-          setProfile(saved || { ...updated, profileCompleted });
-        }
-      } catch {
-        // ignore for now; could add toast
+    setSavingProfile(true);
+    try {
+      if (isPersonal && selectedStudentId) {
+        const saved = await updateStudent(selectedStudentId, payload);
+        setProfile(saved || { ...updated, profileCompleted });
+      } else {
+        const saved = await updateMyProfile(payload);
+        setProfile(saved || { ...updated, profileCompleted });
       }
-    })();
+      setProfileDraft(null);
+      if (profileCompleted) {
+        setIsEditingProfile(false);
+      }
+    } finally {
+      setSavingProfile(false);
+    }
   }
 
   function handlePhotoUpload(e) {
@@ -294,7 +312,7 @@ export default function PhysicalAssessmentPage() {
       }),
     ).then((results) => {
       // Save photos array to profile (first use-case)
-      handleProfileChange({ photo: results[0], photos: results });
+      handleProfileDraftChange({ photo: results[0], photos: results });
     });
   }
 
@@ -389,6 +407,7 @@ export default function PhysicalAssessmentPage() {
             value={selectedStudentId || ""}
             onChange={(e) => {
               setIsEditingProfile(false);
+              setProfileDraft(null);
               setSelectedStudentId(e.target.value);
             }}
           >
@@ -445,7 +464,10 @@ export default function PhysicalAssessmentPage() {
                 {isPersonal && (
                   <button
                     type="button"
-                    onClick={() => setIsEditingProfile((current) => !current)}
+                    onClick={() => {
+                      setProfileDraft(null);
+                      setIsEditingProfile((current) => !current);
+                    }}
                     className="rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-[#b5f03c]/40 hover:bg-white/[0.07]"
                   >
                     {isEditingProfile
@@ -466,9 +488,9 @@ export default function PhysicalAssessmentPage() {
               </h2>
               <div className="flex flex-col items-center gap-3">
                 <div className="h-28 w-28 rounded-lg overflow-hidden bg-white/5">
-                  {profile?.photo || profile?.photoUrl ? (
+                  {draftPhoto ? (
                     <img
-                      src={profile.photo || profile.photoUrl}
+                      src={draftPhoto}
                       alt="foto"
                       className="h-full w-full object-cover"
                     />
@@ -499,9 +521,9 @@ export default function PhysicalAssessmentPage() {
                     {t("NAME", "Nome")}
                   </div>
                   <input
-                    value={profile?.name || profile?.fullName || ""}
+                    value={currentProfileDraft.name}
                     onChange={(e) =>
-                      handleProfileChange({ name: e.target.value })
+                      handleProfileDraftChange({ name: e.target.value })
                     }
                     className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
                   />
@@ -513,11 +535,9 @@ export default function PhysicalAssessmentPage() {
                   </div>
                   <input
                     type="date"
-                    value={getDateInputValue(
-                      profile?.birthdate || profile?.birthDate,
-                    )}
+                    value={currentProfileDraft.birthdate}
                     onChange={(e) =>
-                      handleProfileChange({ birthdate: e.target.value })
+                      handleProfileDraftChange({ birthdate: e.target.value })
                     }
                     className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
                   />
@@ -528,13 +548,24 @@ export default function PhysicalAssessmentPage() {
                     {t("GENDER", "Gênero")}
                   </div>
                   <input
-                    value={profile?.gender || ""}
+                    value={currentProfileDraft.gender}
                     onChange={(e) =>
-                      handleProfileChange({ gender: e.target.value })
+                      handleProfileDraftChange({ gender: e.target.value })
                     }
                     className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
                   />
                 </label>
+
+                <button
+                  type="button"
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile}
+                  className="mt-2 w-full rounded-md bg-[#b5f03c] px-4 py-2 font-semibold text-black transition hover:brightness-110 disabled:opacity-50"
+                >
+                  {savingProfile
+                    ? t("SAVING", "Salvando...")
+                    : t("SAVE_PROFILE", "Salvar cadastro")}
+                </button>
               </div>
             </div>
           )}
