@@ -21,6 +21,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+export default function PhysicalAssessmentPage() {
+  const { user, isPersonal } = useAuth();
+  const { t } = useI18n();
+
   const [students, setStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -85,11 +89,14 @@ import {
   }, [selectedStudentId]);
 
   const chartData = useMemo(() => {
-    const arr = (assessments || []).slice().reverse().map((it) => ({
-      date: it.date ? String(it.date).slice(0, 10) : "",
-      weight: it.weight ? Number(it.weight) : null,
-      fat: it.fatPercentage ?? (it.fat ? Number(it.fat) : null),
-    }));
+    const arr = (assessments || [])
+      .slice()
+      .reverse()
+      .map((it) => ({
+        date: it.date ? String(it.date).slice(0, 10) : "",
+        weight: it.weight ? Number(it.weight) : null,
+        fat: it.fatPercentage ?? (it.fat ? Number(it.fat) : null),
+      }));
 
     return arr;
   }, [assessments]);
@@ -238,7 +245,12 @@ import {
                   </div>
                 )}
               </div>
-              <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} />
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handlePhotoUpload}
+              />
 
               <label className="block w-full">
                 <div className="text-xs text-white/60">{t("NAME", "Nome")}</div>
@@ -392,12 +404,19 @@ import {
                       {t("FAT", "Gordura")}: {a.fatPercentage ?? a.fat}%
                     </div>
                     {a.notes && (
-                      <div className="text-xs text-white/40 mt-1">{a.notes}</div>
+                      <div className="text-xs text-white/40 mt-1">
+                        {a.notes}
+                      </div>
                     )}
                     {Array.isArray(a.photos) && a.photos.length > 0 && (
                       <div className="mt-2 flex gap-2">
                         {a.photos.slice(0, 4).map((p, idx) => (
-                          <img key={idx} src={p} alt={`foto-${idx}`} className="h-12 w-12 rounded object-cover border border-white/[0.04]" />
+                          <img
+                            key={idx}
+                            src={p}
+                            alt={`foto-${idx}`}
+                            className="h-12 w-12 rounded object-cover border border-white/[0.04]"
+                          />
                         ))}
                       </div>
                     )}
