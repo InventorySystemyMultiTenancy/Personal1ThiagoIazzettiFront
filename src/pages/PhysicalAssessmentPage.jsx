@@ -26,6 +26,58 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+const BRAZIL_TIME_ZONE = "America/Sao_Paulo";
+
+function getTodayInBrazil() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BRAZIL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function toBrazilDateInputValue(value) {
+  if (!value) return "";
+  const raw = String(value);
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw.slice(0, 10);
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BRAZIL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function formatBrazilDate(value) {
+  if (!value) return "-";
+  const raw = String(value);
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+    const [year, month, day] = raw.slice(0, 10).split("-");
+    return `${day}/${month}/${year}`;
+  }
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: BRAZIL_TIME_ZONE,
+  }).format(date);
+}
+
 export default function PhysicalAssessmentPage() {
   const { user, isPersonal } = useAuth();
   const { t } = useI18n();
@@ -36,8 +88,9 @@ export default function PhysicalAssessmentPage() {
   const [assessments, setAssessments] = useState([]);
   const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [showEvolutionPhotos, setShowEvolutionPhotos] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [form, setForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
+    date: getTodayInBrazil(),
     weight: "",
     height: "",
     gender: "",
@@ -54,22 +107,21 @@ export default function PhysicalAssessmentPage() {
     );
 
   const getDateInputValue = (value) => {
-    if (!value) return "";
-    return String(value).slice(0, 10);
+    return toBrazilDateInputValue(value);
   };
 
   const profilePhoto = profile?.photo || profile?.photoUrl || null;
   const profileName =
     profile?.fullName || profile?.name || user?.email || "Aluno";
+  const showProfileForm =
+    Boolean(profile) && (!profile.profileCompleted || isEditingProfile);
   const selectedPhotos = Array.isArray(selectedAssessment?.photos)
     ? selectedAssessment.photos
     : [];
 
   const formatAssessmentDate = (value) => {
     if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    return date.toLocaleDateString("pt-BR");
+    return formatBrazilDate(value);
   };
 
   useEffect(() => {
@@ -124,7 +176,7 @@ export default function PhysicalAssessmentPage() {
       .slice()
       .reverse()
       .map((it) => ({
-        date: it.date ? String(it.date).slice(0, 10) : "",
+        date: toBrazilDateInputValue(it.date),
         weight: it.weight ? Number(it.weight) : null,
         fat: it.fatPercentage ?? (it.fat ? Number(it.fat) : null),
       }));
@@ -137,9 +189,11 @@ export default function PhysicalAssessmentPage() {
       .filter((assessment) => Array.isArray(assessment.photos) && assessment.photos[0])
       .slice()
       .sort((a, b) => {
-        const left = new Date(a.date || a.createdAt || 0).getTime();
-        const right = new Date(b.date || b.createdAt || 0).getTime();
-        return left - right;
+        const left = toBrazilDateInputValue(a.date || a.createdAt);
+        const right = toBrazilDateInputValue(b.date || b.createdAt);
+        if (!left) return 1;
+        if (!right) return -1;
+        return left.localeCompare(right);
       });
 
     if (withPhotos.length === 0) {
@@ -307,7 +361,10 @@ export default function PhysicalAssessmentPage() {
           <select
             className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
             value={selectedStudentId || ""}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
+            onChange={(e) => {
+              setIsEditingProfile(false);
+              setSelectedStudentId(e.target.value);
+            }}
           >
             <option value="">— {t("CHOOSE", "Escolher")} —</option>
             {students.map((s) => (
@@ -329,7 +386,8 @@ export default function PhysicalAssessmentPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {profile && (
             <section className="lg:col-span-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                 <div className="h-20 w-20 overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04]">
                   {profilePhoto ? (
                     <img
@@ -357,14 +415,28 @@ export default function PhysicalAssessmentPage() {
                       : ""}
                   </p>
                 </div>
+                </div>
+                {isPersonal && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile((current) => !current)}
+                    className="rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-[#b5f03c]/40 hover:bg-white/[0.07]"
+                  >
+                    {isEditingProfile
+                      ? t("CLOSE", "Fechar")
+                      : t("EDIT_PROFILE", "Editar cadastro")}
+                  </button>
+                )}
               </div>
             </section>
           )}
 
-          {profile && !profile.profileCompleted && (
+          {showProfileForm && (
             <div className="col-span-1 rounded-lg border border-white/[0.06] bg-white/[0.01] p-4">
               <h2 className="font-semibold mb-3">
-                {t("PROFILE", "Cadastro inicial")}
+                {profile.profileCompleted
+                  ? t("EDIT_PROFILE", "Editar cadastro")
+                  : t("PROFILE", "Cadastro inicial")}
               </h2>
               <div className="flex flex-col items-center gap-3">
                 <div className="h-28 w-28 rounded-lg overflow-hidden bg-white/5">
@@ -442,7 +514,7 @@ export default function PhysicalAssessmentPage() {
           )}
 
           <div
-            className={`${profile?.profileCompleted ? "col-span-3" : "col-span-2"} rounded-lg border border-white/[0.06] bg-white/[0.01] p-4`}
+            className={`${showProfileForm ? "col-span-2" : "col-span-3"} rounded-lg border border-white/[0.06] bg-white/[0.01] p-4`}
           >
             <h2 className="font-semibold mb-3">
               {t("ASSESSMENT", "Nova avaliação")}
