@@ -61,6 +61,11 @@ export default function AppLayout() {
       path: "admin/comunicacao",
       icon: MessageSquare,
     },
+    {
+      label: t("NAV_PHYSICAL_ASSESSMENT_THIAGOIAZZETTI", "Avaliação Física"),
+      path: "admin/avaliacao-fisica",
+      icon: BarChart3,
+    },
   ];
 
   const clientNavItems = [
@@ -88,6 +93,11 @@ export default function AppLayout() {
       label: t("NAV_COMMUNICATION_THIAGOIAZZETTI", "Comunicacao"),
       path: "cliente/comunicacao",
       icon: MessageSquare,
+    },
+    {
+      label: t("NAV_PHYSICAL_ASSESSMENT_THIAGOIAZZETTI", "Avaliação Física"),
+      path: "cliente/avaliacao-fisica",
+      icon: BarChart3,
     },
   ];
 

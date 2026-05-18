@@ -298,6 +298,10 @@ export async function updateStudent(studentId, payload, tenantId) {
   });
 }
 
+export async function updateMyProfile(payload, tenantId) {
+  return request(`/alunos/me`, { method: "PATCH", body: payload, tenantId });
+}
+
 export async function listStudentPlans(tenantId) {
   const response = await request("/aluno-plans", { tenantId });
   return Array.isArray(response?.plans) ? response.plans : [];
@@ -356,6 +360,35 @@ export async function listWorkoutPlans(studentId, tenantId) {
   const query = studentId ? `?alunoId=${encodeURIComponent(studentId)}` : "";
   const response = await request(`/workout-plans${query}`, { tenantId });
   return Array.isArray(response?.plans) ? response.plans : [];
+}
+
+export async function listAssessments(alunoId, tenantId) {
+  const response = await request(
+    `/assessments/aluno/${encodeURIComponent(alunoId)}`,
+    { tenantId },
+  );
+  return Array.isArray(response)
+    ? response
+    : Array.isArray(response?.data)
+      ? response.data
+      : [];
+}
+
+export async function createAssessment(payload, tenantId) {
+  const response = await request(`/assessments`, {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response;
+}
+
+export async function deleteAssessment(id, tenantId) {
+  const response = await request(`/assessments/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    tenantId,
+  });
+  return response;
 }
 
 export async function listWorkoutPlanTemplates(tenantId) {
