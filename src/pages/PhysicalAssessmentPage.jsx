@@ -93,6 +93,9 @@ export default function PhysicalAssessmentPage() {
     date: getTodayInBrazil(),
     weight: "",
     height: "",
+    leanMass: "",
+    leanMassPercentage: "",
+    fatWeight: "",
     gender: "",
     fat: "",
     photos: [],
@@ -178,6 +181,11 @@ export default function PhysicalAssessmentPage() {
       .map((it) => ({
         date: toBrazilDateInputValue(it.date),
         weight: it.weight ? Number(it.weight) : null,
+        leanMass: it.leanMass ? Number(it.leanMass) : null,
+        leanMassPercentage: it.leanMassPercentage
+          ? Number(it.leanMassPercentage)
+          : null,
+        fatWeight: it.fatWeight ? Number(it.fatWeight) : null,
         fat: it.fatPercentage ?? (it.fat ? Number(it.fat) : null),
       }));
 
@@ -294,7 +302,16 @@ export default function PhysicalAssessmentPage() {
     if (!selectedStudentId) return;
     // validation
     if (!form.date) return;
-    if (!form.weight && !form.height && !form.fat) return;
+    if (
+      !form.weight &&
+      !form.height &&
+      !form.fat &&
+      !form.leanMass &&
+      !form.leanMassPercentage &&
+      !form.fatWeight
+    ) {
+      return;
+    }
 
     const entry = { ...form };
 
@@ -308,6 +325,15 @@ export default function PhysicalAssessmentPage() {
             : null,
           height: entry.height
             ? parseFloat(String(entry.height).replace(",", "."))
+            : null,
+          leanMass: entry.leanMass
+            ? parseFloat(String(entry.leanMass).replace(",", "."))
+            : null,
+          leanMassPercentage: entry.leanMassPercentage
+            ? parseFloat(String(entry.leanMassPercentage).replace(",", "."))
+            : null,
+          fatWeight: entry.fatWeight
+            ? parseFloat(String(entry.fatWeight).replace(",", "."))
             : null,
           fatPercentage: entry.fat
             ? parseFloat(String(entry.fat).replace(",", "."))
@@ -548,6 +574,36 @@ export default function PhysicalAssessmentPage() {
               />
               <input
                 inputMode="decimal"
+                placeholder={t("LEAN_MASS", "Massa magra (kg)")}
+                value={form.leanMass}
+                onChange={(e) =>
+                  setForm((s) => ({ ...s, leanMass: e.target.value }))
+                }
+                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
+              />
+              <input
+                inputMode="decimal"
+                placeholder={t("LEAN_MASS_PERCENTAGE", "Massa magra (%)")}
+                value={form.leanMassPercentage}
+                onChange={(e) =>
+                  setForm((s) => ({
+                    ...s,
+                    leanMassPercentage: e.target.value,
+                  }))
+                }
+                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
+              />
+              <input
+                inputMode="decimal"
+                placeholder={t("FAT_WEIGHT", "Peso de gordura (kg)")}
+                value={form.fatWeight}
+                onChange={(e) =>
+                  setForm((s) => ({ ...s, fatWeight: e.target.value }))
+                }
+                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
+              />
+              <input
+                inputMode="decimal"
                 placeholder={t("FAT", "Gordura (%)")}
                 value={form.fat}
                 onChange={(e) =>
@@ -678,7 +734,11 @@ export default function PhysicalAssessmentPage() {
                       <div className="text-xs text-white/50">
                         {t("WEIGHT", "Peso")}: {a.weight} kg —{" "}
                         {t("HEIGHT", "Altura")}: {a.height} —{" "}
-                        {t("FAT", "Gordura")}: {a.fatPercentage ?? a.fat}%
+                        {t("LEAN_MASS", "Massa magra")}: {a.leanMass ?? "-"} kg
+                        — {t("LEAN_MASS_PERCENTAGE", "Massa magra")}:
+                        {a.leanMassPercentage ?? "-"}% —{" "}
+                        {t("FAT_WEIGHT", "Peso gordura")}: {a.fatWeight ?? "-"}{" "}
+                        kg — {t("FAT", "Gordura")}: {a.fatPercentage ?? a.fat}%
                       </div>
                       {a.notes && (
                         <div className="text-xs text-white/40 mt-1">
@@ -729,6 +789,27 @@ export default function PhysicalAssessmentPage() {
                       dataKey="fat"
                       stroke="#8884d8"
                       name={t("FAT", "Gordura (%)")}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="leanMass"
+                      stroke="#facc15"
+                      name={t("LEAN_MASS", "Massa magra (kg)")}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="leanMassPercentage"
+                      stroke="#fb923c"
+                      name={t("LEAN_MASS_PERCENTAGE", "Massa magra (%)")}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="fatWeight"
+                      stroke="#f43f5e"
+                      name={t("FAT_WEIGHT", "Peso de gordura (kg)")}
                       dot={false}
                     />
                   </LineChart>
@@ -868,6 +949,30 @@ export default function PhysicalAssessmentPage() {
                     selectedAssessment.fat ??
                     "-"}
                   %
+                </p>
+              </div>
+              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
+                <p className="text-xs text-white/40">
+                  {t("LEAN_MASS", "Massa magra")}
+                </p>
+                <p className="mt-1 text-lg font-semibold text-white">
+                  {selectedAssessment.leanMass ?? "-"} kg
+                </p>
+              </div>
+              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
+                <p className="text-xs text-white/40">
+                  {t("LEAN_MASS_PERCENTAGE", "Massa magra (%)")}
+                </p>
+                <p className="mt-1 text-lg font-semibold text-white">
+                  {selectedAssessment.leanMassPercentage ?? "-"}%
+                </p>
+              </div>
+              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
+                <p className="text-xs text-white/40">
+                  {t("FAT_WEIGHT", "Peso de gordura")}
+                </p>
+                <p className="mt-1 text-lg font-semibold text-white">
+                  {selectedAssessment.fatWeight ?? "-"} kg
                 </p>
               </div>
             </div>
