@@ -33,7 +33,6 @@ export default function PhysicalAssessmentPage() {
     date: new Date().toISOString().slice(0, 10),
     weight: "",
     height: "",
-    age: "",
     gender: "",
     fat: "",
     photos: [],
@@ -184,7 +183,7 @@ export default function PhysicalAssessmentPage() {
     if (!selectedStudentId) return;
     // validation
     if (!form.date) return;
-    if (!form.weight && !form.height && !form.fat && !form.age) return;
+    if (!form.weight && !form.height && !form.fat) return;
 
     const entry = { ...form };
 
@@ -202,7 +201,7 @@ export default function PhysicalAssessmentPage() {
           fatPercentage: entry.fat
             ? parseFloat(String(entry.fat).replace(",", "."))
             : null,
-          age: entry.age ? parseInt(String(entry.age), 10) : null,
+          // age removed from UI; backend can infer from birthDate if needed
           notes: entry.notes,
           photos: Array.isArray(entry.photos) ? entry.photos : [],
         };
@@ -263,71 +262,77 @@ export default function PhysicalAssessmentPage() {
 
       {selectedStudentId && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="col-span-1 rounded-lg border border-white/[0.06] bg-white/[0.01] p-4">
-            <h2 className="font-semibold mb-3">
-              {t("PROFILE", "Cadastro inicial")}
-            </h2>
-            <div className="flex flex-col items-center gap-3">
-              <div className="h-28 w-28 rounded-lg overflow-hidden bg-white/5">
-                {profile?.photo ? (
-                  <img
-                    src={profile.photo}
-                    alt="foto"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-white/30">
-                    {t("NO_PHOTO", "Sem foto")}
+          {!profile && (
+            <div className="col-span-1 rounded-lg border border-white/[0.06] bg-white/[0.01] p-4">
+              <h2 className="font-semibold mb-3">
+                {t("PROFILE", "Cadastro inicial")}
+              </h2>
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-28 w-28 rounded-lg overflow-hidden bg-white/5">
+                  {profile?.photo ? (
+                    <img
+                      src={profile.photo}
+                      alt="foto"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-white/30">
+                      {t("NO_PHOTO", "Sem foto")}
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoUpload}
+                />
+
+                <label className="block w-full">
+                  <div className="text-xs text-white/60">
+                    {t("NAME", "Nome")}
                   </div>
-                )}
+                  <input
+                    value={profile?.name || ""}
+                    onChange={(e) =>
+                      handleProfileChange({ name: e.target.value })
+                    }
+                    className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
+                  />
+                </label>
+
+                <label className="block w-full">
+                  <div className="text-xs text-white/60">
+                    {t("BIRTHDATE", "Data de nascimento")}
+                  </div>
+                  <input
+                    value={profile?.birthdate || ""}
+                    onChange={(e) =>
+                      handleProfileChange({ birthdate: e.target.value })
+                    }
+                    className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
+                  />
+                </label>
+
+                <label className="block w-full">
+                  <div className="text-xs text-white/60">
+                    {t("GENDER", "Gênero")}
+                  </div>
+                  <input
+                    value={profile?.gender || ""}
+                    onChange={(e) =>
+                      handleProfileChange({ gender: e.target.value })
+                    }
+                    className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
+                  />
+                </label>
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handlePhotoUpload}
-              />
-
-              <label className="block w-full">
-                <div className="text-xs text-white/60">{t("NAME", "Nome")}</div>
-                <input
-                  value={profile?.name || ""}
-                  onChange={(e) =>
-                    handleProfileChange({ name: e.target.value })
-                  }
-                  className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
-                />
-              </label>
-
-              <label className="block w-full">
-                <div className="text-xs text-white/60">
-                  {t("BIRTHDATE", "Data de nascimento / Idade")}
-                </div>
-                <input
-                  value={profile?.birthdate || profile?.age || ""}
-                  onChange={(e) =>
-                    handleProfileChange({ birthdate: e.target.value })
-                  }
-                  className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
-                />
-              </label>
-
-              <label className="block w-full">
-                <div className="text-xs text-white/60">
-                  {t("GENDER", "Gênero")}
-                </div>
-                <input
-                  value={profile?.gender || ""}
-                  onChange={(e) =>
-                    handleProfileChange({ gender: e.target.value })
-                  }
-                  className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
-                />
-              </label>
             </div>
-          </div>
+          )}
 
-          <div className="col-span-2 rounded-lg border border-white/[0.06] bg-white/[0.01] p-4">
+          <div
+            className={`${profile ? "col-span-3" : "col-span-2"} rounded-lg border border-white/[0.06] bg-white/[0.01] p-4`}
+          >
             <h2 className="font-semibold mb-3">
               {t("ASSESSMENT", "Nova avaliação")}
             </h2>
@@ -367,15 +372,7 @@ export default function PhysicalAssessmentPage() {
                 }
                 className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
               />
-              <input
-                inputMode="numeric"
-                placeholder={t("AGE", "Idade")}
-                value={form.age}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, age: e.target.value }))
-                }
-                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
-              />
+              {/* Age removed per request */}
               <input
                 placeholder={t("NOTES", "Observações")}
                 value={form.notes}
