@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
 import {
@@ -39,13 +39,25 @@ export default function PhysicalAssessmentPage() {
     notes: "",
   });
 
+  const isInitialProfileComplete = (candidate) =>
+    Boolean(
+      (candidate?.fullName || candidate?.name || "").trim() &&
+        (candidate?.birthDate || candidate?.birthdate) &&
+        (candidate?.gender || "").trim(),
+    );
+
+  const getDateInputValue = (value) => {
+    if (!value) return "";
+    return String(value).slice(0, 10);
+  };
+
   useEffect(() => {
     async function load() {
       if (isPersonal) {
         try {
           const data = await listStudents();
           setStudents(Array.isArray(data) ? data : []);
-        } catch (e) {
+        } catch {
           setStudents([]);
         }
       } else {
@@ -56,7 +68,7 @@ export default function PhysicalAssessmentPage() {
           setProfile(p || null);
           const a = await listAssessments(p?.id || user?.id);
           setAssessments(Array.isArray(a) ? a : []);
-        } catch (e) {
+        } catch {
           const id = user?.id || "me";
           setSelectedStudentId(String(id));
           setProfile(null);
@@ -71,21 +83,20 @@ export default function PhysicalAssessmentPage() {
   useEffect(() => {
     if (!selectedStudentId) return;
     // if admin, try to find profile in students list
-    const found = students.find(
-      (s) => String(s.id) === String(selectedStudentId),
-    );
-    if (found) setProfile(found);
-
-    // load assessments from API
     (async () => {
       try {
+        const found = students.find(
+          (s) => String(s.id) === String(selectedStudentId),
+        );
+        if (found) setProfile(found);
+
         const a = await listAssessments(selectedStudentId);
         setAssessments(Array.isArray(a) ? a : []);
-      } catch (_e) {
+      } catch {
         setAssessments([]);
       }
     })();
-  }, [selectedStudentId]);
+  }, [selectedStudentId, students]);
 
   const chartData = useMemo(() => {
     const arr = (assessments || [])
@@ -135,7 +146,9 @@ export default function PhysicalAssessmentPage() {
 
   function handleProfileChange(changes) {
     const updated = { ...(profile || {}), ...changes };
-    setProfile(updated);
+    const profileCompleted =
+      updated.profileCompleted || isInitialProfileComplete(updated);
+    setProfile({ ...updated, profileCompleted });
 
     // persist to backend
     (async () => {
@@ -145,14 +158,17 @@ export default function PhysicalAssessmentPage() {
           birthDate: updated.birthdate || updated.birthDate || undefined,
           gender: updated.gender || undefined,
           photoUrl: updated.photo || updated.photoUrl || undefined,
+          profileCompleted,
         };
 
         if (isPersonal && selectedStudentId) {
-          await updateStudent(selectedStudentId, payload);
+          const saved = await updateStudent(selectedStudentId, payload);
+          setProfile(saved || { ...updated, profileCompleted });
         } else {
-          await updateMyProfile(payload);
+          const saved = await updateMyProfile(payload);
+          setProfile(saved || { ...updated, profileCompleted });
         }
-      } catch (err) {
+      } catch {
         // ignore for now; could add toast
       }
     })();
@@ -201,14 +217,13 @@ export default function PhysicalAssessmentPage() {
           fatPercentage: entry.fat
             ? parseFloat(String(entry.fat).replace(",", "."))
             : null,
-          // age removed from UI; backend can infer from birthDate if needed
           notes: entry.notes,
           photos: Array.isArray(entry.photos) ? entry.photos : [],
         };
 
         const created = await createAssessment(payload);
         setAssessments((s) => [created || entry, ...s]);
-      } catch (err) {
+      } catch {
         // fallback to local state
         setAssessments((s) => [entry, ...s]);
       }
@@ -221,7 +236,7 @@ export default function PhysicalAssessmentPage() {
       try {
         await deleteAssessment(id);
         setAssessments((s) => s.filter((a) => a.id !== id));
-      } catch (err) {
+      } catch {
         // optimistic local delete
         setAssessments((s) => s.filter((a) => a.id !== id));
       }
@@ -247,7 +262,7 @@ export default function PhysicalAssessmentPage() {
             <option value="">— {t("CHOOSE", "Escolher")} —</option>
             {students.map((s) => (
               <option key={s.id} value={String(s.id)}>
-                {s.name || s.email || s.id}
+                {s.fullName || s.name || s.email || s.id}
               </option>
             ))}
           </select>
@@ -262,16 +277,16 @@ export default function PhysicalAssessmentPage() {
 
       {selectedStudentId && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {!profile && (
+          {profile && !profile.profileCompleted && (
             <div className="col-span-1 rounded-lg border border-white/[0.06] bg-white/[0.01] p-4">
               <h2 className="font-semibold mb-3">
                 {t("PROFILE", "Cadastro inicial")}
               </h2>
               <div className="flex flex-col items-center gap-3">
                 <div className="h-28 w-28 rounded-lg overflow-hidden bg-white/5">
-                  {profile?.photo ? (
+                  {profile?.photo || profile?.photoUrl ? (
                     <img
-                      src={profile.photo}
+                      src={profile.photo || profile.photoUrl}
                       alt="foto"
                       className="h-full w-full object-cover"
                     />
@@ -293,7 +308,7 @@ export default function PhysicalAssessmentPage() {
                     {t("NAME", "Nome")}
                   </div>
                   <input
-                    value={profile?.name || ""}
+                    value={profile?.name || profile?.fullName || ""}
                     onChange={(e) =>
                       handleProfileChange({ name: e.target.value })
                     }
@@ -306,7 +321,10 @@ export default function PhysicalAssessmentPage() {
                     {t("BIRTHDATE", "Data de nascimento")}
                   </div>
                   <input
-                    value={profile?.birthdate || ""}
+                    type="date"
+                    value={getDateInputValue(
+                      profile?.birthdate || profile?.birthDate,
+                    )}
                     onChange={(e) =>
                       handleProfileChange({ birthdate: e.target.value })
                     }
@@ -331,7 +349,7 @@ export default function PhysicalAssessmentPage() {
           )}
 
           <div
-            className={`${profile ? "col-span-3" : "col-span-2"} rounded-lg border border-white/[0.06] bg-white/[0.01] p-4`}
+            className={`${profile?.profileCompleted ? "col-span-3" : "col-span-2"} rounded-lg border border-white/[0.06] bg-white/[0.01] p-4`}
           >
             <h2 className="font-semibold mb-3">
               {t("ASSESSMENT", "Nova avaliação")}
