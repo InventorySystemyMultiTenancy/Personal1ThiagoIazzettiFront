@@ -101,6 +101,39 @@ export default function PhysicalAssessmentPage() {
     return arr;
   }, [assessments]);
 
+  // Compress image to reduce payload size
+  async function compressImage(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          // Resize if larger than 1200px
+          if (width > 1200 || height > 1200) {
+            const ratio = Math.min(1200 / width, 1200 / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG with 70% quality
+          const compressed = canvas.toDataURL("image/jpeg", 0.7);
+          resolve(compressed);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function handleProfileChange(changes) {
     const updated = { ...(profile || {}), ...changes };
     setProfile(updated);
@@ -129,15 +162,18 @@ export default function PhysicalAssessmentPage() {
   function handlePhotoUpload(e) {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+
+    // Limit to 3 photos max
+    const filesToProcess = files.slice(0, 3);
+
     Promise.all(
-      files.map(
-        (file) =>
-          new Promise((res) => {
-            const reader = new FileReader();
-            reader.onload = () => res(reader.result);
-            reader.readAsDataURL(file);
-          }),
-      ),
+      filesToProcess.map(async (file) => {
+        // Validate file size (max 5MB per file before compression)
+        if (file.size > 5 * 1024 * 1024) {
+          console.warn("File too large, will be compressed");
+        }
+        return compressImage(file);
+      }),
     ).then((results) => {
       // Save photos array to profile (first use-case)
       handleProfileChange({ photo: results[0], photos: results });
@@ -355,15 +391,17 @@ export default function PhysicalAssessmentPage() {
                 onChange={(e) => {
                   const files = Array.from(e.target.files || []);
                   if (files.length === 0) return;
+
+                  // Limit to 3 photos max
+                  const filesToProcess = files.slice(0, 3);
+
                   Promise.all(
-                    files.map(
-                      (file) =>
-                        new Promise((res) => {
-                          const reader = new FileReader();
-                          reader.onload = () => res(reader.result);
-                          reader.readAsDataURL(file);
-                        }),
-                    ),
+                    filesToProcess.map(async (file) => {
+                      if (file.size > 5 * 1024 * 1024) {
+                        console.warn("File too large, will be compressed");
+                      }
+                      return compressImage(file);
+                    }),
                   ).then((results) => {
                     setForm((s) => ({ ...s, photos: results }));
                   });
