@@ -391,6 +391,34 @@ export async function deleteAssessment(id, tenantId) {
   return response;
 }
 
+export async function listPersonalEvents(tenantId) {
+  const response = await request("/personal-events", { tenantId });
+  return Array.isArray(response?.events) ? response.events : [];
+}
+
+export async function createPersonalEvent(payload, tenantId) {
+  const response = await request("/personal-events", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.event || response;
+}
+
+export async function listMyPersonalEvents(tenantId) {
+  const response = await request("/personal-events/me", { tenantId });
+  return Array.isArray(response?.events) ? response.events : [];
+}
+
+export async function respondPersonalEvent(eventId, status, tenantId) {
+  const response = await request(`/personal-events/${eventId}/respond`, {
+    method: "PATCH",
+    body: { status },
+    tenantId,
+  });
+  return response?.participant || response;
+}
+
 export async function listWorkoutPlanTemplates(tenantId) {
   const response = await request("/workout-plans/templates", { tenantId });
   if (Array.isArray(response?.templates)) return response.templates;

@@ -13,6 +13,7 @@ import ClientWorkoutsPage from "./pages/ClientWorkoutsPage.jsx";
 import AdminAgendaPage from "./pages/AdminAgendaPage.jsx";
 import ClientAgendaPage from "./pages/ClientAgendaPage.jsx";
 import AdminDietPage from "./pages/AdminDietPage.jsx";
+import AdminEventsPage from "./pages/AdminEventsPage.jsx";
 import StudentWorkoutHistoryPage from "./pages/StudentWorkoutHistoryPage.jsx";
 import PhysicalAssessmentPage from "./pages/PhysicalAssessmentPage.jsx";
 
@@ -88,6 +89,7 @@ export default function App() {
                 <Route path="/admin/treinos" element={<AdminDashboardPage />} />
                 <Route path="/admin/agenda" element={<AdminAgendaPage />} />
                 <Route path="/admin/dietas" element={<AdminDietPage />} />
+                <Route path="/admin/eventos" element={<AdminEventsPage />} />
                 <Route
                   path="/admin/comunicacao"
                   element={<AdminDashboardPage />}

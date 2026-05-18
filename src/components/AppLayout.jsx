@@ -12,6 +12,7 @@ import {
   CalendarDays,
   Salad,
   MessageSquare,
+  PartyPopper,
 } from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
 import SidebarLink from "./SidebarLink.jsx";
@@ -60,6 +61,11 @@ export default function AppLayout() {
       label: t("NAV_COMMUNICATION_THIAGOIAZZETTI", "Comunicacao"),
       path: "admin/comunicacao",
       icon: MessageSquare,
+    },
+    {
+      label: t("NAV_EVENTS_THIAGOIAZZETTI", "Eventos"),
+      path: "admin/eventos",
+      icon: PartyPopper,
     },
     {
       label: t("NAV_PHYSICAL_ASSESSMENT_THIAGOIAZZETTI", "Avaliação Física"),
