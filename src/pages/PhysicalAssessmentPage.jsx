@@ -11,6 +11,10 @@ import {
   updateMyProfile,
 } from "../lib/api.js";
 import {
+  Image as ImageIcon,
+  X,
+} from "lucide-react";
+import {
   LineChart,
   Line,
   XAxis,
@@ -29,6 +33,7 @@ export default function PhysicalAssessmentPage() {
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [assessments, setAssessments] = useState([]);
+  const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     weight: "",
@@ -49,6 +54,20 @@ export default function PhysicalAssessmentPage() {
   const getDateInputValue = (value) => {
     if (!value) return "";
     return String(value).slice(0, 10);
+  };
+
+  const profilePhoto = profile?.photo || profile?.photoUrl || null;
+  const profileName =
+    profile?.fullName || profile?.name || user?.email || "Aluno";
+  const selectedPhotos = Array.isArray(selectedAssessment?.photos)
+    ? selectedAssessment.photos
+    : [];
+
+  const formatAssessmentDate = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString("pt-BR");
   };
 
   useEffect(() => {
@@ -222,10 +241,13 @@ export default function PhysicalAssessmentPage() {
         };
 
         const created = await createAssessment(payload);
-        setAssessments((s) => [created || entry, ...s]);
+        const nextAssessment = created || entry;
+        setAssessments((s) => [nextAssessment, ...s]);
+        setSelectedAssessment(nextAssessment);
       } catch {
         // fallback to local state
         setAssessments((s) => [entry, ...s]);
+        setSelectedAssessment(entry);
       }
     })();
   }
@@ -236,9 +258,15 @@ export default function PhysicalAssessmentPage() {
       try {
         await deleteAssessment(id);
         setAssessments((s) => s.filter((a) => a.id !== id));
+        setSelectedAssessment((current) =>
+          current?.id === id ? null : current,
+        );
       } catch {
         // optimistic local delete
         setAssessments((s) => s.filter((a) => a.id !== id));
+        setSelectedAssessment((current) =>
+          current?.id === id ? null : current,
+        );
       }
     })();
   }
@@ -277,6 +305,40 @@ export default function PhysicalAssessmentPage() {
 
       {selectedStudentId && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {profile && (
+            <section className="lg:col-span-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="h-20 w-20 overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04]">
+                  {profilePhoto ? (
+                    <img
+                      src={profilePhoto}
+                      alt={profileName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-white/35">
+                      {t("NO_PHOTO", "Sem foto")}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                    {t("PROFILE", "Perfil")}
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold text-white">
+                    {profileName}
+                  </h2>
+                  <p className="mt-1 text-sm text-white/50">
+                    {profile?.gender || t("GENDER", "Genero")}
+                    {profile?.birthDate || profile?.birthdate
+                      ? ` - ${formatAssessmentDate(profile.birthDate || profile.birthdate)}`
+                      : ""}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
           {profile && !profile.profileCompleted && (
             <div className="col-span-1 rounded-lg border border-white/[0.06] bg-white/[0.01] p-4">
               <h2 className="font-semibold mb-3">
@@ -424,6 +486,18 @@ export default function PhysicalAssessmentPage() {
                 className="mt-2"
               />
             </div>
+            {Array.isArray(form.photos) && form.photos.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {form.photos.map((photo, index) => (
+                  <img
+                    key={`${photo}-${index}`}
+                    src={photo}
+                    alt={`preview-${index + 1}`}
+                    className="h-16 w-16 rounded-md border border-white/[0.06] object-cover"
+                  />
+                ))}
+              </div>
+            )}
             <div className="flex gap-2">
               <button
                 onClick={handleAddAssessment}
@@ -446,37 +520,61 @@ export default function PhysicalAssessmentPage() {
             <div className="space-y-2">
               {assessments.map((a) => (
                 <div
+                  role="button"
+                  tabIndex={0}
                   key={a.id}
-                  className="flex items-center justify-between rounded-md border border-white/[0.04] p-3"
+                  onClick={() => setSelectedAssessment(a)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedAssessment(a);
+                    }
+                  }}
+                  className="flex w-full items-center justify-between rounded-md border border-white/[0.04] p-3 text-left transition hover:border-[#b5f03c]/35 hover:bg-white/[0.03]"
                 >
-                  <div>
-                    <div className="text-sm font-medium">{a.date}</div>
-                    <div className="text-xs text-white/50">
-                      {t("WEIGHT", "Peso")}: {a.weight} kg —{" "}
-                      {t("HEIGHT", "Altura")}: {a.height} —{" "}
-                      {t("FAT", "Gordura")}: {a.fatPercentage ?? a.fat}%
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-white/[0.05] bg-white/[0.03]">
+                      {Array.isArray(a.photos) && a.photos[0] ? (
+                        <img
+                          src={a.photos[0]}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : profilePhoto ? (
+                        <img
+                          src={profilePhoto}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-white/25">
+                          <ImageIcon size={16} />
+                        </div>
+                      )}
                     </div>
-                    {a.notes && (
-                      <div className="text-xs text-white/40 mt-1">
-                        {a.notes}
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium">
+                        {formatAssessmentDate(a.date)}
                       </div>
-                    )}
-                    {Array.isArray(a.photos) && a.photos.length > 0 && (
-                      <div className="mt-2 flex gap-2">
-                        {a.photos.slice(0, 4).map((p, idx) => (
-                          <img
-                            key={idx}
-                            src={p}
-                            alt={`foto-${idx}`}
-                            className="h-12 w-12 rounded object-cover border border-white/[0.04]"
-                          />
-                        ))}
+                      <div className="text-xs text-white/50">
+                        {t("WEIGHT", "Peso")}: {a.weight} kg —{" "}
+                        {t("HEIGHT", "Altura")}: {a.height} —{" "}
+                        {t("FAT", "Gordura")}: {a.fatPercentage ?? a.fat}%
                       </div>
-                    )}
+                      {a.notes && (
+                        <div className="text-xs text-white/40 mt-1">
+                          {a.notes}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleDeleteAssessment(a.id)}
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleDeleteAssessment(a.id);
+                      }}
                       className="text-xs text-red-400"
                     >
                       {t("DELETE", "Excluir")}
@@ -517,6 +615,103 @@ export default function PhysicalAssessmentPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {selectedAssessment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
+          <section className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-white/[0.08] bg-[#0b0b0b] p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-16 w-16 overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04]">
+                  {profilePhoto ? (
+                    <img
+                      src={profilePhoto}
+                      alt={profileName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs text-white/35">
+                      {t("NO_PHOTO", "Sem foto")}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                    {profileName}
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold text-white">
+                    {t("ASSESSMENT", "Avaliação")}{" "}
+                    {formatAssessmentDate(selectedAssessment.date)}
+                  </h2>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedAssessment(null)}
+                className="rounded-md border border-white/[0.08] p-2 text-white/60 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
+                <p className="text-xs text-white/40">{t("WEIGHT", "Peso")}</p>
+                <p className="mt-1 text-lg font-semibold text-white">
+                  {selectedAssessment.weight ?? "-"} kg
+                </p>
+              </div>
+              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
+                <p className="text-xs text-white/40">{t("HEIGHT", "Altura")}</p>
+                <p className="mt-1 text-lg font-semibold text-white">
+                  {selectedAssessment.height ?? "-"} m
+                </p>
+              </div>
+              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
+                <p className="text-xs text-white/40">{t("FAT", "Gordura")}</p>
+                <p className="mt-1 text-lg font-semibold text-white">
+                  {selectedAssessment.fatPercentage ??
+                    selectedAssessment.fat ??
+                    "-"}
+                  %
+                </p>
+              </div>
+            </div>
+
+            {selectedAssessment.notes && (
+              <div className="mt-4 rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
+                <p className="text-xs text-white/40">
+                  {t("NOTES", "Observações")}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-white/75">
+                  {selectedAssessment.notes}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-5">
+              <h3 className="font-semibold text-white">
+                {t("PHOTOS", "Fotos")}
+              </h3>
+              {selectedPhotos.length > 0 ? (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {selectedPhotos.map((photo, index) => (
+                    <img
+                      key={`${photo}-${index}`}
+                      src={photo}
+                      alt={`foto-avaliacao-${index + 1}`}
+                      className="max-h-80 w-full rounded-md border border-white/[0.06] object-cover"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3 rounded-md border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-white/50">
+                  {t("NO_PHOTOS", "Nenhuma foto registrada nesta avaliação.")}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       )}
     </div>
