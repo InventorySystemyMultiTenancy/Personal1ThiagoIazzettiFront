@@ -615,18 +615,20 @@ export default function PhysicalAssessmentPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleDeleteAssessment(a.id);
-                      }}
-                      className="text-xs text-red-400"
-                    >
-                      {t("DELETE", "Excluir")}
-                    </button>
-                  </div>
+                  {isPersonal && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleDeleteAssessment(a.id);
+                        }}
+                        className="text-xs text-red-400"
+                      >
+                        {t("DELETE", "Excluir")}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
