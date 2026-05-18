@@ -11,6 +11,7 @@ import {
   updateMyProfile,
 } from "../lib/api.js";
 import {
+  Camera,
   Image as ImageIcon,
   X,
 } from "lucide-react";
@@ -34,6 +35,7 @@ export default function PhysicalAssessmentPage() {
   const [profile, setProfile] = useState(null);
   const [assessments, setAssessments] = useState([]);
   const [selectedAssessment, setSelectedAssessment] = useState(null);
+  const [showEvolutionPhotos, setShowEvolutionPhotos] = useState(false);
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     weight: "",
@@ -128,6 +130,26 @@ export default function PhysicalAssessmentPage() {
       }));
 
     return arr;
+  }, [assessments]);
+
+  const evolutionPhotos = useMemo(() => {
+    const withPhotos = (assessments || [])
+      .filter((assessment) => Array.isArray(assessment.photos) && assessment.photos[0])
+      .slice()
+      .sort((a, b) => {
+        const left = new Date(a.date || a.createdAt || 0).getTime();
+        const right = new Date(b.date || b.createdAt || 0).getTime();
+        return left - right;
+      });
+
+    if (withPhotos.length === 0) {
+      return { first: null, latest: null };
+    }
+
+    return {
+      first: withPhotos[0],
+      latest: withPhotos[withPhotos.length - 1],
+    };
   }, [assessments]);
 
   // Compress image to reduce payload size
@@ -359,11 +381,20 @@ export default function PhysicalAssessmentPage() {
                   )}
                 </div>
                 <input
+                  id="profile-photo-upload"
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={handlePhotoUpload}
+                  className="sr-only"
                 />
+                <label
+                  htmlFor="profile-photo-upload"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-[#b5f03c]/40 hover:bg-white/[0.07]"
+                >
+                  <Camera size={16} className="text-[#b5f03c]" />
+                  {t("ADD_PHOTO", "Adicionar foto")}
+                </label>
 
                 <label className="block w-full">
                   <div className="text-xs text-white/60">
@@ -461,30 +492,46 @@ export default function PhysicalAssessmentPage() {
                 }
                 className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
               />
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  if (files.length === 0) return;
+              <div className="flex items-center gap-3">
+                <input
+                  id="assessment-photo-upload"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length === 0) return;
 
-                  // Limit to 3 photos max
-                  const filesToProcess = files.slice(0, 3);
+                    // Limit to 3 photos max
+                    const filesToProcess = files.slice(0, 3);
 
-                  Promise.all(
-                    filesToProcess.map(async (file) => {
-                      if (file.size > 5 * 1024 * 1024) {
-                        console.warn("File too large, will be compressed");
-                      }
-                      return compressImage(file);
-                    }),
-                  ).then((results) => {
-                    setForm((s) => ({ ...s, photos: results }));
-                  });
-                }}
-                className="mt-2"
-              />
+                    Promise.all(
+                      filesToProcess.map(async (file) => {
+                        if (file.size > 5 * 1024 * 1024) {
+                          console.warn("File too large, will be compressed");
+                        }
+                        return compressImage(file);
+                      }),
+                    ).then((results) => {
+                      setForm((s) => ({ ...s, photos: results }));
+                    });
+                  }}
+                  className="sr-only"
+                />
+                <label
+                  htmlFor="assessment-photo-upload"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-[#b5f03c]/40 hover:bg-white/[0.07]"
+                >
+                  <Camera size={16} className="text-[#b5f03c]" />
+                  {t("ADD_PHOTO", "Adicionar foto")}
+                </label>
+                {form.photos.length > 0 && (
+                  <span className="text-xs text-white/45">
+                    {form.photos.length}{" "}
+                    {form.photos.length === 1 ? "foto" : "fotos"}
+                  </span>
+                )}
+              </div>
             </div>
             {Array.isArray(form.photos) && form.photos.length > 0 && (
               <div className="mb-3 flex flex-wrap gap-2">
@@ -613,8 +660,80 @@ export default function PhysicalAssessmentPage() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowEvolutionPhotos(true)}
+                  className="rounded-md bg-[#b5f03c] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110"
+                >
+                  {t("VIEW_EVOLUTION", "Ver evolução")}
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {showEvolutionPhotos && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
+          <section className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-lg border border-white/[0.08] bg-[#0b0b0b] p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                  {profileName}
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-white">
+                  {t("VIEW_EVOLUTION", "Ver evolução")}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEvolutionPhotos(false)}
+                className="rounded-md border border-white/[0.08] p-2 text-white/60 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {evolutionPhotos.first && evolutionPhotos.latest ? (
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <article className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                    {t("FIRST_PHOTO", "Primeira foto")}
+                  </p>
+                  <p className="mt-1 text-sm text-white/65">
+                    {formatAssessmentDate(evolutionPhotos.first.date)}
+                  </p>
+                  <img
+                    src={evolutionPhotos.first.photos[0]}
+                    alt="primeira-foto-evolucao"
+                    className="mt-3 max-h-[62vh] w-full rounded-md border border-white/[0.06] object-contain"
+                  />
+                </article>
+
+                <article className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                    {t("LATEST_PHOTO", "Último histórico")}
+                  </p>
+                  <p className="mt-1 text-sm text-white/65">
+                    {formatAssessmentDate(evolutionPhotos.latest.date)}
+                  </p>
+                  <img
+                    src={evolutionPhotos.latest.photos[0]}
+                    alt="ultima-foto-evolucao"
+                    className="mt-3 max-h-[62vh] w-full rounded-md border border-white/[0.06] object-contain"
+                  />
+                </article>
+              </div>
+            ) : (
+              <div className="mt-5 rounded-md border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-white/55">
+                {t(
+                  "NO_EVOLUTION_PHOTOS",
+                  "Adicione fotos nos históricos para comparar a evolução.",
+                )}
+              </div>
+            )}
+          </section>
         </div>
       )}
 
