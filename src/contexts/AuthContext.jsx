@@ -1,10 +1,12 @@
-import React, {
+import {
+  useCallback,
   createContext,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
+import { useTenant } from "./TenantContext.jsx";
 import {
   clearStoredSession,
   getStoredSession,
@@ -17,10 +19,11 @@ import {
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const { tenantId } = useTenant();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     const session = getStoredSession();
 
     if (!session?.token) {
@@ -29,14 +32,14 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      const current = await me();
+      const current = await me(tenantId);
       setUser(current.user);
       setStoredSession({ token: session.token, user: current.user });
     } catch {
       clearStoredSession();
       setUser(null);
     }
-  };
+  }, [tenantId]);
 
   useEffect(() => {
     let mounted = true;
@@ -53,26 +56,26 @@ export function AuthProvider({ children }) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshSession]);
 
-  const signIn = async ({ email, password }) => {
-    const session = await login({ email, password });
+  const signIn = useCallback(async ({ email, password }) => {
+    const session = await login({ email, password }, tenantId);
     setStoredSession(session);
     setUser(session.user);
     return session;
-  };
+  }, [tenantId]);
 
-  const signUp = async (payload) => {
+  const signUp = useCallback(async (payload) => {
     const session = await registerClient(payload);
     setStoredSession(session);
     setUser(session.user);
     return session;
-  };
+  }, []);
 
-  const signOut = () => {
+  const signOut = useCallback(() => {
     clearStoredSession();
     setUser(null);
-  };
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -86,7 +89,7 @@ export function AuthProvider({ children }) {
       signOut,
       refreshSession,
     }),
-    [loading, user],
+    [loading, user, signIn, signUp, signOut, refreshSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

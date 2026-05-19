@@ -186,11 +186,12 @@ async function request(path, options = {}) {
   return response.json();
 }
 
-export async function login(payload) {
+export async function login(payload, tenantId) {
   const response = await request("/auth/login", {
     method: "POST",
     body: payload,
     auth: false,
+    tenantId,
   });
 
   return {
@@ -212,8 +213,8 @@ export async function registerClient(payload) {
   };
 }
 
-export async function me() {
-  return request("/auth/me");
+export async function me(tenantId) {
+  return request("/auth/me", { tenantId });
 }
 
 export async function getPublicPlans(personalId) {
