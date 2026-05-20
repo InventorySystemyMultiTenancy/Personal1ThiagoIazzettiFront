@@ -1,11 +1,9 @@
-import React from "react";
+import { useState } from "react";
 import {
   BarChart3,
   Users,
   Dumbbell,
   Wallet,
-  Settings,
-  Crown,
   Bell,
   LogOut,
   Sparkles,
@@ -13,6 +11,8 @@ import {
   Salad,
   MessageSquare,
   PartyPopper,
+  Menu,
+  X,
 } from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
 import SidebarLink from "./SidebarLink.jsx";
@@ -22,6 +22,7 @@ import { useI18n } from "../contexts/I18nContext.jsx";
 import LanguageSwitcher from "./LanguageSwitcher.jsx";
 
 export default function AppLayout() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { tenantId } = useTenant();
   const { user, isPersonal, signOut } = useAuth();
   const { t } = useI18n();
@@ -115,26 +116,49 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-[#080808] text-[#f4ead2]">
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[220px_1fr]">
+        {isMobileMenuOpen && (
+          <button
+            type="button"
+            aria-label={t("NAV_CLOSE_MENU_THIAGOIAZZETTI", "Fechar menu")}
+            className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm lg:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
         {/* SIDEBAR */}
-        <aside className="flex flex-col border-r border-white/[0.05] bg-[#0b0b0b] px-3 py-6">
+        <aside
+          className={`fixed inset-y-0 left-0 z-40 flex w-[280px] max-w-[86vw] flex-col border-r border-white/[0.05] bg-[#0b0b0b] px-3 py-5 shadow-2xl shadow-black/50 transition-transform duration-300 lg:static lg:z-auto lg:w-auto lg:max-w-none lg:translate-x-0 lg:px-3 lg:py-6 lg:shadow-none ${
+            isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
           {/* Logo */}
-          <div className="mb-8 flex items-center gap-3 px-2">
-            <div className="relative">
-              <img
-                src="/image.png"
-                alt="Thiago Iazzetti"
-                className="h-10 w-10 rounded-2xl bg-white/10 object-cover p-0.5"
-              />
-              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0b0b0b] bg-emerald-400" />
+          <div className="mb-8 flex items-center justify-between gap-3 px-2">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="relative">
+                <img
+                  src="/image.png"
+                  alt="Thiago Iazzetti"
+                  className="h-10 w-10 rounded-2xl bg-white/10 object-cover p-0.5"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0b0b0b] bg-emerald-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-white leading-tight">
+                  Thiago Iazzetti
+                </p>
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/30 leading-tight mt-0.5">
+                  {roleLabel}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-white leading-tight">
-                Thiago Iazzetti
-              </p>
-              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/30 leading-tight mt-0.5">
-                {roleLabel}
-              </p>
-            </div>
+            <button
+              type="button"
+              aria-label={t("NAV_CLOSE_MENU_THIAGOIAZZETTI", "Fechar menu")}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/70 transition hover:border-white/15 hover:text-white lg:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <X size={18} />
+            </button>
           </div>
 
           {/* Nav */}
@@ -148,6 +172,7 @@ export default function AppLayout() {
                 to={`/${item.path}`}
                 label={item.label}
                 icon={item.icon}
+                onClick={() => setIsMobileMenuOpen(false)}
               />
             ))}
           </nav>
@@ -169,10 +194,18 @@ export default function AppLayout() {
         </aside>
 
         <section className="flex min-h-screen flex-col">
-          <header className="flex items-center justify-between border-b border-white/[0.05] bg-[#080808]/90 px-6 py-3.5 backdrop-blur-sm sticky top-0 z-10">
-            <div className="flex items-center gap-2.5">
+          <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-white/[0.05] bg-[#080808]/90 px-4 py-3 backdrop-blur-sm sm:px-6 lg:py-3.5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <button
+                type="button"
+                aria-label={t("NAV_OPEN_MENU_THIAGOIAZZETTI", "Abrir menu")}
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/70 transition hover:border-[#b5f03c]/40 hover:text-[#b5f03c] lg:hidden"
+                onClick={() => setIsMobileMenuOpen(true)}
+              >
+                <Menu size={18} />
+              </button>
               <div className="h-2 w-2 rounded-full bg-[#b5f03c] shadow-[0_0_8px_rgba(181,240,60,0.6)]" />
-              <p className="text-sm font-semibold text-white/70">
+              <p className="truncate text-sm font-semibold text-white/70">
                 {isPersonal
                   ? t(
                       "HEADER_PERSONAL_PANEL_THIAGOIAZZETTI",
@@ -185,18 +218,25 @@ export default function AppLayout() {
               <LanguageSwitcher compact />
               <Link
                 to="/"
-                className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-1.5 text-xs text-white/50 transition hover:border-white/15 hover:text-white/80"
+                className="flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-2.5 text-xs text-white/50 transition hover:border-white/15 hover:text-white/80 sm:px-3"
               >
                 <Bell size={12} />
-                {t("HEADER_PUBLIC_PAGE_THIAGOIAZZETTI", "Pagina publica")}
+                <span className="hidden sm:inline">
+                  {t("HEADER_PUBLIC_PAGE_THIAGOIAZZETTI", "Pagina publica")}
+                </span>
               </Link>
               <button
                 type="button"
-                onClick={signOut}
-                className="flex items-center gap-1.5 rounded-lg bg-white/[0.06] border border-white/[0.07] px-3 py-1.5 text-xs text-white/60 transition hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  signOut();
+                }}
+                className="flex h-8 items-center gap-1.5 rounded-lg bg-white/[0.06] border border-white/[0.07] px-2.5 text-xs text-white/60 transition hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 sm:px-3"
               >
                 <LogOut size={12} />
-                {t("NAV_SIGN_OUT_THIAGOIAZZETTI", "Sair")}
+                <span className="hidden sm:inline">
+                  {t("NAV_SIGN_OUT_THIAGOIAZZETTI", "Sair")}
+                </span>
               </button>
             </div>
           </header>
