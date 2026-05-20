@@ -194,18 +194,18 @@ export default function AppLayout() {
         </aside>
 
         <section className="flex min-h-screen flex-col">
-          <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-white/[0.05] bg-[#080808]/90 px-4 py-3 backdrop-blur-sm sm:px-6 lg:py-3.5">
-            <div className="flex min-w-0 items-center gap-2.5">
+          <header className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-white/[0.05] bg-[#080808]/90 px-3 py-2.5 backdrop-blur-sm sm:gap-3 sm:px-6 lg:py-3.5">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-2.5">
               <button
                 type="button"
                 aria-label={t("NAV_OPEN_MENU_THIAGOIAZZETTI", "Abrir menu")}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/70 transition hover:border-[#b5f03c]/40 hover:text-[#b5f03c] lg:hidden"
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-white/70 transition hover:border-[#b5f03c]/40 hover:text-[#b5f03c] sm:h-9 sm:w-9 sm:rounded-xl lg:hidden"
                 onClick={() => setIsMobileMenuOpen(true)}
               >
                 <Menu size={18} />
               </button>
-              <div className="h-2 w-2 rounded-full bg-[#b5f03c] shadow-[0_0_8px_rgba(181,240,60,0.6)]" />
-              <p className="truncate text-sm font-semibold text-white/70">
+              <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#b5f03c] shadow-[0_0_8px_rgba(181,240,60,0.6)] sm:h-2 sm:w-2" />
+              <p className="truncate text-[11px] font-semibold text-white/70 sm:text-sm">
                 {isPersonal
                   ? t(
                       "HEADER_PERSONAL_PANEL_THIAGOIAZZETTI",
@@ -214,11 +214,11 @@ export default function AppLayout() {
                   : t("HEADER_MY_AREA_THIAGOIAZZETTI", "Minha Area")}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2">
               <LanguageSwitcher compact />
               <Link
                 to="/"
-                className="flex h-8 items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-2.5 text-xs text-white/50 transition hover:border-white/15 hover:text-white/80 sm:px-3"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.03] text-xs text-white/50 transition hover:border-white/15 hover:text-white/80 sm:w-auto sm:gap-1.5 sm:px-3"
               >
                 <Bell size={12} />
                 <span className="hidden sm:inline">
@@ -231,7 +231,7 @@ export default function AppLayout() {
                   setIsMobileMenuOpen(false);
                   signOut();
                 }}
-                className="flex h-8 items-center gap-1.5 rounded-lg bg-white/[0.06] border border-white/[0.07] px-2.5 text-xs text-white/60 transition hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 sm:px-3"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.06] text-xs text-white/60 transition hover:border-red-500/20 hover:bg-red-500/10 hover:text-red-400 sm:w-auto sm:gap-1.5 sm:px-3"
               >
                 <LogOut size={12} />
                 <span className="hidden sm:inline">
@@ -241,7 +241,7 @@ export default function AppLayout() {
             </div>
           </header>
 
-          <main className="flex-1 p-5 lg:p-7">
+          <main className="flex-1 px-3 py-4 sm:p-5 lg:p-7">
             <Outlet />
           </main>
         </section>
