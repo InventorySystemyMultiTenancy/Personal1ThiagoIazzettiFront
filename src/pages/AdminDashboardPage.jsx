@@ -15,6 +15,7 @@ import {
   Trash2,
   Send,
   ChevronLeft,
+  ChevronDown,
 } from "lucide-react";
 import {
   createStudent,
@@ -258,6 +259,7 @@ export default function AdminDashboardPage() {
   const [loadingAgenda, setLoadingAgenda] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [statsExpanded, setStatsExpanded] = useState(false);
   const [studentFormErrors, setStudentFormErrors] = useState({});
   const [activeTab, setActiveTab] = useState("visao-geral");
   const [editingStudentId, setEditingStudentId] = useState("");
@@ -892,7 +894,35 @@ export default function AdminDashboardPage() {
       {/* TAB: VISAO GERAL */}
       {activeTab === "visao-geral" && (
         <div className="space-y-6">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <button
+            type="button"
+            onClick={() => setStatsExpanded((current) => !current)}
+            className="flex w-full items-center justify-between rounded-2xl border border-white/[0.07] bg-[#0f0f0f] px-4 py-3 text-left sm:hidden"
+            aria-expanded={statsExpanded}
+          >
+            <span>
+              <span className="block text-[10px] font-bold uppercase tracking-[0.28em] text-white/30">
+                {t("ADMIN_DASH_MORE_DATA_THIAGOIAZZETTI", "Mais dados")}
+              </span>
+              <span className="mt-1 block text-sm font-semibold text-white">
+                {statsExpanded
+                  ? t("ADMIN_DASH_HIDE_DATA_THIAGOIAZZETTI", "Ocultar dados")
+                  : t("ADMIN_DASH_SHOW_DATA_THIAGOIAZZETTI", "Ver mais dados")}
+              </span>
+            </span>
+            <ChevronDown
+              size={18}
+              className={`text-[#b5f03c] transition-transform ${
+                statsExpanded ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          <div
+            className={`gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4 ${
+              statsExpanded ? "grid" : "hidden"
+            }`}
+          >
             {stats.map((stat) => (
               <StatCard key={stat.label} {...stat} />
             ))}

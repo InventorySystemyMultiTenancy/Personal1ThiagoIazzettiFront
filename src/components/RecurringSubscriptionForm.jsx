@@ -1,13 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadMercadoPago } from "@mercadopago/sdk-js";
-import { CreditCard, Loader2, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  Copy,
+  CreditCard,
+  Loader2,
+  QrCode,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import {
+  createPixRecurringSubscription,
   createRecurringSubscription,
   formatCurrency,
+  formatDate,
+  getRecurringSubscription,
   getMyStudentProfile,
+  renewPixRecurringSubscription,
 } from "../lib/api.js";
 
 const MP_PUBLIC_KEY = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY || "";
@@ -39,6 +51,84 @@ function buildFieldId(prefix, field) {
   return `${prefix}__${field}`;
 }
 
+function getPlanCheckoutId(plan) {
+  return plan?.recurringPlanId || plan?.preapproval_plan_id || plan?.id || "";
+}
+
+function getAlunoPlanId(plan) {
+  return (
+    plan?.alunoPlanId ||
+    plan?.aluno_plan_id ||
+    plan?.planId ||
+    plan?.plan_id ||
+    (plan?.id && plan.id !== plan?.recurringPlanId ? plan.id : "")
+  );
+}
+
+function normalizeSubscriptionPayload(result) {
+  if (!result || typeof result !== "object") {
+    return { subscription: null, provider: null };
+  }
+
+  return {
+    subscription:
+      result.subscription ||
+      result.data?.subscription ||
+      result.recurringSubscription ||
+      result,
+    provider:
+      result.provider ||
+      result.data?.provider ||
+      result.payment ||
+      result.subscription?.provider ||
+      null,
+  };
+}
+
+function getSubscriptionStatusLabel(status) {
+  if (status === "authorized") return "Pagamento confirmado";
+  if (status === "canceled") return "Assinatura cancelada";
+  if (status === "pending") return "Aguardando pagamento PIX";
+  return status || "Status indisponivel";
+}
+
+function getNextChargeDate(subscription) {
+  return (
+    subscription?.nextChargeAt ||
+    subscription?.next_charge_at ||
+    subscription?.nextPaymentDate ||
+    subscription?.next_payment_date ||
+    subscription?.current_period_end ||
+    ""
+  );
+}
+
+function formatExpirationTime(expiresAt) {
+  if (!expiresAt) return "";
+  const date = new Date(expiresAt);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function getPayerEmail(user, profile) {
+  return user?.email || profile?.email || profile?.aluno?.email || "";
+}
+
+function getPayerName(user, profile) {
+  return (
+    user?.fullName ||
+    user?.name ||
+    profile?.fullName ||
+    profile?.name ||
+    profile?.aluno?.fullName ||
+    profile?.aluno?.name ||
+    ""
+  );
+}
+
 export default function RecurringSubscriptionForm({ plan, personalId, onSuccess }) {
   const navigate = useNavigate();
   const { tenantId } = useTenant();
@@ -49,9 +139,17 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   const studentIdRef = useRef("");
   const sdkStateRef = useRef("idle");
   const redirectTimeoutRef = useRef(null);
+  const pollingIntervalRef = useRef(null);
   const [studentProfile, setStudentProfile] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState("pix");
   const [sdkState, setSdkState] = useState("idle");
   const [feedback, setFeedback] = useState("");
+  const [pixState, setPixState] = useState("idle");
+  const [pixFeedback, setPixFeedback] = useState("");
+  const [pixSubscription, setPixSubscription] = useState(null);
+  const [pixProvider, setPixProvider] = useState(null);
+  const [pixNow, setPixNow] = useState(() => Date.now());
+  const [copiedPix, setCopiedPix] = useState(false);
 
   const resolvedStudentId = useMemo(
     () => resolveStudentId(user, studentProfile),
@@ -69,6 +167,25 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
     : "";
   const shouldShowRecurringPlanWarning =
     MP_DEBUG_ENABLED && Boolean(missingRecurringPlanWarning);
+  const pixStatus = pixSubscription?.status || pixProvider?.status || "";
+  const pixExpiresAt = pixProvider?.expires_at || pixProvider?.expiresAt || "";
+  const pixExpiresAtTime = pixExpiresAt ? new Date(pixExpiresAt).getTime() : 0;
+  const pixExpired =
+    Boolean(pixExpiresAtTime) &&
+    Number.isFinite(pixExpiresAtTime) &&
+    pixExpiresAtTime <= pixNow &&
+    pixStatus !== "authorized";
+  const pixQrCode = pixProvider?.qr_code || pixProvider?.qrCode || "";
+  const pixQrCodeBase64 =
+    pixProvider?.qr_code_base64 || pixProvider?.qrCodeBase64 || "";
+  const pixQrImageSrc = pixQrCodeBase64?.startsWith("data:")
+    ? pixQrCodeBase64
+    : `data:image/png;base64,${pixQrCodeBase64}`;
+  const pixNextCharge = getNextChargeDate(pixSubscription);
+  const pixCanRenew =
+    Boolean(pixSubscription?.id) &&
+    pixStatus !== "authorized" &&
+    (pixExpired || !pixQrCode);
 
   useEffect(() => {
     studentIdRef.current = resolvedStudentId;
@@ -79,8 +196,22 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   }, [onSuccess]);
 
   useEffect(() => {
+    const interval = window.setInterval(() => setPixNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     sdkStateRef.current = sdkState;
   }, [sdkState]);
+
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        window.clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!MP_DEBUG_ENABLED) {
@@ -127,7 +258,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   }, [tenantId, user?.role]);
 
   useEffect(() => {
-    if (sdkConfigError) {
+    if (paymentMethod !== "card" || sdkConfigError) {
       return undefined;
     }
 
@@ -335,11 +466,177 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
         redirectTimeoutRef.current = null;
       }
     };
-  }, [sdkConfigError, formPrefix, navigate, plan, recurringPersonalId, user?.email]);
+  }, [
+    sdkConfigError,
+    formPrefix,
+    navigate,
+    paymentMethod,
+    plan,
+    recurringPersonalId,
+    user?.email,
+  ]);
 
-  const effectiveState = sdkConfigError ? "error" : sdkState;
-  const effectiveFeedback = sdkConfigError || feedback;
+  const stopPixPolling = () => {
+    if (pollingIntervalRef.current) {
+      window.clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  };
+
+  const applyPixResult = (result) => {
+    const { subscription, provider } = normalizeSubscriptionPayload(result);
+    if (subscription) {
+      setPixSubscription(subscription);
+    }
+    if (provider) {
+      setPixProvider(provider);
+    }
+
+    return { subscription, provider };
+  };
+
+  const refreshPixStatus = async (subscriptionId, { silent = false } = {}) => {
+    if (!subscriptionId) return null;
+
+    try {
+      if (!silent) {
+        setPixState("loading");
+      }
+
+      const result = await getRecurringSubscription(
+        subscriptionId,
+        recurringPersonalId,
+      );
+      const normalized = applyPixResult(result);
+      const status =
+        normalized.subscription?.status || normalized.provider?.status || "";
+
+      if (status === "authorized") {
+        stopPixPolling();
+        setPixState("success");
+        setPixFeedback("Pagamento confirmado. Sua assinatura esta ativa.");
+        onSuccessRef.current?.(normalized.subscription || result);
+      } else if (!silent) {
+        setPixState("ready");
+      }
+
+      return normalized;
+    } catch (error) {
+      if (!silent) {
+        setPixState("error");
+        setPixFeedback(
+          error?.message || "Nao foi possivel consultar o status da assinatura.",
+        );
+      }
+      return null;
+    }
+  };
+
+  const startPixPolling = (subscriptionId) => {
+    stopPixPolling();
+    if (!subscriptionId) return;
+
+    pollingIntervalRef.current = window.setInterval(() => {
+      refreshPixStatus(subscriptionId, { silent: true });
+    }, 20000);
+  };
+
+  const buildPixPayload = () => {
+    const payload = {
+      preapproval_plan_id: getPlanCheckoutId(plan),
+      payer_email: getPayerEmail(user, studentProfile),
+      payer_name: getPayerName(user, studentProfile),
+    };
+    const alunoId = resolvedStudentId;
+    const alunoPlanId = getAlunoPlanId(plan);
+
+    if (alunoId) payload.alunoId = alunoId;
+    if (alunoPlanId) payload.alunoPlanId = alunoPlanId;
+
+    return payload;
+  };
+
+  const handleCreatePixCharge = async () => {
+    try {
+      setPixState("submitting");
+      setPixFeedback("");
+      setCopiedPix(false);
+
+      const payload = buildPixPayload();
+      if (!payload.preapproval_plan_id) {
+        throw new Error("Nao foi possivel identificar o plano para gerar o PIX.");
+      }
+      if (!payload.payer_email) {
+        throw new Error("Informe um email no cadastro para gerar a cobranca PIX.");
+      }
+
+      const result = await createPixRecurringSubscription(
+        payload,
+        recurringPersonalId,
+      );
+      const { subscription } = applyPixResult(result);
+      const subscriptionId = subscription?.id || result?.subscription?.id;
+
+      setPixState("ready");
+      setPixFeedback("Cobranca PIX gerada. Pague o QR Code para ativar a assinatura.");
+      if (subscriptionId) {
+        startPixPolling(subscriptionId);
+      }
+    } catch (error) {
+      setPixState("error");
+      setPixFeedback(error?.message || "Nao foi possivel gerar a cobranca PIX.");
+    }
+  };
+
+  const handleRenewPixCharge = async () => {
+    const subscriptionId = pixSubscription?.id;
+    if (!subscriptionId) return;
+
+    try {
+      setPixState("submitting");
+      setPixFeedback("");
+      setCopiedPix(false);
+      const result = await renewPixRecurringSubscription(
+        subscriptionId,
+        {
+          payer_email: getPayerEmail(user, studentProfile),
+          payer_name: getPayerName(user, studentProfile),
+        },
+        recurringPersonalId,
+      );
+      applyPixResult(result);
+      setPixState("ready");
+      setPixFeedback("Nova cobranca PIX gerada.");
+      startPixPolling(subscriptionId);
+    } catch (error) {
+      setPixState("error");
+      setPixFeedback(
+        error?.message || "Nao foi possivel gerar uma nova cobranca PIX.",
+      );
+    }
+  };
+
+  const handleCopyPix = async () => {
+    if (!pixQrCode) return;
+
+    try {
+      await navigator.clipboard.writeText(pixQrCode);
+      setCopiedPix(true);
+      window.setTimeout(() => setCopiedPix(false), 1800);
+    } catch {
+      setPixFeedback("Nao foi possivel copiar automaticamente. Copie o codigo manualmente.");
+    }
+  };
+
+  const effectiveState =
+    paymentMethod === "card" && sdkConfigError ? "error" : sdkState;
+  const effectiveFeedback =
+    paymentMethod === "card" ? sdkConfigError || feedback : feedback;
   const isBusy = effectiveState === "loading" || effectiveState === "submitting";
+  const pixIsBusy = pixState === "loading" || pixState === "submitting";
+  const pixTimeLeftMs = pixExpiresAtTime ? Math.max(0, pixExpiresAtTime - pixNow) : 0;
+  const pixMinutesLeft = Math.floor(pixTimeLeftMs / 60000);
+  const pixSecondsLeft = Math.floor((pixTimeLeftMs % 60000) / 1000);
 
   return (
     <section className="rounded-[1.75rem] border border-[#b5f03c]/20 bg-[radial-gradient(circle_at_top,rgba(181,240,60,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
@@ -352,7 +649,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             Finalizar {plan.name}
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
-            O cartao e tokenizado no navegador pelo Mercado Pago. Seu servidor recebe apenas o token seguro para criar a cobranca mensal.
+            Escolha PIX ou cartao para iniciar a assinatura. PIX precisa ser pago mensalmente para manter a assinatura ativa.
           </p>
         </div>
 
@@ -367,125 +664,274 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
         </div>
       </div>
 
+      <div className="mt-6 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-black/20 p-1.5">
+        <button
+          type="button"
+          onClick={() => setPaymentMethod("pix")}
+          className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+            paymentMethod === "pix"
+              ? "bg-[#b5f03c] text-black"
+              : "text-white/55 hover:bg-white/5 hover:text-white"
+          }`}
+        >
+          <QrCode size={16} />
+          PIX
+        </button>
+        <button
+          type="button"
+          onClick={() => setPaymentMethod("card")}
+          className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+            paymentMethod === "card"
+              ? "bg-[#b5f03c] text-black"
+              : "text-white/55 hover:bg-white/5 hover:text-white"
+          }`}
+        >
+          <CreditCard size={16} />
+          Cartao
+        </button>
+      </div>
+
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <form id={formPrefix} className="space-y-4 rounded-3xl border border-white/10 bg-black/20 p-5">
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="text-sm text-white/70 md:col-span-2">
-              Numero do cartao
+        {paymentMethod === "pix" ? (
+          <div className="space-y-4 rounded-3xl border border-white/10 bg-black/20 p-5">
+            {!pixSubscription ? (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-7 text-white/70">
+                Gere a cobranca PIX, pague pelo QR Code e aguarde a confirmacao automatica. Vamos consultar o status periodicamente ate o pagamento ser confirmado.
+              </div>
+            ) : null}
+
+            {pixQrCodeBase64 ? (
+              <div className="flex flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white p-5 text-black">
+                <img
+                  src={pixQrImageSrc}
+                  alt="QR Code PIX"
+                  className="h-56 w-56 rounded-xl object-contain"
+                />
+                <p className="text-center text-sm font-semibold">
+                  Escaneie o QR Code no app do seu banco.
+                </p>
+              </div>
+            ) : null}
+
+            {pixQrCode ? (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/35">
+                    PIX copia e cola
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCopyPix}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:border-[#b5f03c]/50 hover:text-white"
+                  >
+                    {copiedPix ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                    {copiedPix ? "Copiado" : "Copiar"}
+                  </button>
+                </div>
+                <p className="mt-3 max-h-28 overflow-auto break-all rounded-xl bg-black/30 p-3 text-xs leading-6 text-white/70">
+                  {pixQrCode}
+                </p>
+              </div>
+            ) : null}
+
+            {pixExpiresAt ? (
               <div
-                id={buildFieldId(formPrefix, "cardNumber")}
-                className="mt-2 min-h-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-              />
-            </label>
-
-            <label className="text-sm text-white/70">
-              Validade
-              <div
-                id={buildFieldId(formPrefix, "expirationDate")}
-                className="mt-2 min-h-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-              />
-            </label>
-
-            <label className="text-sm text-white/70">
-              CVV
-              <div
-                id={buildFieldId(formPrefix, "securityCode")}
-                className="mt-2 min-h-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-              />
-            </label>
-
-            <label className="text-sm text-white/70 md:col-span-2">
-              Nome do titular
-              <input
-                id={buildFieldId(formPrefix, "cardholderName")}
-                defaultValue={user?.fullName || user?.name || ""}
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/30"
-                placeholder="Nome como impresso no cartao"
-              />
-            </label>
-
-            <label className="text-sm text-white/70">
-              Banco emissor
-              <select
-                id={buildFieldId(formPrefix, "issuer")}
-                defaultValue=""
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                className={`rounded-2xl border px-4 py-3 text-sm ${
+                  pixExpired
+                    ? "border-amber-400/30 bg-amber-500/10 text-amber-100"
+                    : "border-white/10 bg-white/5 text-white/70"
+                }`}
               >
-                <option value="">Selecione</option>
-              </select>
-            </label>
+                {pixExpired
+                  ? "Esta cobranca PIX expirou."
+                  : `Expira em ${String(pixMinutesLeft).padStart(2, "0")}:${String(
+                      pixSecondsLeft,
+                    ).padStart(2, "0")} (${formatExpirationTime(pixExpiresAt)}).`}
+              </div>
+            ) : null}
 
-            <label className="text-sm text-white/70">
-              Parcelas
-              <select
-                id={buildFieldId(formPrefix, "installments")}
-                defaultValue=""
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
-              >
-                <option value="">Selecione</option>
-              </select>
-            </label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {!pixSubscription ? (
+                <button
+                  type="button"
+                  onClick={handleCreatePixCharge}
+                  disabled={pixIsBusy}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#b5f03c] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {pixIsBusy ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <QrCode size={16} />
+                  )}
+                  Gerar cobranca PIX
+                </button>
+              ) : null}
 
-            <label className="text-sm text-white/70">
-              Tipo de documento
-              <select
-                id={buildFieldId(formPrefix, "identificationType")}
-                defaultValue=""
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
-              >
-                <option value="">Selecione</option>
-              </select>
-            </label>
+              {pixCanRenew ? (
+                <button
+                  type="button"
+                  onClick={handleRenewPixCharge}
+                  disabled={pixIsBusy}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#b5f03c] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {pixIsBusy ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <RefreshCw size={16} />
+                  )}
+                  Gerar nova cobranca PIX
+                </button>
+              ) : null}
 
-            <label className="text-sm text-white/70">
-              Documento do titular
-              <input
-                id={buildFieldId(formPrefix, "identificationNumber")}
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/30"
-                placeholder="CPF"
-              />
-            </label>
-
-            <label className="text-sm text-white/70 md:col-span-2">
-              Email do titular
-              <input
-                id={buildFieldId(formPrefix, "cardholderEmail")}
-                type="email"
-                defaultValue={user?.email || ""}
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/30"
-                placeholder="voce@exemplo.com"
-              />
-            </label>
+              {pixSubscription?.id && pixStatus !== "authorized" ? (
+                <button
+                  type="button"
+                  onClick={() => refreshPixStatus(pixSubscription.id)}
+                  disabled={pixIsBusy}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-white/75 transition hover:border-[#b5f03c]/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RefreshCw size={16} />
+                  Atualizar status
+                </button>
+              ) : null}
+            </div>
           </div>
+        ) : (
+          <form id={formPrefix} className="space-y-4 rounded-3xl border border-white/10 bg-black/20 p-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="text-sm text-white/70 md:col-span-2">
+                Numero do cartao
+                <div
+                  id={buildFieldId(formPrefix, "cardNumber")}
+                  className="mt-2 min-h-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                />
+              </label>
 
-          <button
-            type="submit"
-            disabled={isBusy || Boolean(sdkConfigError)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b5f03c] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isBusy ? (
-              <>
-                <Loader2 className="animate-spin" size={16} />
-                Processando assinatura...
-              </>
-            ) : (
-              <>
-                <CreditCard size={16} />
-                Assinar por {formatCurrency(plan.transactionAmount)}
-              </>
-            )}
-          </button>
-        </form>
+              <label className="text-sm text-white/70">
+                Validade
+                <div
+                  id={buildFieldId(formPrefix, "expirationDate")}
+                  className="mt-2 min-h-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                />
+              </label>
+
+              <label className="text-sm text-white/70">
+                CVV
+                <div
+                  id={buildFieldId(formPrefix, "securityCode")}
+                  className="mt-2 min-h-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                />
+              </label>
+
+              <label className="text-sm text-white/70 md:col-span-2">
+                Nome do titular
+                <input
+                  id={buildFieldId(formPrefix, "cardholderName")}
+                  defaultValue={user?.fullName || user?.name || ""}
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/30"
+                  placeholder="Nome como impresso no cartao"
+                />
+              </label>
+
+              <label className="text-sm text-white/70">
+                Banco emissor
+                <select
+                  id={buildFieldId(formPrefix, "issuer")}
+                  defaultValue=""
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                >
+                  <option value="">Selecione</option>
+                </select>
+              </label>
+
+              <label className="text-sm text-white/70">
+                Parcelas
+                <select
+                  id={buildFieldId(formPrefix, "installments")}
+                  defaultValue=""
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                >
+                  <option value="">Selecione</option>
+                </select>
+              </label>
+
+              <label className="text-sm text-white/70">
+                Tipo de documento
+                <select
+                  id={buildFieldId(formPrefix, "identificationType")}
+                  defaultValue=""
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                >
+                  <option value="">Selecione</option>
+                </select>
+              </label>
+
+              <label className="text-sm text-white/70">
+                Documento do titular
+                <input
+                  id={buildFieldId(formPrefix, "identificationNumber")}
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/30"
+                  placeholder="CPF"
+                />
+              </label>
+
+              <label className="text-sm text-white/70 md:col-span-2">
+                Email do titular
+                <input
+                  id={buildFieldId(formPrefix, "cardholderEmail")}
+                  type="email"
+                  defaultValue={user?.email || ""}
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/30"
+                  placeholder="voce@exemplo.com"
+                />
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isBusy || Boolean(sdkConfigError)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b5f03c] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isBusy ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  Processando assinatura...
+                </>
+              ) : (
+                <>
+                  <CreditCard size={16} />
+                  Assinar por {formatCurrency(plan.transactionAmount)}
+                </>
+              )}
+            </button>
+          </form>
+        )}
 
         <aside className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-5">
           <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white/70">
             <div className="flex items-center gap-2 font-semibold text-[#b5f03c]">
               <ShieldCheck size={16} />
-              Fluxo seguro
+              {paymentMethod === "pix" ? "Status da assinatura" : "Fluxo seguro"}
             </div>
-            <p className="mt-2 leading-7">
-              Os dados sensiveis do cartao ficam no iframe do Mercado Pago. O frontend envia apenas o token gerado para o backend concluir a assinatura.
-            </p>
+            {paymentMethod === "pix" ? (
+              <div className="mt-3 space-y-2">
+                <p className="text-white/70">
+                  {getSubscriptionStatusLabel(pixStatus)}
+                </p>
+                {pixNextCharge ? (
+                  <p className="text-white/45">
+                    Proxima cobranca: {formatDate(pixNextCharge)}
+                  </p>
+                ) : null}
+                <p className="leading-7 text-white/55">
+                  PIX precisa ser pago mensalmente para manter a assinatura ativa.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-2 leading-7">
+                Os dados sensiveis do cartao ficam no iframe do Mercado Pago. O frontend envia apenas o token gerado para o backend concluir a assinatura.
+              </p>
+            )}
           </div>
 
           {!resolvedStudentId ? (
@@ -500,7 +946,21 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             </div>
           ) : null}
 
-          {effectiveFeedback ? (
+          {paymentMethod === "pix" && pixFeedback ? (
+            <div
+              className={`rounded-2xl border px-4 py-3 text-sm ${
+                pixState === "success"
+                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
+                  : pixState === "error"
+                    ? "border-red-400/30 bg-red-500/10 text-red-100"
+                    : "border-white/10 bg-black/20 text-white/70"
+              }`}
+            >
+              {pixFeedback}
+            </div>
+          ) : null}
+
+          {paymentMethod === "card" && effectiveFeedback ? (
             <div
               className={`rounded-2xl border px-4 py-3 text-sm ${
                 effectiveState === "success"
@@ -514,7 +974,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             </div>
           ) : null}
 
-          {effectiveState === "loading" ? (
+          {paymentMethod === "card" && effectiveState === "loading" ? (
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/65">
               <Loader2 className="animate-spin text-[#b5f03c]" size={16} />
               Carregando formulario seguro do Mercado Pago...

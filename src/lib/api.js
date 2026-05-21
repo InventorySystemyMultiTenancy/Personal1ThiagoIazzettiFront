@@ -238,8 +238,11 @@ export async function listRecurringSubscriptionPlans(
   };
 
   try {
+    const query = recurringPersonalId
+      ? `?personalId=${encodeURIComponent(recurringPersonalId)}`
+      : "";
     const response = await request(
-      "/payments/recurring/subscriptions/plans/public",
+      `/payments/recurring/subscriptions/plans/public${query}`,
       {
         tenantId: recurringPersonalId,
         auth: false,
@@ -276,6 +279,42 @@ export async function createRecurringSubscription(payload, tenantId) {
   });
 
   return response?.subscription || response?.data || response;
+}
+
+export async function createPixRecurringSubscription(payload, tenantId) {
+  const response = await request("/payments/recurring/subscriptions/pix", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+
+  return response?.data || response;
+}
+
+export async function renewPixRecurringSubscription(
+  subscriptionId,
+  payload = {},
+  tenantId,
+) {
+  const response = await request(
+    `/payments/recurring/subscriptions/${subscriptionId}/pix`,
+    {
+      method: "POST",
+      body: payload,
+      tenantId,
+    },
+  );
+
+  return response?.data || response;
+}
+
+export async function getRecurringSubscription(subscriptionId, tenantId) {
+  const response = await request(
+    `/payments/recurring/subscriptions/${subscriptionId}`,
+    { tenantId },
+  );
+
+  return response?.data || response?.subscription || response;
 }
 
 export async function listStudents(tenantId) {
