@@ -6,13 +6,13 @@ export default function LanguageSwitcher({ compact = false }) {
 
   return (
     <label
-      className={`inline-flex items-center gap-2 rounded-lg border border-white/[0.1] bg-white/[0.03] ${compact ? "px-2 py-1" : "px-2.5 py-1.5"}`}
+      className={`inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.03] sm:gap-2 ${compact ? "px-1.5 py-1 sm:px-2" : "px-2.5 py-1.5"}`}
     >
       <Languages size={compact ? 12 : 14} className="text-white/55" />
       <select
         value={locale}
         onChange={(e) => setLocale(e.target.value)}
-        className="bg-transparent text-xs font-semibold text-white/70 outline-none"
+        className="max-w-[4.5rem] bg-transparent text-[11px] font-semibold text-white/70 outline-none sm:max-w-none sm:text-xs"
       >
         {locales.map((item) => (
           <option

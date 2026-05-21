@@ -15,7 +15,6 @@ import {
   Trash2,
   Send,
   ChevronLeft,
-  ChevronDown,
 } from "lucide-react";
 import {
   createStudent,
@@ -41,22 +40,22 @@ import WorkoutBuilderPage from "./WorkoutBuilderPage.jsx";
 function StatCard({ icon: Icon, label, value, sub, color = "#b5f03c" }) {
   return (
     <article
-      className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0f0f0f] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-white/12 hover:shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
+      className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0f0f0f] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-white/12 hover:shadow-[0_20px_60px_rgba(0,0,0,0.5)] sm:rounded-2xl sm:p-6"
       style={{ boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04)` }}
     >
       {/* Top row: icon */}
       <div
-        className="mb-4 inline-flex rounded-xl p-2.5 transition-all duration-300 group-hover:scale-110"
+        className="mb-3 inline-flex rounded-lg p-2 transition-all duration-300 group-hover:scale-110 sm:mb-4 sm:rounded-xl sm:p-2.5"
         style={{ background: `${color}15`, color }}
       >
         <Icon size={18} strokeWidth={2} />
       </div>
       {/* Value */}
-      <p className="text-3xl font-black text-white leading-none tracking-tight">
+      <p className="text-2xl font-black leading-none tracking-tight text-white sm:text-3xl">
         {value}
       </p>
       {/* Label */}
-      <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.3em] text-white/30">
+      <p className="mt-2 text-[9px] font-bold uppercase tracking-[0.24em] text-white/30 sm:text-[10px] sm:tracking-[0.3em]">
         {label}
       </p>
       {sub && <p className="mt-1.5 text-[11px] text-white/25">{sub}</p>}
@@ -79,14 +78,14 @@ function TabButton({ active, icon: Icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`relative flex items-center gap-2 rounded-xl px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-200 ${
+      className={`relative flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] transition-all duration-200 sm:gap-2 sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-[11px] sm:tracking-[0.2em] ${
         active
           ? "bg-[#b5f03c]/10 text-[#b5f03c] shadow-[inset_0_0_0_1px_rgba(181,240,60,0.25)]"
           : "text-white/30 hover:bg-white/[0.04] hover:text-white/60"
       }`}
     >
       {Icon && <Icon size={13} strokeWidth={2.5} />}
-      <span className="hidden sm:inline">{label}</span>
+      <span>{label}</span>
       {active && (
         <span className="absolute bottom-0 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-[#b5f03c]" />
       )}
@@ -259,7 +258,6 @@ export default function AdminDashboardPage() {
   const [loadingAgenda, setLoadingAgenda] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [statsExpanded, setStatsExpanded] = useState(false);
   const [studentFormErrors, setStudentFormErrors] = useState({});
   const [activeTab, setActiveTab] = useState("visao-geral");
   const [editingStudentId, setEditingStudentId] = useState("");
@@ -829,14 +827,14 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <main className="space-y-6 pb-12">
+    <main className="space-y-4 pb-10 sm:space-y-6 sm:pb-12">
       {/* Header */}
-      <section className="flex items-center justify-between">
+      <section className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.45em] text-white/20">
+          <p className="text-[8px] font-bold uppercase tracking-[0.35em] text-white/20 sm:text-[9px] sm:tracking-[0.45em]">
             {t("ADMIN_DASH_HEADER_LABEL_THIAGOIAZZETTI", "Painel")}
           </p>
-          <h1 className="mt-1 text-2xl font-black text-white leading-tight tracking-tight">
+          <h1 className="mt-1 text-xl font-black leading-tight tracking-tight text-white sm:text-2xl">
             {t("ADMIN_DASH_HEADER_TITLE_THIAGOIAZZETTI", "Visão Geral")}
           </h1>
         </div>
@@ -858,7 +856,8 @@ export default function AdminDashboardPage() {
       ) : null}
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-1 rounded-2xl border border-white/[0.06] bg-[#0d0d0d] p-1.5">
+      <div className="-mx-3 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
+        <div className="flex min-w-max items-center gap-1 rounded-xl border border-white/[0.06] bg-[#0d0d0d] p-1 sm:rounded-2xl sm:p-1.5">
         <TabButton
           active={activeTab === "visao-geral"}
           icon={BarChart3}
@@ -889,40 +888,13 @@ export default function AdminDashboardPage() {
           label={t("ADMIN_TAB_COMMUNICATION_THIAGOIAZZETTI", "Comunicação")}
           onClick={() => setActiveTab("comunicacao")}
         />
+        </div>
       </div>
 
       {/* TAB: VISAO GERAL */}
       {activeTab === "visao-geral" && (
-        <div className="space-y-6">
-          <button
-            type="button"
-            onClick={() => setStatsExpanded((current) => !current)}
-            className="flex w-full items-center justify-between rounded-2xl border border-white/[0.07] bg-[#0f0f0f] px-4 py-3 text-left sm:hidden"
-            aria-expanded={statsExpanded}
-          >
-            <span>
-              <span className="block text-[10px] font-bold uppercase tracking-[0.28em] text-white/30">
-                {t("ADMIN_DASH_MORE_DATA_THIAGOIAZZETTI", "Mais dados")}
-              </span>
-              <span className="mt-1 block text-sm font-semibold text-white">
-                {statsExpanded
-                  ? t("ADMIN_DASH_HIDE_DATA_THIAGOIAZZETTI", "Ocultar dados")
-                  : t("ADMIN_DASH_SHOW_DATA_THIAGOIAZZETTI", "Ver mais dados")}
-              </span>
-            </span>
-            <ChevronDown
-              size={18}
-              className={`text-[#b5f03c] transition-transform ${
-                statsExpanded ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-
-          <div
-            className={`gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4 ${
-              statsExpanded ? "grid" : "hidden"
-            }`}
-          >
+        <div className="space-y-4 sm:space-y-6">
+          <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
             {stats.map((stat) => (
               <StatCard key={stat.label} {...stat} />
             ))}
@@ -942,8 +914,8 @@ export default function AdminDashboardPage() {
               ).length;
               const total = students.length;
               return (
-                <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/30 mb-4">
+                <article className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 sm:rounded-2xl sm:p-5">
+                  <p className="mb-4 text-[9px] font-bold uppercase tracking-[0.24em] text-white/30 sm:text-[10px] sm:tracking-[0.32em]">
                     {t(
                       "ADMIN_DASH_PAYMENT_STATUS_THIAGOIAZZETTI",
                       "Status de Pagamento",
@@ -963,7 +935,7 @@ export default function AdminDashboardPage() {
                       style={{ width: `${(overdue / total) * 100}%` }}
                     />
                   </div>
-                  <div className="mt-4 flex gap-5 text-xs text-white/50">
+                  <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[10px] text-white/50 sm:gap-5 sm:text-xs">
                     <span className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
                       {paid} {t("ADMIN_DASH_PAID_THIAGOIAZZETTI", "pagos")}

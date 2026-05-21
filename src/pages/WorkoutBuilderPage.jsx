@@ -497,6 +497,8 @@ function ExerciseSelector({
   exerciseLibrary,
   tenantId,
   onExerciseCreated,
+  initialExercise,
+  isEditing,
 }) {
   const { t } = useI18n();
   const [selectedGroup, setSelectedGroup] = useState("Peito");
@@ -508,7 +510,41 @@ function ExerciseSelector({
     sets: 3,
     reps: 10,
     restSeconds: 60,
+    videoUrl: "",
   });
+
+  useEffect(() => {
+    if (!initialExercise) {
+      setFormData({
+        exerciseName: "",
+        equipment: "",
+        sets: 3,
+        reps: 10,
+        restSeconds: 60,
+        videoUrl: "",
+      });
+      setIsCreatingNew(false);
+      return;
+    }
+
+    setFormData({
+      exerciseName: initialExercise.exerciseName || "",
+      equipment: initialExercise.equipment || "",
+      sets: Number(initialExercise.sets ?? 3),
+      reps: Number(initialExercise.reps ?? 10),
+      restSeconds: Number(initialExercise.restSeconds ?? 60),
+      videoUrl: initialExercise.videoUrl || "",
+    });
+    setIsCreatingNew(false);
+
+    const matchedGroup = Object.entries(exerciseLibrary).find(([, items]) =>
+      items.some((exercise) => exercise.name === initialExercise.exerciseName),
+    );
+
+    if (matchedGroup?.[0]) {
+      setSelectedGroup(matchedGroup[0]);
+    }
+  }, [initialExercise, exerciseLibrary]);
 
   const filteredExercises = exerciseLibrary[selectedGroup] || [];
 
@@ -542,6 +578,7 @@ function ExerciseSelector({
         sets: 3,
         reps: 10,
         restSeconds: 60,
+        videoUrl: "",
       });
       setIsCreatingNew(false);
     }
@@ -551,13 +588,19 @@ function ExerciseSelector({
     const value = e.target.value;
     if (value === "__create_new__") {
       setIsCreatingNew(true);
-      setFormData((prev) => ({ ...prev, exerciseName: "", equipment: "" }));
+      setFormData((prev) => ({
+        ...prev,
+        exerciseName: "",
+        equipment: "",
+        videoUrl: "",
+      }));
     } else {
       setIsCreatingNew(false);
       setFormData((prev) => ({
         ...prev,
         exerciseName: value,
         equipment: "",
+        videoUrl: "",
       }));
     }
   };
@@ -567,10 +610,15 @@ function ExerciseSelector({
       <div className="w-full max-w-2xl rounded-4xl border border-white/10 bg-[#0a0a0a] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-title text-2xl text-[#b5f03c]">
-            {t(
-              "WORKOUT_MODAL_ADD_EXERCISE_TITLE_THIAGOIAZZETTI",
-              "Adicionar Exercicio",
-            )}
+            {isEditing
+              ? t(
+                  "WORKOUT_MODAL_EDIT_EXERCISE_TITLE_THIAGOIAZZETTI",
+                  "Editar Exercicio",
+                )
+              : t(
+                  "WORKOUT_MODAL_ADD_EXERCISE_TITLE_THIAGOIAZZETTI",
+                  "Adicionar Exercicio",
+                )}
           </h2>
           <button
             type="button"
@@ -592,7 +640,12 @@ function ExerciseSelector({
                 <button
                   key={group}
                   type="button"
-                  onClick={() => setSelectedGroup(group)}
+                  onClick={() => {
+                    if (!isEditing) {
+                      setSelectedGroup(group);
+                    }
+                  }}
+                  disabled={isEditing}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                     selectedGroup === group
                       ? "border border-[#b5f03c]/50 bg-[#b5f03c]/15 text-[#b5f03c]"
@@ -605,33 +658,50 @@ function ExerciseSelector({
             </div>
           </label>
 
-          <label className="block text-sm text-white/70">
-            {t("WORKOUT_MODAL_EXERCISE_LABEL_THIAGOIAZZETTI", "Exercicio")}
-            <select
-              value={isCreatingNew ? "__create_new__" : formData.exerciseName}
-              onChange={handleSelectChange}
-              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
-            >
-              <option value="">
-                {t(
-                  "WORKOUT_MODAL_SELECT_EXERCISE_THIAGOIAZZETTI",
-                  "Selecione um exercicio",
-                )}
-              </option>
-              {filteredExercises.map((ex) => (
-                <option key={ex.name} value={ex.name}>
-                  {ex.name} ({ex.equipment})
+          {isEditing ? (
+            <label className="block text-sm text-white/70">
+              {t("WORKOUT_MODAL_EXERCISE_LABEL_THIAGOIAZZETTI", "Exercicio")}
+              <input
+                type="text"
+                value={formData.exerciseName}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    exerciseName: e.target.value,
+                  }))
+                }
+                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
+              />
+            </label>
+          ) : (
+            <label className="block text-sm text-white/70">
+              {t("WORKOUT_MODAL_EXERCISE_LABEL_THIAGOIAZZETTI", "Exercicio")}
+              <select
+                value={isCreatingNew ? "__create_new__" : formData.exerciseName}
+                onChange={handleSelectChange}
+                className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition focus:border-[#b5f03c]/50"
+              >
+                <option value="">
+                  {t(
+                    "WORKOUT_MODAL_SELECT_EXERCISE_THIAGOIAZZETTI",
+                    "Selecione um exercicio",
+                  )}
                 </option>
-              ))}
-              <option value="__create_new__" className="font-semibold">
-                +{" "}
-                {t(
-                  "WORKOUT_MODAL_CREATE_NEW_EXERCISE_THIAGOIAZZETTI",
-                  "Criar novo exercicio",
-                )}
-              </option>
-            </select>
-          </label>
+                {filteredExercises.map((ex) => (
+                  <option key={ex.name} value={ex.name}>
+                    {ex.name} ({ex.equipment})
+                  </option>
+                ))}
+                <option value="__create_new__" className="font-semibold">
+                  +{" "}
+                  {t(
+                    "WORKOUT_MODAL_CREATE_NEW_EXERCISE_THIAGOIAZZETTI",
+                    "Criar novo exercicio",
+                  )}
+                </option>
+              </select>
+            </label>
+          )}
 
           {isCreatingNew && (
             <>
@@ -678,6 +748,25 @@ function ExerciseSelector({
               </label>
             </>
           )}
+
+          <label className="block text-sm text-white/70">
+            {t(
+              "WORKOUT_MODAL_VIDEO_URL_LABEL_THIAGOIAZZETTI",
+              "Link do video (opcional)",
+            )}
+            <input
+              type="url"
+              placeholder="https://youtube.com/watch?v=..."
+              value={formData.videoUrl}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  videoUrl: e.target.value,
+                }))
+              }
+              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white outline-none transition placeholder:text-white/30 focus:border-[#b5f03c]/50"
+            />
+          </label>
 
           <div className="grid gap-3 md:grid-cols-3">
             <label className="block text-sm text-white/70">
@@ -746,10 +835,15 @@ function ExerciseSelector({
                     "WORKOUT_MODAL_SAVING_EXERCISE_THIAGOIAZZETTI",
                     "Salvando...",
                   )
-                : t(
-                    "WORKOUT_MODAL_ADD_EXERCISE_BUTTON_THIAGOIAZZETTI",
-                    "Adicionar exercicio",
-                  )}
+                : isEditing
+                  ? t(
+                      "WORKOUT_MODAL_SAVE_EXERCISE_BUTTON_THIAGOIAZZETTI",
+                      "Salvar alteracoes",
+                    )
+                  : t(
+                      "WORKOUT_MODAL_ADD_EXERCISE_BUTTON_THIAGOIAZZETTI",
+                      "Adicionar exercicio",
+                    )}
             </button>
             <button
               type="button"
@@ -765,7 +859,7 @@ function ExerciseSelector({
   );
 }
 
-function WorkoutItem({ exercise, onRemove }) {
+function WorkoutItem({ exercise, onRemove, onEdit }) {
   const { t } = useI18n();
   return (
     <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
@@ -782,10 +876,25 @@ function WorkoutItem({ exercise, onRemove }) {
       <div className="flex items-center gap-2">
         <button
           type="button"
+          onClick={() => onEdit(exercise.id)}
           className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:text-[#b5f03c]"
         >
           <Edit2 size={16} />
         </button>
+        {exercise.videoUrl ? (
+          <a
+            href={exercise.videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t(
+              "WORKOUT_ITEM_WATCH_VIDEO_THIAGOIAZZETTI",
+              "Ver video do exercicio",
+            )}
+            className="rounded-lg border border-white/10 p-2 text-white/60 transition hover:border-[#b5f03c]/50 hover:text-[#b5f03c]"
+          >
+            <Play size={16} />
+          </a>
+        ) : null}
         <button
           type="button"
           onClick={() => onRemove(exercise.id)}
@@ -805,6 +914,7 @@ export default function WorkoutBuilderPage() {
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [workouts, setWorkouts] = useState([]);
   const [showExerciseModal, setShowExerciseModal] = useState(false);
+  const [editingWorkoutExerciseId, setEditingWorkoutExerciseId] = useState("");
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [currentWorkoutExercises, setCurrentWorkoutExercises] = useState([]);
   const [message, setMessage] = useState("");
@@ -934,6 +1044,7 @@ export default function WorkoutBuilderPage() {
   const resetWorkoutForm = () => {
     setEditingWorkoutId("");
     setEditingTemplateId("");
+    setEditingWorkoutExerciseId("");
     setWorkoutForm({ title: "", objective: "", phase: "Hipertrofia" });
     setCurrentWorkoutExercises([]);
     setSaveAsTemplate(false);
@@ -1027,13 +1138,32 @@ export default function WorkoutBuilderPage() {
   }, [selectedStudentId, tenantId]);
 
   const handleAddExerciseToWorkout = (exercise) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setCurrentWorkoutExercises((prev) => [...prev, { ...exercise, id }]);
+    if (editingWorkoutExerciseId) {
+      setCurrentWorkoutExercises((prev) =>
+        prev.map((item) =>
+          item.id === editingWorkoutExerciseId
+            ? { ...item, ...exercise, id: editingWorkoutExerciseId }
+            : item,
+        ),
+      );
+      setEditingWorkoutExerciseId("");
+    } else {
+      const id = Math.random().toString(36).substr(2, 9);
+      setCurrentWorkoutExercises((prev) => [...prev, { ...exercise, id }]);
+    }
     setShowExerciseModal(false);
+  };
+
+  const handleEditExercise = (exerciseId) => {
+    setEditingWorkoutExerciseId(exerciseId);
+    setShowExerciseModal(true);
   };
 
   const handleRemoveExercise = (id) => {
     setCurrentWorkoutExercises((prev) => prev.filter((ex) => ex.id !== id));
+    if (editingWorkoutExerciseId === id) {
+      setEditingWorkoutExerciseId("");
+    }
   };
 
   const handleApplyTemplate = (template) => {
@@ -1131,6 +1261,7 @@ export default function WorkoutBuilderPage() {
           restSeconds: exercise.restSeconds
             ? Number(exercise.restSeconds)
             : null,
+          videoUrl: exercise.videoUrl || null,
           orderIndex: index,
         })),
       };
@@ -1375,6 +1506,14 @@ export default function WorkoutBuilderPage() {
     setEditingExerciseId("");
     setCustomExerciseForm({ name: "", muscleGroup: "", equipment: "" });
   };
+
+  const editingWorkoutExercise = useMemo(
+    () =>
+      currentWorkoutExercises.find(
+        (exercise) => exercise.id === editingWorkoutExerciseId,
+      ) || null,
+    [currentWorkoutExercises, editingWorkoutExerciseId],
+  );
 
   const handleScheduleSessionChange = (sessionId, field, value) => {
     setScheduleSessions((current) =>
@@ -1769,6 +1908,7 @@ export default function WorkoutBuilderPage() {
                   <WorkoutItem
                     key={exercise.id}
                     exercise={exercise}
+                    onEdit={handleEditExercise}
                     onRemove={handleRemoveExercise}
                   />
                 ))
@@ -1792,7 +1932,10 @@ export default function WorkoutBuilderPage() {
           <div className="flex flex-wrap gap-3 pt-4">
             <button
               type="button"
-              onClick={() => setShowExerciseModal(true)}
+              onClick={() => {
+                setEditingWorkoutExerciseId("");
+                setShowExerciseModal(true);
+              }}
               className="inline-flex items-center gap-2 rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-6 py-3 font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20"
             >
               <Plus size={16} />
@@ -2270,7 +2413,12 @@ export default function WorkoutBuilderPage() {
           exerciseLibrary={mergedExerciseLibrary}
           tenantId={tenantId}
           onAdd={handleAddExerciseToWorkout}
-          onClose={() => setShowExerciseModal(false)}
+          initialExercise={editingWorkoutExercise}
+          isEditing={Boolean(editingWorkoutExercise)}
+          onClose={() => {
+            setShowExerciseModal(false);
+            setEditingWorkoutExerciseId("");
+          }}
           onExerciseCreated={(exercise) => {
             // Adicionar o novo exercício ao estado de customExercises
             setCustomExercises((prev) => [...prev, exercise]);

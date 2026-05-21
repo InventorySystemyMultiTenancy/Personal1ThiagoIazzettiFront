@@ -6,13 +6,17 @@ import {
   Dumbbell,
   Loader2,
   MessageSquare,
+  MapPin,
+  PartyPopper,
   Send,
   Sparkles,
 } from "lucide-react";
 import {
   formatDate,
   getMyStudentProfile,
+  listMyPersonalEvents,
   listMyMessages,
+  respondPersonalEvent,
   sendMyMessage,
 } from "../lib/api.js";
 import { getBillingStatus } from "../lib/billingStatus.js";
@@ -88,6 +92,7 @@ function WorkoutCard({ workout }) {
 
 export default function ClientDashboardPage() {
   const [profile, setProfile] = useState(null);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -100,9 +105,13 @@ export default function ClientDashboardPage() {
     const loadProfile = async () => {
       setLoading(true);
       try {
-        const result = await getMyStudentProfile(tenantId);
+        const [result, eventRows] = await Promise.all([
+          getMyStudentProfile(tenantId),
+          listMyPersonalEvents(tenantId),
+        ]);
         if (!cancelled) {
           setProfile(result);
+          setEvents(eventRows);
         }
       } catch (error) {
         if (!cancelled) {
@@ -145,6 +154,40 @@ export default function ClientDashboardPage() {
       time: `${8 + index}:00`,
     }));
   }, [workoutPlans]);
+
+  const formatEventDateTime = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "America/Sao_Paulo",
+    }).format(date);
+  };
+
+  const handleEventResponse = async (eventId, status) => {
+    const previous = events;
+    setEvents((current) =>
+      current.map((item) =>
+        item.eventId === eventId || item.event?.id === eventId
+          ? { ...item, status }
+          : item,
+      ),
+    );
+    try {
+      const updated = await respondPersonalEvent(eventId, status, tenantId);
+      setEvents((current) =>
+        current.map((item) =>
+          item.eventId === eventId || item.event?.id === eventId
+            ? { ...item, ...updated, event: item.event }
+            : item,
+        ),
+      );
+    } catch {
+      setEvents(previous);
+    }
+  };
 
   return (
     <main className="space-y-6">
@@ -333,6 +376,85 @@ export default function ClientDashboardPage() {
                     )}
               </p>
             </article>
+          </section>
+
+          <section className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-white/40">
+                  Eventos
+                </p>
+                <h2 className="mt-2 font-title text-2xl text-[#b5f03c]">
+                  Convites do personal
+                </h2>
+              </div>
+              <PartyPopper className="text-[#b5f03c]" />
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {events.length === 0 ? (
+                <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
+                  Nenhum evento enviado para voce ainda.
+                </p>
+              ) : (
+                events.map((participant) => {
+                  const event = participant.event || {};
+                  const eventId = participant.eventId || event.id;
+                  return (
+                    <article
+                      key={participant.id || eventId}
+                      className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold text-white">
+                            {event.title}
+                          </h3>
+                          <p className="mt-1 text-sm text-white/55">
+                            {formatEventDateTime(event.startsAt)}
+                          </p>
+                          {event.location ? (
+                            <p className="mt-1 flex items-center gap-1 text-sm text-white/50">
+                              <MapPin size={14} /> {event.location}
+                            </p>
+                          ) : null}
+                        </div>
+                        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/55">
+                          {participant.status === "GOING"
+                            ? "Confirmado"
+                            : participant.status === "NOT_GOING"
+                              ? "Nao vai"
+                              : "Pendente"}
+                        </span>
+                      </div>
+                      {event.description ? (
+                        <p className="mt-3 text-sm leading-6 text-white/60">
+                          {event.description}
+                        </p>
+                      ) : null}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEventResponse(eventId, "GOING")}
+                          className="rounded-md bg-[#b5f03c] px-4 py-2 text-sm font-semibold text-black"
+                        >
+                          Vou
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleEventResponse(eventId, "NOT_GOING")
+                          }
+                          className="rounded-md border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 hover:bg-white/[0.05]"
+                        >
+                          Nao vou
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
+            </div>
           </section>
 
           <section className="grid gap-4 xl:grid-cols-2">

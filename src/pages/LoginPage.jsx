@@ -2,12 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Lock, Mail } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { useTenant } from "../contexts/TenantContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
 
 export default function LoginPage() {
   const { t } = useI18n();
-  const { tenantId } = useTenant();
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });

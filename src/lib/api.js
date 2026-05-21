@@ -186,11 +186,12 @@ async function request(path, options = {}) {
   return response.json();
 }
 
-export async function login(payload) {
+export async function login(payload, tenantId) {
   const response = await request("/auth/login", {
     method: "POST",
     body: payload,
     auth: false,
+    tenantId,
   });
 
   return {
@@ -212,8 +213,8 @@ export async function registerClient(payload) {
   };
 }
 
-export async function me() {
-  return request("/auth/me");
+export async function me(tenantId) {
+  return request("/auth/me", { tenantId });
 }
 
 export async function getPublicPlans(personalId) {
@@ -337,6 +338,10 @@ export async function updateStudent(studentId, payload, tenantId) {
   });
 }
 
+export async function updateMyProfile(payload, tenantId) {
+  return request(`/alunos/me`, { method: "PATCH", body: payload, tenantId });
+}
+
 export async function listStudentPlans(tenantId) {
   const response = await request("/aluno-plans", { tenantId });
   return Array.isArray(response?.plans) ? response.plans : [];
@@ -395,6 +400,63 @@ export async function listWorkoutPlans(studentId, tenantId) {
   const query = studentId ? `?alunoId=${encodeURIComponent(studentId)}` : "";
   const response = await request(`/workout-plans${query}`, { tenantId });
   return Array.isArray(response?.plans) ? response.plans : [];
+}
+
+export async function listAssessments(alunoId, tenantId) {
+  const response = await request(
+    `/assessments/aluno/${encodeURIComponent(alunoId)}`,
+    { tenantId },
+  );
+  return Array.isArray(response)
+    ? response
+    : Array.isArray(response?.data)
+      ? response.data
+      : [];
+}
+
+export async function createAssessment(payload, tenantId) {
+  const response = await request(`/assessments`, {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response;
+}
+
+export async function deleteAssessment(id, tenantId) {
+  const response = await request(`/assessments/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    tenantId,
+  });
+  return response;
+}
+
+export async function listPersonalEvents(tenantId) {
+  const response = await request("/personal-events", { tenantId });
+  return Array.isArray(response?.events) ? response.events : [];
+}
+
+export async function createPersonalEvent(payload, tenantId) {
+  const response = await request("/personal-events", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.event || response;
+}
+
+export async function listMyPersonalEvents(tenantId) {
+  const response = await request("/personal-events/me", { tenantId });
+  return Array.isArray(response?.events) ? response.events : [];
+}
+
+export async function respondPersonalEvent(eventId, status, tenantId) {
+  const response = await request(`/personal-events/${eventId}/respond`, {
+    method: "PATCH",
+    body: { status },
+    tenantId,
+  });
+  return response?.participant || response;
 }
 
 export async function listWorkoutPlanTemplates(tenantId) {
@@ -557,6 +619,32 @@ export async function confirmAgendaAttendance(
     tenantId,
   });
   return response?.event || response;
+}
+
+export async function requestAgendaCancel(eventId, reason, tenantId) {
+  const response = await request(`/agenda/${eventId}/request-cancel`, {
+    method: "PATCH",
+    body: { reason },
+    tenantId,
+  });
+  return response?.event || response;
+}
+
+export async function requestAgendaReschedule(eventId, payload, tenantId) {
+  const response = await request(`/agenda/${eventId}/request-reschedule`, {
+    method: "PATCH",
+    body: payload,
+    tenantId,
+  });
+  return response?.event || response;
+}
+
+export async function reviewAgendaChangeRequest(eventId, decision, tenantId) {
+  return request(`/agenda/${eventId}/review-request`, {
+    method: "PATCH",
+    body: { decision },
+    tenantId,
+  });
 }
 
 export async function listDiets(tenantId, filters = {}) {
