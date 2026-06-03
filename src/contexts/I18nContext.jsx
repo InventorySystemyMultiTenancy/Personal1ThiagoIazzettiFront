@@ -85,7 +85,10 @@ export function I18nProvider({ children }) {
   }, [locale, direction]);
 
   const t = useCallback(
-    (key, fallback = "") => dictionary[key] || fallback || key,
+    (key, fallback = "") => {
+      const value = dictionary[key];
+      return value && value !== key ? value : fallback || key;
+    },
     [dictionary],
   );
 
