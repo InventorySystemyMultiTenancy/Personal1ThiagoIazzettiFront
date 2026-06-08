@@ -110,14 +110,17 @@ const PLANS_PAGE_FALLBACKS = {
 function translatePlanPage(rawT, locale, key, fallback = "") {
   const remoteValue = rawT(key, "");
   const localValue = PLANS_PAGE_FALLBACKS[locale]?.[key];
+  const hasRemoteValue = remoteValue && remoteValue !== key;
   const isLikelyUntranslated =
-    locale !== "pt-BR" && locale !== "pt-PT" && remoteValue === fallback;
+    locale !== "pt-BR" &&
+    locale !== "pt-PT" &&
+    (!hasRemoteValue || remoteValue === fallback);
 
   if (isLikelyUntranslated && localValue) {
     return localValue;
   }
 
-  return remoteValue || localValue || fallback || key;
+  return hasRemoteValue ? remoteValue : localValue || fallback || key;
 }
 
 function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
