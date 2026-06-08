@@ -46,11 +46,18 @@ export default function LoginPage() {
         className="absolute inset-0 z-0 bg-cover bg-center"
         style={{
           backgroundImage:
-            "url('/Gemini_Generatéd_Image_g258log258log258 (1).png')",
+            "url('/Gemini_Generated_Image_g258log258log258 (1).png')",
         }}
       />
-      {/* Dark gradient overlay — covers the bottom-right Gemini watermark naturally */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-black/80 via-black/65 to-black/90" />
+      <div
+        className="absolute inset-0 z-0 bg-center bg-no-repeat opacity-[0.06]"
+        style={{
+          backgroundImage: "url('/image.png')",
+          backgroundSize: "min(78vw, 680px)",
+        }}
+      />
+      {/* Dark gradient overlay */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-br from-black/70 via-black/62 to-black/88" />
       {/* Extra bottom-right cover to fully hide watermark */}
       <div className="absolute bottom-0 right-0 z-0 h-20 w-40 bg-black/90" />
 

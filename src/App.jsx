@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
@@ -17,6 +17,7 @@ import AdminEventsPage from "./pages/AdminEventsPage.jsx";
 import AdminMyDataPage from "./pages/AdminMyDataPage.jsx";
 import StudentWorkoutHistoryPage from "./pages/StudentWorkoutHistoryPage.jsx";
 import PhysicalAssessmentPage from "./pages/PhysicalAssessmentPage.jsx";
+import { applyThemeMode, getStoredThemeMode } from "./lib/themeMode.js";
 
 function RouteFallback() {
   return (
@@ -60,6 +61,10 @@ function RequireRole({ role }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    applyThemeMode(getStoredThemeMode());
+  }, []);
+
   return (
     <Suspense fallback={<RouteFallback />}>
       <TenantProvider>

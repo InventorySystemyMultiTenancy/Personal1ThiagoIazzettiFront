@@ -57,6 +57,7 @@ export default function LandingPage() {
   const [plansLoading, setPlansLoading] = useState(false);
   const [footerProfile, setFooterProfile] = useState(DEFAULT_FOOTER_PROFILE);
   const plansRef = useRef(null);
+  const touchStartXRef = useRef(null);
   const marqueeItems = [
     t("HOME_MARQUEE_MUSCULATION_THIAGOIAZZETTI", "Musculação"),
     t("HOME_MARQUEE_WEIGHT_LOSS_THIAGOIAZZETTI", "Emagrecimento"),
@@ -144,6 +145,26 @@ export default function LandingPage() {
     setActivePlanIndex((current) =>
       plans.length ? (current + 1) % plans.length : 0,
     );
+  };
+
+  const handleCarouselTouchStart = (event) => {
+    touchStartXRef.current = event.touches[0]?.clientX ?? null;
+  };
+
+  const handleCarouselTouchEnd = (event) => {
+    if (touchStartXRef.current === null) return;
+
+    const endX = event.changedTouches[0]?.clientX ?? touchStartXRef.current;
+    const distance = endX - touchStartXRef.current;
+    touchStartXRef.current = null;
+
+    if (Math.abs(distance) < 45) return;
+
+    if (distance > 0) {
+      goToPreviousPlan();
+    } else {
+      goToNextPlan();
+    }
   };
 
   return (
@@ -377,15 +398,20 @@ export default function LandingPage() {
                 onBlur={() => setIsCarouselPaused(false)}
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(181,240,60,0.16),transparent_34%),linear-gradient(90deg,rgba(181,240,60,0.08),transparent_26%,transparent_74%,rgba(181,240,60,0.08))]" />
-                <div className="relative z-10 mx-auto h-[430px] max-w-6xl overflow-visible sm:h-[440px] lg:h-[450px]">
-                  <button
-                    type="button"
-                    onClick={goToPreviousPlan}
-                    className="absolute left-1 top-[57%] z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:left-3"
-                    aria-label="Plano anterior"
-                  >
-                    <ChevronLeft size={22} />
-                  </button>
+                <button
+                  type="button"
+                  onClick={goToPreviousPlan}
+                  className="absolute left-4 top-[57%] z-30 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:flex lg:left-7"
+                  aria-label="Plano anterior"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+
+                <div
+                  className="relative z-10 mx-auto h-[430px] max-w-6xl touch-pan-y overflow-visible sm:h-[440px] lg:h-[450px]"
+                  onTouchStart={handleCarouselTouchStart}
+                  onTouchEnd={handleCarouselTouchEnd}
+                >
 
                   {plans.map((plan, index) => {
                     const summary = getPlanSummary(plan);
@@ -481,15 +507,16 @@ export default function LandingPage() {
                       </article>
                     );
                   })}
-                  <button
-                    type="button"
-                    onClick={goToNextPlan}
-                    className="absolute right-1 top-[57%] z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:right-3"
-                    aria-label="Próximo plano"
-                  >
-                    <ChevronRight size={22} />
-                  </button>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={goToNextPlan}
+                  className="absolute right-4 top-[57%] z-30 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:flex lg:right-7"
+                  aria-label="Próximo plano"
+                >
+                  <ChevronRight size={22} />
+                </button>
 
                 <div className="relative z-10 -mt-2 hidden justify-center gap-2 opacity-80 sm:flex">
                   {[...Array(8)].map((_, index) => (
