@@ -408,7 +408,7 @@ export default function LandingPage() {
                 </button>
 
                 <div
-                  className="relative z-10 mx-auto h-[620px] max-w-6xl touch-pan-y overflow-visible sm:h-[640px] lg:h-[660px]"
+                  className="relative z-10 mx-auto h-[620px] w-full touch-pan-y overflow-visible sm:h-[640px] lg:h-[660px]"
                   onTouchStart={handleCarouselTouchStart}
                   onTouchEnd={handleCarouselTouchEnd}
                 >
@@ -425,18 +425,18 @@ export default function LandingPage() {
                     );
                     const isActive = position === 0;
                     const isVisible = Math.abs(position) <= 1;
-                    const translateX = position * 46;
+                  const translateX = position * 52;
 
                     return (
                       <article
                         key={plan.id}
-                        className={`absolute left-1/2 top-[61%] flex h-[285px] w-[min(64vw,310px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.25rem] border p-4 text-left transition-all duration-500 sm:h-[300px] sm:w-[330px] sm:p-5 lg:h-[315px] lg:w-[350px] ${
+                        className={`absolute left-1/2 top-[61%] flex h-[320px] w-[min(72vw,350px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.35rem] border p-4 text-left transition-all duration-500 sm:h-[340px] sm:w-[370px] sm:p-5 lg:h-[360px] lg:w-[410px] ${
                           isActive
                             ? "z-20 border-[#b5f03c]/60 bg-[#0d2517]/95 opacity-100 shadow-[0_0_48px_rgba(181,240,60,0.28)]"
                             : "z-10 border-white/10 bg-[#142018]/80 opacity-60 shadow-2xl"
                         } ${isVisible ? "" : "pointer-events-none opacity-0"}`}
                         style={{
-                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 1 : 0.72})`,
+                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 1 : 0.78})`,
                         }}
                       >
                         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(181,240,60,0.14),transparent_36%),radial-gradient(circle_at_top_right,rgba(181,240,60,0.18),transparent_34%)]" />
