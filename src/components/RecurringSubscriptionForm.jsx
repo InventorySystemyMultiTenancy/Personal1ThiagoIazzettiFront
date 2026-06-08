@@ -44,7 +44,7 @@ function getFrequencyLabel(plan) {
     return frequency === 1 ? "por dia" : `a cada ${frequency} dias`;
   }
 
-  return frequency === 1 ? "por mês" : `a cada ${frequency} meses`;
+  return frequency === 1 ? "por mês" : `a cada ${frequency} mêses`;
 }
 
 function buildFieldId(prefix, field) {
@@ -89,7 +89,7 @@ function getSubscriptionStatusLabel(status) {
   if (status === "authorized") return "Pagamento confirmado";
   if (status === "canceled") return "Assinatura cancelada";
   if (status === "pending") return "Aguardando pagamento PIX";
-  return status || "Status indisponivel";
+  return status || "Status indisponível";
 }
 
 function getNextChargeDate(subscription) {
@@ -163,7 +163,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
     ? "Configure VITE_MERCADO_PAGO_PUBLIC_KEY para habilitar o checkout recorrente."
     : "";
   const missingRecurringPlanWarning = !plan?.recurringPlanId
-    ? "Este plano nao trouxe preapproval_plan_id. Vamos tentar criar a assinatura usando o identificador interno do plano."
+    ? "Este plano não trouxe preapproval_plan_id. Vamos tentar criar a assinatura usando o identificador interno do plano."
     : "";
   const shouldShowRecurringPlanWarning =
     MP_DEBUG_ENABLED && Boolean(missingRecurringPlanWarning);
@@ -277,7 +277,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
 
         const MercadoPago = window.MercadoPago;
         if (typeof MercadoPago !== "function") {
-          throw new Error("SDK do Mercado Pago indisponivel no navegador.");
+          throw new Error("SDK do Mercado Pago indisponível no navegador.");
         }
 
         const mp = new MercadoPago(MP_PUBLIC_KEY, {
@@ -288,7 +288,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
           if (!cancelled && sdkStateRef.current === "loading") {
             setSdkState("error");
             setFeedback(
-              "Nao foi possivel inicializar o formulario de pagamento. Tente recarregar a pagina.",
+              "Não foi possível inicializar o formulário de pagamento. Tente recarregar a página.",
             );
           }
         }, 12000);
@@ -312,7 +312,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             },
             cardholderName: {
               id: buildFieldId(formPrefix, "cardholderName"),
-              placeholder: "Nome como no cartao",
+              placeholder: "Nome como no cartão",
             },
             issuer: {
               id: buildFieldId(formPrefix, "issuer"),
@@ -329,7 +329,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             },
             cardholderEmail: {
               id: buildFieldId(formPrefix, "cardholderEmail"),
-              placeholder: user?.email || "voce@exemplo.com",
+              placeholder: user?.email || "você@exemplo.com",
             },
           },
           callbacks: {
@@ -345,7 +345,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
 
               if (error) {
                 setSdkState("error");
-                setFeedback("Nao foi possivel montar o formulario do cartao.");
+                setFeedback("Não foi possível montar o formulário do cartão.");
                 return;
               }
 
@@ -367,7 +367,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                 const payerEmail = cardFormData?.cardholderEmail;
 
                 if (!token) {
-                  throw new Error("Token do cartao nao foi gerado. Revise os dados do formulario.");
+                  throw new Error("Token do cartão não foi gerado. Revise os dados do formulário.");
                 }
 
                 if (!payerEmail) {
@@ -413,7 +413,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                   setSdkState("error");
                   setFeedback(
                     error?.message ||
-                      "Nao foi possivel criar a assinatura recorrente.",
+                      "Não foi possível criar a assinatura recorrente.",
                   );
                 }
               }
@@ -434,7 +434,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
               setSdkState("error");
               setFeedback(
                 error?.message ||
-                  "Erro no formulario do Mercado Pago. Verifique os dados e tente novamente.",
+                  "Erro no formulário do Mercado Pago. Verifique os dados e tente novamente.",
               );
             },
           },
@@ -525,7 +525,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
       if (!silent) {
         setPixState("error");
         setPixFeedback(
-          error?.message || "Nao foi possivel consultar o status da assinatura.",
+          error?.message || "Não foi possível consultar o status da assinatura.",
         );
       }
       return null;
@@ -564,10 +564,10 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
 
       const payload = buildPixPayload();
       if (!payload.preapproval_plan_id) {
-        throw new Error("Nao foi possivel identificar o plano para gerar o PIX.");
+        throw new Error("Não foi possível identificar o plano para gerar o PIX.");
       }
       if (!payload.payer_email) {
-        throw new Error("Informe um email no cadastro para gerar a cobranca PIX.");
+        throw new Error("Informe um email no cadastro para gerar a cobrança PIX.");
       }
 
       const result = await createPixRecurringSubscription(
@@ -584,7 +584,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
       }
     } catch (error) {
       setPixState("error");
-      setPixFeedback(error?.message || "Nao foi possivel gerar a cobranca PIX.");
+      setPixFeedback(error?.message || "Não foi possível gerar a cobrança PIX.");
     }
   };
 
@@ -606,12 +606,12 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
       );
       applyPixResult(result);
       setPixState("ready");
-      setPixFeedback("Nova cobranca PIX gerada.");
+      setPixFeedback("Nova cobrança PIX gerada.");
       startPixPolling(subscriptionId);
     } catch (error) {
       setPixState("error");
       setPixFeedback(
-        error?.message || "Nao foi possivel gerar uma nova cobranca PIX.",
+        error?.message || "Não foi possível gerar uma nova cobrança PIX.",
       );
     }
   };
@@ -624,7 +624,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
       setCopiedPix(true);
       window.setTimeout(() => setCopiedPix(false), 1800);
     } catch {
-      setPixFeedback("Nao foi possivel copiar automaticamente. Copie o codigo manualmente.");
+      setPixFeedback("Não foi possível copiar automaticamente. Copie o código manualmente.");
     }
   };
 
@@ -649,7 +649,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             Finalizar {plan.name}
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
-            Escolha PIX ou cartao para iniciar a assinatura. PIX precisa ser pago mensalmente para manter a assinatura ativa.
+            Escolha PIX ou cartão para iniciar a assinatura. PIX precisa ser pago mensalmente para manter a assinatura ativa.
           </p>
         </div>
 
@@ -696,7 +696,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
           <div className="space-y-4 rounded-3xl border border-white/10 bg-black/20 p-5">
             {!pixSubscription ? (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-7 text-white/70">
-                Gere a cobranca PIX, pague pelo QR Code e aguarde a confirmacao automatica. Vamos consultar o status periodicamente ate o pagamento ser confirmado.
+                Gere a cobrança PIX, pague pelo QR Code e aguarde a confirmação automática. Vamos consultar o status periodicamente até o pagamento ser confirmado.
               </div>
             ) : null}
 
@@ -743,7 +743,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                 }`}
               >
                 {pixExpired
-                  ? "Esta cobranca PIX expirou."
+                  ? "Esta cobrança PIX expirou."
                   : `Expira em ${String(pixMinutesLeft).padStart(2, "0")}:${String(
                       pixSecondsLeft,
                     ).padStart(2, "0")} (${formatExpirationTime(pixExpiresAt)}).`}
@@ -763,7 +763,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                   ) : (
                     <QrCode size={16} />
                   )}
-                  Gerar cobranca PIX
+                  Gerar cobrança PIX
                 </button>
               ) : null}
 
@@ -779,7 +779,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                   ) : (
                     <RefreshCw size={16} />
                   )}
-                  Gerar nova cobranca PIX
+                  Gerar nova cobrança PIX
                 </button>
               ) : null}
 
@@ -800,7 +800,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
           <form id={formPrefix} className="space-y-4 rounded-3xl border border-white/10 bg-black/20 p-5">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="text-sm text-white/70 md:col-span-2">
-                Numero do cartao
+                Número do cartão
                 <div
                   id={buildFieldId(formPrefix, "cardNumber")}
                   className="mt-2 min-h-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
@@ -829,7 +829,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                   id={buildFieldId(formPrefix, "cardholderName")}
                   defaultValue={user?.fullName || user?.name || ""}
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/30"
-                  placeholder="Nome como impresso no cartao"
+                  placeholder="Nome como impresso no cartão"
                 />
               </label>
 
@@ -882,7 +882,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                   type="email"
                   defaultValue={user?.email || ""}
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/30"
-                  placeholder="voce@exemplo.com"
+                  placeholder="você@exemplo.com"
                 />
               </label>
             </div>
@@ -920,7 +920,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                 </p>
                 {pixNextCharge ? (
                   <p className="text-white/45">
-                    Proxima cobranca: {formatDate(pixNextCharge)}
+                    Próxima cobrança: {formatDate(pixNextCharge)}
                   </p>
                 ) : null}
                 <p className="leading-7 text-white/55">
@@ -929,14 +929,14 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
               </div>
             ) : (
               <p className="mt-2 leading-7">
-                Os dados sensiveis do cartao ficam no iframe do Mercado Pago. O frontend envia apenas o token gerado para o backend concluir a assinatura.
+                Os dados sensíveis do cartão ficam no iframe do Mercado Pago. O frontend envia apenas o token gerado para o backend concluir a assinatura.
               </p>
             )}
           </div>
 
           {!resolvedStudentId ? (
             <div className="rounded-2xl border border-amber-400/25 bg-amber-500/10 p-4 text-sm text-amber-100">
-              Nao foi possivel resolver automaticamente o identificador do aluno. O backend pode rejeitar a assinatura se exigir aluno_id.
+              Não foi possível resolver automaticamente o identificador do aluno. O backend pode rejeitar a assinatura se exigir aluno_id.
             </div>
           ) : null}
 
@@ -977,7 +977,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
           {paymentMethod === "card" && effectiveState === "loading" ? (
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/65">
               <Loader2 className="animate-spin text-[#b5f03c]" size={16} />
-              Carregando formulario seguro do Mercado Pago...
+              Carregando formulário seguro do Mercado Pago...
             </div>
           ) : null}
         </aside>

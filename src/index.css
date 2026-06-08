@@ -32,6 +32,57 @@ body {
   color: #f2f2f2;
 }
 
+html.theme-military {
+  background-color: #313925;
+  color-scheme: dark;
+}
+
+html.theme-military body {
+  background:
+    radial-gradient(circle at top left, rgba(181, 240, 60, 0.12), transparent 30%),
+    radial-gradient(circle at right bottom, rgba(112, 132, 72, 0.24), transparent 28%),
+    linear-gradient(180deg, #3b452e 0%, #2f3825 52%, #28311f 100%);
+}
+
+html.theme-military .bg-\[\#0a0a0a\],
+html.theme-military .bg-\[\#080808\],
+html.theme-military .bg-\[\#0b0b0b\],
+html.theme-military .bg-\[\#0d0d0d\],
+html.theme-military .bg-\[\#0f0f0f\],
+html.theme-military .bg-\[\#111\],
+html.theme-military .bg-\[\#111111\] {
+  background-color: #3a442d !important;
+}
+
+html.theme-military .bg-black\/20,
+html.theme-military .bg-black\/25,
+html.theme-military .bg-black\/30 {
+  background-color: rgba(34, 42, 25, 0.42) !important;
+}
+
+html.theme-military .bg-white\/\[0\.02\],
+html.theme-military .bg-white\/\[0\.03\],
+html.theme-military .bg-white\/\[0\.04\],
+html.theme-military .bg-white\/\[0\.05\],
+html.theme-military .bg-white\/5 {
+  background-color: rgba(230, 240, 210, 0.07) !important;
+}
+
+html.theme-military .border-white\/\[0\.05\],
+html.theme-military .border-white\/\[0\.06\],
+html.theme-military .border-white\/\[0\.07\],
+html.theme-military .border-white\/\[0\.08\],
+html.theme-military .border-white\/10 {
+  border-color: rgba(230, 240, 210, 0.16) !important;
+}
+
+html.theme-military select,
+html.theme-military option,
+html.theme-military input,
+html.theme-military textarea {
+  background-color: #313b25;
+}
+
 #root {
   min-height: 100vh;
 }

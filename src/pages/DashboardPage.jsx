@@ -32,28 +32,28 @@ const mockStudents = [
     nome: "Lucas M.",
     foto: "LM",
     planoStatus: "Ativo",
-    inicio: "10/01/2026",
+    início: "10/01/2026",
   },
   {
     id: "2",
     nome: "Bruna F.",
     foto: "BF",
     planoStatus: "Ativo",
-    inicio: "22/02/2026",
+    início: "22/02/2026",
   },
   {
     id: "3",
     nome: "Rafael P.",
     foto: "RP",
     planoStatus: "Pendente",
-    inicio: "03/03/2026",
+    início: "03/03/2026",
   },
   {
     id: "4",
     nome: "Carla N.",
     foto: "CN",
     planoStatus: "Ativo",
-    inicio: "18/03/2026",
+    início: "18/03/2026",
   },
 ];
 
@@ -204,7 +204,7 @@ export default function DashboardPage() {
                   {t("DASH_COL_PLAN_STATUS_THIAGOIAZZETTI", "Status do Plano")}
                 </th>
                 <th className="px-3 py-2">
-                  {t("DASH_COL_START_THIAGOIAZZETTI", "Inicio")}
+                  {t("DASH_COL_START_THIAGOIAZZETTI", "Início")}
                 </th>
                 <th className="px-3 py-2">
                   {t("DASH_COL_ACTION_THIAGOIAZZETTI", "Acao")}
@@ -233,7 +233,7 @@ export default function DashboardPage() {
                     </span>
                   </td>
                   <td className="px-3 py-3 font-body text-sm text-premium-anthracite/80">
-                    {student.inicio}
+                    {student.início}
                   </td>
                   <td className="px-3 py-3">
                     <button

@@ -102,7 +102,7 @@ export default function AdminDietPage() {
             error?.message ||
               t(
                 "DIET_LOAD_ERROR_THIAGOIAZZETTI",
-                "Nao foi possivel carregar dietas",
+                "Não foi possível carregar dietas",
               ),
           );
         }
@@ -168,7 +168,7 @@ export default function AdminDietPage() {
       setMessage(
         t(
           "DIET_REQUIRED_FIELDS_THIAGOIAZZETTI",
-          "Aluno, titulo e cardapio sao obrigatorios",
+          "Aluno, título e cardapio sao obrigatorios",
         ),
       );
       return;
@@ -206,7 +206,7 @@ export default function AdminDietPage() {
     } catch (error) {
       setMessage(
         error?.message ||
-          t("DIET_SAVE_ERROR_THIAGOIAZZETTI", "Nao foi possivel salvar dieta"),
+          t("DIET_SAVE_ERROR_THIAGOIAZZETTI", "Não foi possível salvar dieta"),
       );
     } finally {
       setSaving(false);
@@ -239,7 +239,7 @@ export default function AdminDietPage() {
         error?.message ||
           t(
             "DIET_DELETE_ERROR_THIAGOIAZZETTI",
-            "Nao foi possivel remover dieta",
+            "Não foi possível remover dieta",
           ),
       );
     }
@@ -259,11 +259,11 @@ export default function AdminDietPage() {
     doc.setFontSize(12);
     doc.text(`Aluno: ${diet?.aluno?.fullName || "Aluno"}`, marginX, y);
     y += 18;
-    doc.text(`Titulo: ${diet.title}`, marginX, y);
+    doc.text(`Título: ${diet.title}`, marginX, y);
 
     if (diet.description) {
       y += 18;
-      const split = doc.splitTextToSize(`Descricao: ${diet.description}`, 500);
+      const split = doc.splitTextToSize(`Descrição: ${diet.description}`, 500);
       doc.text(split, marginX, y);
       y += split.length * 14;
     }
@@ -312,7 +312,7 @@ export default function AdminDietPage() {
         <p className="mt-3 max-w-3xl text-white/65">
           {t(
             "DIET_HEADER_SUBTITLE_THIAGOIAZZETTI",
-            "Crie um plano de dieta, vincule a um aluno e selecione um ou varios dias da semana. Cada plano fica isolado.",
+            "Crie um plano de dieta, vincule à um aluno e selecione um ou vários dias da semana. Cada plano fica isolado.",
           )}
         </p>
       </header>
@@ -356,7 +356,7 @@ export default function AdminDietPage() {
             </label>
 
             <label className="block text-sm text-white/70">
-              {t("DIET_FORM_TITLE_LABEL_THIAGOIAZZETTI", "Titulo")}
+              {t("DIET_FORM_TITLE_LABEL_THIAGOIAZZETTI", "Título")}
               <input
                 value={form.title}
                 onChange={(e) =>
@@ -371,7 +371,7 @@ export default function AdminDietPage() {
             </label>
 
             <label className="block text-sm text-white/70">
-              {t("DIET_FORM_DESC_LABEL_THIAGOIAZZETTI", "Descricao (opcional)")}
+              {t("DIET_FORM_DESC_LABEL_THIAGOIAZZETTI", "Descrição (opcional)")}
               <input
                 value={form.description}
                 onChange={(e) =>
@@ -440,7 +440,7 @@ export default function AdminDietPage() {
                   : editingId
                     ? t(
                         "DIET_FORM_SAVE_CHANGES_THIAGOIAZZETTI",
-                        "Salvar alteracoes",
+                        "Salvar alterações",
                       )
                     : t("DIET_FORM_CREATE_THIAGOIAZZETTI", "Criar dieta")}
               </button>
@@ -460,7 +460,7 @@ export default function AdminDietPage() {
               <p className="text-xs text-white/50">
                 {t(
                   "DIET_FORM_ASSOC_STUDENT_THIAGOIAZZETTI",
-                  "Plano sera associado ao aluno",
+                  "Plano será associado ao aluno",
                 )}
                 : {selectedStudent.fullName}
               </p>

@@ -21,7 +21,7 @@ import PhysicalAssessmentPage from "./pages/PhysicalAssessmentPage.jsx";
 function RouteFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] font-body text-white/70">
-      Carregando modulo...
+      Carregando módulo...
     </div>
   );
 }

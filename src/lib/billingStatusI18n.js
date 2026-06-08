@@ -36,11 +36,11 @@ export function localizeBillingStatus(status, locale) {
   const detail = String(status.detail || "");
 
   const translatedDetail =
-    replacePrefix(detail, "Proxima cobranca em ", "Next charge on ") ||
-    replacePrefix(detail, "Ultimo pagamento em ", "Last payment on ") ||
+    replacePrefix(detail, "Próxima cobrança em ", "Next charge on ") ||
+    replacePrefix(detail, "Último pagamento em ", "Last payment on ") ||
     replacePrefix(
       detail,
-      "Aguardando confirmacao ate ",
+      "Aguardando confirmação até ",
       "Awaiting confirmation until ",
     ) ||
     replacePrefix(detail, "Retomada prevista para ", "Expected resume on ") ||
@@ -57,7 +57,7 @@ export function localizeBillingStatus(status, locale) {
     ) ||
     replacePrefix(detail, "Venceu em ", "Expired on ") ||
     replacePrefix(detail, "Proximo vencimento em ", "Next due date on ") ||
-    (detail === "Aguardando confirmacao da cobranca"
+    (detail === "Aguardando confirmação da cobrança"
       ? "Awaiting billing confirmation"
       : null) ||
     (detail === "O backend marcou a assinatura como pausada"
@@ -66,13 +66,13 @@ export function localizeBillingStatus(status, locale) {
     (detail === "A assinatura foi interrompida"
       ? "The subscription was interrupted"
       : null) ||
-    (detail === "Existe pendencia de pagamento para este ciclo"
+    (detail === "Existe pendência de pagamento para este ciclo"
       ? "There is a payment issue for this cycle"
       : null) ||
-    (detail === "Status de cobranca atualizado pelo backend"
+    (detail === "Status de cobrança atualizado pelo backend"
       ? "Billing status updated by backend"
       : null) ||
-    (detail === "Sem historico de cobranca ou vencimento informado"
+    (detail === "Sem histórico de cobrança ou vencimento informado"
       ? "No billing history or due date informed"
       : null) ||
     (detail === "Data de vencimento invalida" ? "Invalid due date" : null) ||

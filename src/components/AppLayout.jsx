@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   UserRound,
+  Palette,
 } from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
 import SidebarLink from "./SidebarLink.jsx";
@@ -21,16 +22,18 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
 import LanguageSwitcher from "./LanguageSwitcher.jsx";
+import { useThemeMode } from "../lib/themeMode.js";
 
 export default function AppLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { tenantId } = useTenant();
   const { user, isPersonal, signOut } = useAuth();
   const { t } = useI18n();
+  const { isMilitaryTheme, toggleThemeMode } = useThemeMode();
 
   const adminNavItems = [
     {
-      label: t("NAV_OVERVIEW_THIAGOIAZZETTI", "Visao Geral"),
+      label: t("NAV_OVERVIEW_THIAGOIAZZETTI", "Visão Geral"),
       path: "admin",
       icon: BarChart3,
     },
@@ -60,7 +63,7 @@ export default function AppLayout() {
       icon: Salad,
     },
     {
-      label: t("NAV_COMMUNICATION_THIAGOIAZZETTI", "Comunicacao"),
+      label: t("NAV_COMMUNICATION_THIAGOIAZZETTI", "Comunicação"),
       path: "admin/comunicacao",
       icon: MessageSquare,
     },
@@ -103,7 +106,7 @@ export default function AppLayout() {
       icon: CalendarDays,
     },
     {
-      label: t("NAV_COMMUNICATION_THIAGOIAZZETTI", "Comunicacao"),
+      label: t("NAV_COMMUNICATION_THIAGOIAZZETTI", "Comunicação"),
       path: "cliente/comunicacao",
       icon: MessageSquare,
     },
@@ -170,7 +173,7 @@ export default function AppLayout() {
           {/* Nav */}
           <nav className="flex-1 space-y-0.5">
             <p className="mb-3 px-3 text-[9px] font-bold uppercase tracking-[0.4em] text-white/20">
-              {t("NAV_SECTION_TITLE_THIAGOIAZZETTI", "Navegacao")}
+              {t("NAV_SECTION_TITLE_THIAGOIAZZETTI", "Navegação")}
             </p>
             {navItems.map((item) => (
               <SidebarLink
@@ -217,10 +220,25 @@ export default function AppLayout() {
                       "HEADER_PERSONAL_PANEL_THIAGOIAZZETTI",
                       "Painel do Personal",
                     )
-                  : t("HEADER_MY_AREA_THIAGOIAZZETTI", "Minha Area")}
+                  : t("HEADER_MY_AREA_THIAGOIAZZETTI", "Minha Área")}
               </p>
             </div>
             <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                onClick={toggleThemeMode}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.03] text-xs text-white/50 transition hover:border-[#b5f03c]/35 hover:text-[#b5f03c] sm:w-auto sm:gap-1.5 sm:px-3"
+                title={
+                  isMilitaryTheme
+                    ? "Usar estilo escuro"
+                    : "Usar estilo verde militar"
+                }
+              >
+                <Palette size={12} />
+                <span className="hidden sm:inline">
+                  {isMilitaryTheme ? "Escuro" : "Militar"}
+                </span>
+              </button>
               <LanguageSwitcher compact />
               <Link
                 to="/"
@@ -228,7 +246,7 @@ export default function AppLayout() {
               >
                 <Bell size={12} />
                 <span className="hidden sm:inline">
-                  {t("HEADER_PUBLIC_PAGE_THIAGOIAZZETTI", "Pagina publica")}
+                  {t("HEADER_PUBLIC_PAGE_THIAGOIAZZETTI", "Página pública")}
                 </span>
               </Link>
               <button

@@ -119,7 +119,7 @@ export default function ClientDashboardPage() {
             error?.message ||
               t(
                 "CLIENT_DASH_LOAD_ERROR_THIAGOIAZZETTI",
-                "Nao foi possivel carregar seu perfil",
+                "Não foi possível carregar seu perfil",
               ),
           );
         }
@@ -193,7 +193,7 @@ export default function ClientDashboardPage() {
     <main className="space-y-6">
       <section className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
         <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-          {t("CLIENT_DASH_HEADER_BADGE_THIAGOIAZZETTI", "Area do aluno")}
+          {t("CLIENT_DASH_HEADER_BADGE_THIAGOIAZZETTI", "Área do aluno")}
         </p>
         <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
           {t(
@@ -204,7 +204,7 @@ export default function ClientDashboardPage() {
         <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
           {t(
             "CLIENT_DASH_HEADER_SUBTITLE_THIAGOIAZZETTI",
-            "Aqui voce acompanha o plano ativo, os treinos liberados pelo personal e uma agenda simples baseada nas rotinas cadastradas.",
+            "Aqui você acompanha o plano ativo, os treinos liberados pelo personal e uma agenda simples baseada nas rotinas cadastradas.",
           )}
         </p>
       </section>
@@ -245,7 +245,7 @@ export default function ClientDashboardPage() {
                     {activePlan?.description ||
                       t(
                         "CLIENT_DASH_NO_PLAN_DESC_THIAGOIAZZETTI",
-                        "Selecione um plano publico para iniciar.",
+                        "Selecione um plano público para iniciar.",
                       )}
                   </p>
                 </div>
@@ -290,7 +290,7 @@ export default function ClientDashboardPage() {
                   <h2 className="mt-2 font-title text-2xl text-[#b5f03c]">
                     {t(
                       "CLIENT_DASH_SCHEDULE_TITLE_THIAGOIAZZETTI",
-                      "Proximas rotinas",
+                      "Próximas rotinas",
                     )}
                   </h2>
                 </div>
@@ -372,7 +372,7 @@ export default function ClientDashboardPage() {
                   ? formatDate(profile.planDueDate)
                   : t(
                       "CLIENT_DASH_NOT_INFORMED_THIAGOIAZZETTI",
-                      "Nao informado",
+                      "Não informado",
                     )}
               </p>
             </article>
@@ -394,7 +394,7 @@ export default function ClientDashboardPage() {
             <div className="mt-5 space-y-3">
               {events.length === 0 ? (
                 <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-sm text-white/65">
-                  Nenhum evento enviado para voce ainda.
+                  Nenhum evento enviado para você ainda.
                 </p>
               ) : (
                 events.map((participant) => {
@@ -423,7 +423,7 @@ export default function ClientDashboardPage() {
                           {participant.status === "GOING"
                             ? "Confirmado"
                             : participant.status === "NOT_GOING"
-                              ? "Nao vai"
+                              ? "Não vai"
                               : "Pendente"}
                         </span>
                       </div>
@@ -447,7 +447,7 @@ export default function ClientDashboardPage() {
                           }
                           className="rounded-md border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 hover:bg-white/[0.05]"
                         >
-                          Nao vou
+                          Não vou
                         </button>
                       </div>
                     </article>

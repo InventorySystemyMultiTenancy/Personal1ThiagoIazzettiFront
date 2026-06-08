@@ -35,7 +35,7 @@ import { useTenant } from "../contexts/TenantContext.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
 
 const recurrenceOptions = [
-  { label: "Sem recorrencia", value: "NONE" },
+  { label: "Sem recorrência", value: "NONE" },
   { label: "Semanal", value: "WEEKLY" },
   { label: "Quinzenal", value: "BIWEEKLY" },
   { label: "Mensal", value: "MONTHLY" },
@@ -148,7 +148,7 @@ function ScheduleSessionModal({
             <p className="mt-2 text-sm text-white/65">
               {t(
                 "WORKOUT_MODAL_SCHEDULE_SUBTITLE_THIAGOIAZZETTI",
-                "Defina dias, horarios e recorrencia das proximas sessoes desse plano.",
+                "Defina dias, horários e recorrência das próximas sessões desse plano.",
               )}
             </p>
           </div>
@@ -224,7 +224,7 @@ function ScheduleSessionModal({
                 <label className="text-sm text-white/70 xl:col-span-3">
                   {t(
                     "WORKOUT_MODAL_SESSION_TITLE_LABEL_THIAGOIAZZETTI",
-                    "Titulo da sessao",
+                    "Título da sessão",
                   )}
                   <input
                     value={session.title}
@@ -253,7 +253,7 @@ function ScheduleSessionModal({
                 <label className="text-sm text-white/70">
                   {t(
                     "WORKOUT_MODAL_SESSION_START_LABEL_THIAGOIAZZETTI",
-                    "Inicio",
+                    "Início",
                   )}
                   <input
                     type="time"
@@ -290,7 +290,7 @@ function ScheduleSessionModal({
                 <label className="text-sm text-white/70">
                   {t(
                     "WORKOUT_MODAL_SESSION_RECURRENCE_LABEL_THIAGOIAZZETTI",
-                    "Recorrencia",
+                    "Recorrência",
                   )}
                   <select
                     value={session.recurrence}
@@ -315,7 +315,7 @@ function ScheduleSessionModal({
                 <label className="text-sm text-white/70">
                   {t(
                     "WORKOUT_MODAL_SESSION_UNTIL_LABEL_THIAGOIAZZETTI",
-                    "Repetir ate",
+                    "Repetir até",
                   )}
                   <input
                     type="date"
@@ -348,11 +348,11 @@ function ScheduleSessionModal({
                     {updatingSessionId === session.id
                       ? t(
                           "WORKOUT_MODAL_SAVING_SESSION_THIAGOIAZZETTI",
-                          "Salvando sessao...",
+                          "Salvando sessão...",
                         )
                       : t(
                           "WORKOUT_MODAL_SAVE_SESSION_THIAGOIAZZETTI",
-                          "Salvar sessao",
+                          "Salvar sessão",
                         )}
                   </button>
 
@@ -371,7 +371,7 @@ function ScheduleSessionModal({
                         )
                       : t(
                           "WORKOUT_MODAL_DELETE_SESSION_THIAGOIAZZETTI",
-                          "Excluir sessao",
+                          "Excluir sessão",
                         )}
                   </button>
                 </div>
@@ -388,7 +388,7 @@ function ScheduleSessionModal({
             className="rounded-xl border border-[#b5f03c]/50 bg-[#b5f03c]/10 px-4 py-3 text-sm font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/20 disabled:opacity-50"
           >
             <Plus size={16} className="mr-2 inline-block" />
-            {t("WORKOUT_MODAL_ADD_SESSION_THIAGOIAZZETTI", "Adicionar sessao")}
+            {t("WORKOUT_MODAL_ADD_SESSION_THIAGOIAZZETTI", "Adicionar sessão")}
           </button>
 
           <button
@@ -684,7 +684,7 @@ function ExerciseSelector({
                 <option value="">
                   {t(
                     "WORKOUT_MODAL_SELECT_EXERCISE_THIAGOIAZZETTI",
-                    "Selecione um exercicio",
+                    "Selecione um exercício",
                   )}
                 </option>
                 {filteredExercises.map((ex) => (
@@ -838,7 +838,7 @@ function ExerciseSelector({
                 : isEditing
                   ? t(
                       "WORKOUT_MODAL_SAVE_EXERCISE_BUTTON_THIAGOIAZZETTI",
-                      "Salvar alteracoes",
+                      "Salvar alterações",
                     )
                   : t(
                       "WORKOUT_MODAL_ADD_EXERCISE_BUTTON_THIAGOIAZZETTI",
@@ -1018,7 +1018,7 @@ export default function WorkoutBuilderPage() {
       setScheduleSessions(draftSessions);
     } catch (error) {
       setScheduleError(
-        error?.message || "Nao foi possivel carregar a agenda deste plano.",
+        error?.message || "Não foi possível carregar a agenda deste plano.",
       );
       setScheduleSessions([
         {
@@ -1085,7 +1085,7 @@ export default function WorkoutBuilderPage() {
             error?.message ||
               t(
                 "WORKOUT_BUILDER_LOAD_STUDENTS_ERROR_THIAGOIAZZETTI",
-                "Nao foi possivel carregar alunos",
+                "Não foi possível carregar alunos",
               ),
           );
         }
@@ -1123,7 +1123,7 @@ export default function WorkoutBuilderPage() {
             error?.message ||
               t(
                 "WORKOUT_BUILDER_LOAD_WORKOUTS_ERROR_THIAGOIAZZETTI",
-                "Nao foi possivel carregar treinos",
+                "Não foi possível carregar treinos",
               ),
           );
         }
@@ -1198,7 +1198,7 @@ export default function WorkoutBuilderPage() {
       setMessage(
         t(
           "WORKOUT_BUILDER_FORM_REQUIRED_THIAGOIAZZETTI",
-          "Preencha o titulo e adicione exercicios",
+          "Preencha o título e adicione exercicios",
         ),
       );
       return;
@@ -1320,7 +1320,7 @@ export default function WorkoutBuilderPage() {
         error?.message ||
           t(
             "WORKOUT_BUILDER_SAVE_ERROR_THIAGOIAZZETTI",
-            "Nao foi possivel salvar treino",
+            "Não foi possível salvar treino",
           ),
       );
     } finally {
@@ -1353,7 +1353,7 @@ export default function WorkoutBuilderPage() {
   };
 
   const handleDeleteWorkout = async (workoutId) => {
-    if (!window.confirm("Tem certeza que deseja deletar este treino?")) {
+    if (!window.confirm("Tem certeza que deseja excluir este treino?")) {
       return;
     }
 
@@ -1365,9 +1365,9 @@ export default function WorkoutBuilderPage() {
         resetWorkoutForm();
       }
 
-      setMessage("Treino deletado com sucesso!");
+      setMessage("Treino excluído com sucesso!");
     } catch (error) {
-      setMessage(error?.message || "Erro ao deletar treino. Tente novamente.");
+      setMessage(error?.message || "Erro ao excluir treino. Tente novamente.");
     }
   };
 
@@ -1428,7 +1428,7 @@ export default function WorkoutBuilderPage() {
   };
 
   const handleDeleteTemplate = async (templateId) => {
-    if (!window.confirm("Tem certeza que deseja deletar este template?")) {
+    if (!window.confirm("Tem certeza que deseja excluir este template?")) {
       return;
     }
 
@@ -1437,10 +1437,10 @@ export default function WorkoutBuilderPage() {
       setWorkoutTemplates((prev) =>
         prev.filter((template) => template.id !== templateId),
       );
-      setMessage("Template deletado com sucesso!");
+      setMessage("Template excluído com sucesso!");
     } catch (error) {
       setMessage(
-        error?.message || "Erro ao deletar template. Tente novamente.",
+        error?.message || "Erro ao excluir template. Tente novamente.",
       );
     }
   };
@@ -1487,17 +1487,17 @@ export default function WorkoutBuilderPage() {
   };
 
   const handleDeleteCustomExercise = async (exerciseId) => {
-    if (!window.confirm("Tem certeza que deseja deletar este exercício?")) {
+    if (!window.confirm("Tem certeza que deseja excluir este exercício?")) {
       return;
     }
 
     try {
       await deleteCustomExercise(exerciseId, tenantId);
       setCustomExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
-      setMessage("Exercício deletado com sucesso!");
+      setMessage("Exercício excluído com sucesso!");
     } catch (error) {
       setMessage(
-        error?.message || "Erro ao deletar exercício. Tente novamente.",
+        error?.message || "Erro ao excluir exercício. Tente novamente.",
       );
     }
   };
@@ -1535,7 +1535,7 @@ export default function WorkoutBuilderPage() {
 
   const handleSubmitSchedule = async () => {
     if (!scheduleTarget?.id) {
-      setScheduleError("Selecione um plano valido para agendar as sessoes.");
+      setScheduleError("Selecione um plano válido para agendar as sessões.");
       return;
     }
 
@@ -1570,7 +1570,7 @@ export default function WorkoutBuilderPage() {
 
     if (normalizedSessions.length === 0) {
       setScheduleError(
-        "Adicione pelo menos uma nova sessao para salvar a agenda.",
+        "Adicione pelo menos uma nova sessão para salvar a agenda.",
       );
       return;
     }
@@ -1585,7 +1585,7 @@ export default function WorkoutBuilderPage() {
 
     if (invalidSession) {
       setScheduleError(
-        "Preencha titulo, data, horario e data final para todas as sessoes recorrentes.",
+        "Preencha título, data, horário e data final para todas as sessões recorrentes.",
       );
       return;
     }
@@ -1621,8 +1621,8 @@ export default function WorkoutBuilderPage() {
     } catch (error) {
       setScheduleError(
         error?.status === 409
-          ? "Ja existe treino agendado para outro aluno nesse horario. Escolha outro horario."
-          : error?.message || "Nao foi possivel agendar as sessoes.",
+          ? "Ja existe treino agendado para outro aluno nesse horário. Escolha outro horário."
+          : error?.message || "Não foi possível agendar as sessões.",
       );
     } finally {
       setScheduling(false);
@@ -1645,7 +1645,7 @@ export default function WorkoutBuilderPage() {
 
     if (!sessionDraft.title.trim() || !startsAt || !endsAt) {
       setScheduleError(
-        "Preencha titulo, data e horarios validos para editar a sessao.",
+        "Preencha título, data e horários validos para editar a sessão.",
       );
       return;
     }
@@ -1702,8 +1702,8 @@ export default function WorkoutBuilderPage() {
     } catch (error) {
       setScheduleError(
         error?.status === 409
-          ? "Ja existe treino agendado para outro aluno nesse horario. Escolha outro horario."
-          : error?.message || "Nao foi possivel editar a sessao.",
+          ? "Ja existe treino agendado para outro aluno nesse horário. Escolha outro horário."
+          : error?.message || "Não foi possível editar a sessão.",
       );
     } finally {
       setUpdatingSessionId("");
@@ -1741,7 +1741,7 @@ export default function WorkoutBuilderPage() {
         `${t("WORKOUT_BUILDER_SESSION_DELETED_THIAGOIAZZETTI", "Sessao removida com sucesso")}: "${sessionDraft.title}".`,
       );
     } catch (error) {
-      setScheduleError(error?.message || "Nao foi possivel excluir a sessao.");
+      setScheduleError(error?.message || "Não foi possível excluir a sessão.");
     } finally {
       setDeletingSessionId("");
     }
@@ -1785,7 +1785,7 @@ export default function WorkoutBuilderPage() {
             <p className="text-white/50">
               {t(
                 "WORKOUT_BUILDER_LINKED_TO_THIAGOIAZZETTI",
-                "Treino sera vinculado a",
+                "Treino será vinculado a",
               )}
             </p>
             <p className="mt-1 font-semibold text-[#b5f03c]">
@@ -1809,7 +1809,7 @@ export default function WorkoutBuilderPage() {
             <label className="block text-sm text-white/70">
               {t(
                 "WORKOUT_BUILDER_TITLE_LABEL_THIAGOIAZZETTI",
-                "Titulo do treino",
+                "Título do treino",
               )}
               <input
                 type="text"
@@ -2144,7 +2144,7 @@ export default function WorkoutBuilderPage() {
         <p className="mt-2 text-sm text-white/60">
           {t(
             "WORKOUT_BUILDER_TEMPLATES_SUBTITLE_THIAGOIAZZETTI",
-            "Use templates pre-definidos como base e customize conforme necessario",
+            "Use templates pré-definidos como base e customize conforme necessário",
           )}
         </p>
 
@@ -2275,14 +2275,14 @@ export default function WorkoutBuilderPage() {
                     <Clock3 size={16} />
                     {t(
                       "CLIENT_WORKOUTS_UPCOMING_TITLE_THIAGOIAZZETTI",
-                      "Proximas sessoes",
+                      "Próximas sessões",
                     )}
                   </div>
 
                   <div className="mt-3 space-y-2">
                     {workout.schedule.length === 0 ? (
                       <p className="text-sm text-white/55">
-                        Nenhuma sessao agendada ainda. Clique no calendario para
+                        Nenhuma sessão agendada ainda. Clique no calendario para
                         montar a agenda deste plano.
                       </p>
                     ) : (
@@ -2336,7 +2336,7 @@ export default function WorkoutBuilderPage() {
               <p className="text-white/60">
                 {t(
                   "WORKOUT_BUILDER_NO_TEMPLATES_THIAGOIAZZETTI",
-                  "Nenhum template criado ainda. Marque a opcao 'Salvar como template' ao criar um treino!",
+                  "Nenhum template criado ainda. Marque a opção 'Salvar como template' ao criar um treino!",
                 )}
               </p>
             </div>

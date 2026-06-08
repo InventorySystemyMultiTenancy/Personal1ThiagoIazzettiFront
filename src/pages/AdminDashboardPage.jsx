@@ -475,7 +475,7 @@ export default function AdminDashboardPage() {
             error?.message ||
               t(
                 "ADMIN_DASH_LOAD_ERROR_THIAGOIAZZETTI",
-                "Nao foi possivel carregar o painel",
+                "Não foi possível carregar o painel",
               ),
           );
         }
@@ -830,7 +830,7 @@ export default function AdminDashboardPage() {
 
   const handleDeleteStudent = async (student) => {
     const confirmed = window.confirm(
-      `Tem certeza que deseja excluir o aluno "${student.fullName}"? Essa acao apaga o aluno do banco de dados e nao pode ser desfeita.`,
+      `Tem certeza que deseja excluir o aluno "${student.fullName}"? Essa ação apaga o aluno do banco de dados e não pode ser desfeita.`,
     );
 
     if (!confirmed) return;
@@ -846,7 +846,7 @@ export default function AdminDashboardPage() {
     } catch (error) {
       setMessage(
         error?.status === 404
-          ? "A rota DELETE /alunos/:id ainda nao existe no backend. Use o prompt gerado em docs/backend-delete-student-prompt.md para implementar."
+          ? "A rota DELETE /alunos/:id ainda não existe no backend. Use o prompt gerado em docs/backend-delete-student-prompt.md para implementar."
           : error?.message || "Não foi possível excluir o aluno.",
       );
     } finally {
@@ -1281,7 +1281,7 @@ export default function AdminDashboardPage() {
                         />
                       </label>
                       <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                        Duracao
+                        Duração
                         <input
                           type="number"
                           min="1"

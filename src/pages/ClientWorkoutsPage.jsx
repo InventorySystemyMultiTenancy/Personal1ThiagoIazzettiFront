@@ -85,7 +85,7 @@ function WorkoutExerciseList({ items, planId, notesByPlan, onLoadNoteChange }) {
             <label className="mt-3 block text-xs text-white/55">
               {t(
                 "CLIENT_WORKOUTS_LOAD_NOTES_LABEL_THIAGOIAZZETTI",
-                "Anotacao de cargas",
+                "Anotação de cargas",
               )}
               <input
                 type="text"
@@ -124,7 +124,7 @@ function WorkoutScheduleList({ schedule, referenceNow }) {
     <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-[#b5f03c]">
         <CalendarDays size={16} />
-        {t("CLIENT_WORKOUTS_UPCOMING_TITLE_THIAGOIAZZETTI", "Proximas sessoes")}
+        {t("CLIENT_WORKOUTS_UPCOMING_TITLE_THIAGOIAZZETTI", "Próximas sessões")}
       </div>
 
       <div className="mt-3 space-y-3">
@@ -132,7 +132,7 @@ function WorkoutScheduleList({ schedule, referenceNow }) {
           <p className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-sm text-white/60">
             {t(
               "CLIENT_WORKOUTS_NO_SESSIONS_THIAGOIAZZETTI",
-              "Nenhuma sessao agendada para este plano no momento.",
+              "Nenhuma sessão agendada para este plano no momento.",
             )}
           </p>
         ) : (
@@ -262,7 +262,7 @@ export default function ClientWorkoutsPage() {
             error?.message ||
               t(
                 "CLIENT_WORKOUTS_LOAD_ERROR_THIAGOIAZZETTI",
-                "Nao foi possivel carregar seus treinos.",
+                "Não foi possível carregar seus treinos.",
               ),
           );
         }
@@ -324,7 +324,7 @@ export default function ClientWorkoutsPage() {
         ),
       );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel iniciar o treino.");
+      setMessage(error?.message || "Não foi possível iniciar o treino.");
     }
   };
 
@@ -381,7 +381,7 @@ export default function ClientWorkoutsPage() {
         `${t("CLIENT_WORKOUTS_FINISHED_THIAGOIAZZETTI", "Treino finalizado em")} ${formatDuration(durationMs)}.`,
       );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel finalizar o treino.");
+      setMessage(error?.message || "Não foi possível finalizar o treino.");
     }
   };
 
@@ -389,18 +389,18 @@ export default function ClientWorkoutsPage() {
     <main className="space-y-6">
       <section className="rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.2),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
         <p className="text-xs uppercase tracking-[0.28em] text-white/40">
-          {t("CLIENT_DASH_HEADER_BADGE_THIAGOIAZZETTI", "Area do aluno")}
+          {t("CLIENT_DASH_HEADER_BADGE_THIAGOIAZZETTI", "Área do aluno")}
         </p>
         <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
           {t(
             "CLIENT_WORKOUTS_HEADER_TITLE_THIAGOIAZZETTI",
-            "Seus planos e sessoes de treino",
+            "Seus planos e sessões de treino",
           )}
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
           {t(
             "CLIENT_WORKOUTS_HEADER_SUBTITLE_THIAGOIAZZETTI",
-            "Aqui voce acompanha os planos ativos criados pelo seu personal e as proximas sessoes agendadas para a sua rotina.",
+            "Aqui você acompanha os planos ativos criados pelo seu personal e as próximas sessões agendadas para a sua rotina.",
           )}
         </p>
       </section>
@@ -485,7 +485,7 @@ export default function ClientWorkoutsPage() {
                   {schedule.length}{" "}
                   {t(
                     "CLIENT_WORKOUTS_SESSIONS_LABEL_THIAGOIAZZETTI",
-                    "sessao(oes)",
+                    "sessão(oes)",
                   )}
                 </span>
                 <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-100">
@@ -514,7 +514,7 @@ export default function ClientWorkoutsPage() {
                         )
                       : t(
                           "CLIENT_WORKOUTS_LAST_DURATION_THIAGOIAZZETTI",
-                          "Ultima duracao",
+                          "Última duração",
                         )}
                     :
                     <span className="font-semibold text-white">

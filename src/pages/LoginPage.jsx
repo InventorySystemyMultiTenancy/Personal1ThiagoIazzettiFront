@@ -32,7 +32,7 @@ export default function LoginPage() {
     } catch (loginError) {
       setError(
         loginError?.message ||
-          t("LOGIN_ERROR_GENERIC_THIAGOIAZZETTI", "Nao foi possivel entrar"),
+          t("LOGIN_ERROR_GENERIC_THIAGOIAZZETTI", "Não foi possível entrar"),
       );
     } finally {
       setLoading(false);
@@ -46,7 +46,7 @@ export default function LoginPage() {
         className="absolute inset-0 z-0 bg-cover bg-center"
         style={{
           backgroundImage:
-            "url('/Gemini_Generated_Image_g258log258log258 (1).png')",
+            "url('/Gemini_Generatéd_Image_g258log258log258 (1).png')",
         }}
       />
       {/* Dark gradient overlay — covers the bottom-right Gemini watermark naturally */}
@@ -94,7 +94,7 @@ export default function LoginPage() {
                   className="w-full bg-transparent text-white outline-none placeholder:text-white/30"
                   placeholder={t(
                     "LOGIN_EMAIL_PLACEHOLDER_THIAGOIAZZETTI",
-                    "voce@exemplo.com",
+                    "você@exemplo.com",
                   )}
                   required
                 />

@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Star, Play, ChevronDown, X } from "lucide-react";
+import {
+  ArrowRight,
+  Star,
+  Play,
+  ChevronDown,
+  X,
+  Palette,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { getTenantFromHost, useTenant } from "../contexts/TenantContext.jsx";
 import {
   listPublicStudentPlans,
@@ -12,6 +21,7 @@ import {
 } from "../lib/footerProfile.js";
 import LanguageSwitcher from "../components/LanguageSwitcher.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
+import { useThemeMode } from "../lib/themeMode.js";
 
 const WHATSAPP_NUMBER = "5511965949300";
 
@@ -20,17 +30,34 @@ function whatsappLink() {
   return `https://wa.me/${WHATSAPP_NUMBER}`;
 }
 
+function getPlanSummary(plan) {
+  const text = String(plan?.summary || plan?.description || "").trim();
+  if (!text) return "";
+  if (text.length <= 120) return text;
+  return `${text.slice(0, 117).trim()}...`;
+}
+
+function getCarouselPosition(index, activeIndex, total) {
+  const raw = index - activeIndex;
+  if (raw > total / 2) return raw - total;
+  if (raw < -total / 2) return raw + total;
+  return raw;
+}
+
 export default function LandingPage() {
   const { t } = useI18n();
   const { tenantId: contextTenantId } = useTenant();
+  const { isMilitaryTheme, toggleThemeMode } = useThemeMode();
   const tenantFromHost = getTenantFromHost() || contextTenantId || "";
   const [showPlans, setShowPlans] = useState(false);
+  const [expandedPlanId, setExpandedPlanId] = useState("");
+  const [activePlanIndex, setActivePlanIndex] = useState(0);
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const [footerProfile, setFooterProfile] = useState(DEFAULT_FOOTER_PROFILE);
   const plansRef = useRef(null);
   const marqueeItems = [
-    t("HOME_MARQUEE_MUSCULATION_THIAGOIAZZETTI", "Musculacao"),
+    t("HOME_MARQUEE_MUSCULATION_THIAGOIAZZETTI", "Musculação"),
     t("HOME_MARQUEE_WEIGHT_LOSS_THIAGOIAZZETTI", "Emagrecimento"),
     t("HOME_MARQUEE_MASS_GAIN_THIAGOIAZZETTI", "Ganho de Massa"),
     t("HOME_MARQUEE_HYPERTROPHY_THIAGOIAZZETTI", "Hipertrofia"),
@@ -78,8 +105,28 @@ export default function LandingPage() {
   }, [showPlans]);
 
   useEffect(() => {
+    if (activePlanIndex >= plans.length) {
+      setActivePlanIndex(0);
+    }
+  }, [activePlanIndex, plans.length]);
+
+  useEffect(() => {
     setFooterProfile(loadFooterProfile(tenantFromHost || "default"));
   }, [tenantFromHost]);
+
+  const goToPreviousPlan = () => {
+    setExpandedPlanId("");
+    setActivePlanIndex((current) =>
+      plans.length ? (current - 1 + plans.length) % plans.length : 0,
+    );
+  };
+
+  const goToNextPlan = () => {
+    setExpandedPlanId("");
+    setActivePlanIndex((current) =>
+      plans.length ? (current + 1) % plans.length : 0,
+    );
+  };
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0a0a0a] text-white">
@@ -87,8 +134,9 @@ export default function LandingPage() {
       <div
         className="absolute inset-0 z-0"
         style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 60% 40%, rgba(60,80,40,0.45) 0%, rgba(10,10,10,0.0) 70%), radial-gradient(ellipse 50% 80% at 80% 60%, rgba(30,50,20,0.3) 0%, transparent 60%), linear-gradient(180deg,#0a0a0a 0%,#111810 40%,#0a0a0a 100%)",
+          background: isMilitaryTheme
+            ? "radial-gradient(ellipse 80% 60% at 60% 40%, rgba(181,240,60,0.18) 0%, rgba(63,74,47,0.1) 70%), radial-gradient(ellipse 50% 80% at 80% 60%, rgba(117,133,77,0.28) 0%, transparent 60%), linear-gradient(180deg,#4b5637 0%,#39442d 45%,#2f3825 100%)"
+            : "radial-gradient(ellipse 80% 60% at 60% 40%, rgba(60,80,40,0.45) 0%, rgba(10,10,10,0.0) 70%), radial-gradient(ellipse 50% 80% at 80% 60%, rgba(30,50,20,0.3) 0%, transparent 60%), linear-gradient(180deg,#0a0a0a 0%,#111810 40%,#0a0a0a 100%)",
         }}
       />
       <div
@@ -131,6 +179,21 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleThemeMode}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/60 transition hover:border-[#b5f03c]/40 hover:text-[#b5f03c]"
+              title={
+                isMilitaryTheme
+                  ? "Usar estilo escuro"
+                  : "Usar estilo verde militar"
+              }
+            >
+              <Palette size={14} />
+              <span className="hidden sm:inline">
+                {isMilitaryTheme ? "Escuro" : "Militar"}
+              </span>
+            </button>
             <LanguageSwitcher />
             <a
               href={whatsappLink()}
@@ -184,7 +247,7 @@ export default function LandingPage() {
                   to="/login"
                   className="inline-flex items-center gap-2 rounded-full bg-[#b5f03c] px-7 py-3.5 text-sm font-bold text-black transition hover:brightness-110"
                 >
-                  {t("HOME_JOIN_US_THIAGOIAZZETTI", "Junte-se a nos")}
+                  {t("HOME_JOIN_US_THIAGOIAZZETTI", "Junte-se a nós")}
                   <ArrowRight size={16} />
                 </Link>
                 <button
@@ -228,7 +291,7 @@ export default function LandingPage() {
                 to={tenantFromHost ? "/login" : "/cadastro"}
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b5f03c] py-3 text-sm font-bold text-black transition hover:brightness-110"
               >
-                {t("HOME_JOIN_US_THIAGOIAZZETTI", "Junte-se a nos")}
+                {t("HOME_JOIN_US_THIAGOIAZZETTI", "Junte-se a nós")}
                 <ArrowRight size={15} />
               </Link>
 
@@ -251,7 +314,7 @@ export default function LandingPage() {
             <div className="mb-8 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.35em] text-white/30">
-                  {t("HOME_AVAILABLE_THIAGOIAZZETTI", "Disponiveis")}
+                  {t("HOME_AVAILABLE_THIAGOIAZZETTI", "Disponíveis")}
                 </p>
                 <h2 className="mt-1 text-3xl font-black text-white">
                   {t("HOME_OUR_PLANS_THIAGOIAZZETTI", "Nossos Planos")}
@@ -288,44 +351,144 @@ export default function LandingPage() {
                 </a>
               </div>
             ) : (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {plans.map((plan) => (
-                  <div
-                    key={plan.id}
-                    className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#b5f03c]/30 hover:bg-white/[0.07]"
-                  >
-                    <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-[#b5f03c]/10 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                    <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/30">
-                      {t("HOME_PLAN_LABEL_THIAGOIAZZETTI", "Plano")}
-                    </p>
-                    <h3 className="mt-2 text-xl font-black text-white">
-                      {plan.name}
-                    </h3>
-                    {plan.description && (
-                      <p className="mt-2 text-sm text-white/50 leading-6">
-                        {plan.description}
-                      </p>
-                    )}
-                    <p className="mt-5 text-4xl font-black text-[#b5f03c] leading-none">
-                      {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
-                      <span className="text-sm font-normal text-white/35">
-                        {t("HOME_PER_MONTH_THIAGOIAZZETTI", "/mes")}
-                      </span>
-                    </p>
-                    <a
-                      href={whatsappLink()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b5f03c] py-3 text-sm font-bold text-black transition hover:brightness-110"
-                    >
-                      {t(
-                        "HOME_I_WANT_THIS_PLAN_THIAGOIAZZETTI",
-                        "Quero este plano",
-                      )}
-                      <ArrowRight size={15} />
-                    </a>
-                  </div>
-                ))}
+              <div className="relative overflow-hidden rounded-[2rem] border border-[#b5f03c]/20 bg-[#07120b]/45 px-3 py-8 shadow-[0_0_60px_rgba(181,240,60,0.12)] sm:px-8 lg:px-14">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(181,240,60,0.16),transparent_34%),linear-gradient(90deg,rgba(181,240,60,0.08),transparent_26%,transparent_74%,rgba(181,240,60,0.08))]" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-8 hidden justify-center gap-2 opacity-70 sm:flex">
+                  {[...Array(8)].map((_, index) => (
+                    <span
+                      key={index}
+                      className="h-3 w-9 skew-x-[-25deg] bg-[#b5f03c] shadow-[0_0_18px_rgba(181,240,60,0.65)]"
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={goToPreviousPlan}
+                  className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:left-5"
+                  aria-label="Plano anterior"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+
+                <div className="relative z-10 mx-auto h-[520px] max-w-6xl sm:h-[500px] lg:h-[470px]">
+                  {plans.map((plan, index) => {
+                    const summary = getPlanSummary(plan);
+                    const description = String(plan.description || "").trim();
+                    const isExpanded = expandedPlanId === plan.id;
+                    const canExpand = description && description !== summary;
+                    const position = getCarouselPosition(
+                      index,
+                      activePlanIndex,
+                      plans.length,
+                    );
+                    const isActive = position === 0;
+                    const isVisible = Math.abs(position) <= 1;
+                    const translateX = position * 64;
+
+                    return (
+                      <article
+                        key={plan.id}
+                        className={`absolute left-1/2 top-1/2 w-[min(82vw,420px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[1.6rem] border p-6 text-left transition-all duration-500 sm:w-[420px] ${
+                          isActive
+                            ? "z-20 border-[#b5f03c]/60 bg-[#0d2517]/95 opacity-100 shadow-[0_0_48px_rgba(181,240,60,0.28)]"
+                            : "z-10 border-white/10 bg-[#142018]/80 opacity-60 shadow-2xl"
+                        } ${isVisible ? "" : "pointer-events-none opacity-0"}`}
+                        style={{
+                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 1 : 0.78})`,
+                        }}
+                      >
+                        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(181,240,60,0.14),transparent_36%),radial-gradient(circle_at_top_right,rgba(181,240,60,0.18),transparent_34%)]" />
+                        <div className="relative">
+                          <p className="text-xs font-black uppercase tracking-[0.28em] text-[#b5f03c]">
+                            {t("HOME_PLAN_LABEL_THIAGOIAZZETTI", "Plano")}
+                          </p>
+                          <h3 className="mt-2 text-2xl font-black uppercase leading-tight text-white">
+                            {plan.name}
+                          </h3>
+
+                          {(summary || description) && (
+                            <div className="mt-4 space-y-3">
+                              <p className="min-h-[96px] text-sm leading-6 text-white/68">
+                                {isExpanded
+                                  ? description
+                                  : summary || description}
+                              </p>
+                              {canExpand && isActive ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedPlanId((current) =>
+                                      current === plan.id ? "" : plan.id,
+                                    )
+                                  }
+                                  className="text-xs font-bold uppercase tracking-[0.18em] text-[#b5f03c] transition hover:text-white"
+                                >
+                                  {isExpanded ? "Ver resumo" : "Saber mais"}
+                                </button>
+                              ) : null}
+                            </div>
+                          )}
+
+                          <p className="mt-7 text-4xl font-black leading-none text-[#b5f03c] drop-shadow-[0_0_12px_rgba(181,240,60,0.45)]">
+                            {formatCurrency(
+                              (plan.monthlyPriceCents || 0) / 100,
+                            )}
+                            <span className="text-sm font-normal text-white/45">
+                              {t("HOME_PER_MONTH_THIAGOIAZZETTI", "/mês")}
+                            </span>
+                          </p>
+
+                          <a
+                            href={whatsappLink()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`mt-7 flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-black uppercase tracking-wide transition ${
+                              isActive
+                                ? "bg-[#b5f03c] text-black shadow-[0_0_28px_rgba(181,240,60,0.45)] hover:brightness-110"
+                                : "bg-white/10 text-white/70"
+                            }`}
+                            tabIndex={isActive ? 0 : -1}
+                          >
+                            {t(
+                              "HOME_I_WANT_THIS_PLAN_THIAGOIAZZETTI",
+                              "Quero este plano",
+                            )}
+                            <ArrowRight size={15} />
+                          </a>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={goToNextPlan}
+                  className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:right-5"
+                  aria-label="Próximo plano"
+                >
+                  <ChevronRight size={22} />
+                </button>
+
+                <div className="relative z-10 mt-2 flex justify-center gap-2">
+                  {plans.map((plan, index) => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      onClick={() => {
+                        setExpandedPlanId("");
+                        setActivePlanIndex(index);
+                      }}
+                      className={`h-2.5 rounded-full transition-all ${
+                        index === activePlanIndex
+                          ? "w-8 bg-[#b5f03c]"
+                          : "w-2.5 bg-white/25 hover:bg-white/45"
+                      }`}
+                      aria-label={`Ver plano ${index + 1}`}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </section>

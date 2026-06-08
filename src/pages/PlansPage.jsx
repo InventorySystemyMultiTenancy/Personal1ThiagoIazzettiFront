@@ -65,8 +65,8 @@ const PLANS_PAGE_FALLBACKS = {
     PLANS_PLAN_LABEL_THIAGOIAZZETTI: "Piano",
     PLANS_PREMIUM_DESCRIPTION_THIAGOIAZZETTI:
       "Piano premium con supporto del personal trainer.",
-    PLANS_PER_MONTH_THIAGOIAZZETTI: "/mese",
-    PLANS_MONTHS_THIAGOIAZZETTI: "mesi",
+    PLANS_PER_MONTH_THIAGOIAZZETTI: "/mêse",
+    PLANS_MONTHS_THIAGOIAZZETTI: "mêsi",
     PLANS_PER_DAY_THIAGOIAZZETTI: "/giorno",
     PLANS_DAYS_THIAGOIAZZETTI: "giorni",
     PLANS_PROTECTED_CONTRACT_THIAGOIAZZETTI: "Contratto protetto",
@@ -95,8 +95,8 @@ const PLANS_PAGE_FALLBACKS = {
     PLANS_PLAN_LABEL_THIAGOIAZZETTI: "Plan",
     PLANS_PREMIUM_DESCRIPTION_THIAGOIAZZETTI:
       "Plan premium con acompanamiento del entrenador.",
-    PLANS_PER_MONTH_THIAGOIAZZETTI: "/mes",
-    PLANS_MONTHS_THIAGOIAZZETTI: "meses",
+    PLANS_PER_MONTH_THIAGOIAZZETTI: "/mês",
+    PLANS_MONTHS_THIAGOIAZZETTI: "mêses",
     PLANS_PER_DAY_THIAGOIAZZETTI: "/dia",
     PLANS_DAYS_THIAGOIAZZETTI: "dias",
     PLANS_PROTECTED_CONTRACT_THIAGOIAZZETTI: "Contrato protegido",
@@ -167,8 +167,8 @@ function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
         <span className="pb-1 text-sm text-white/50">
           {frequencyType === "months"
             ? frequency === 1
-              ? t("PLANS_PER_MONTH_THIAGOIAZZETTI", "/mes")
-              : `${t("PLANS_EVERY_THIAGOIAZZETTI", "/")}${frequency} ${t("PLANS_MONTHS_THIAGOIAZZETTI", "meses")}`
+              ? t("PLANS_PER_MONTH_THIAGOIAZZETTI", "/mês")
+              : `${t("PLANS_EVERY_THIAGOIAZZETTI", "/")}${frequency} ${t("PLANS_MONTHS_THIAGOIAZZETTI", "mêses")}`
             : frequency === 1
               ? t("PLANS_PER_DAY_THIAGOIAZZETTI", "/dia")
               : `${t("PLANS_EVERY_THIAGOIAZZETTI", "/")}${frequency} ${t("PLANS_DAYS_THIAGOIAZZETTI", "dias")}`}
@@ -185,11 +185,11 @@ function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
           {plan.isRecurringEnabled === false
             ? t(
                 "PLANS_CHECKOUT_PENDING_THIAGOIAZZETTI",
-                "Checkout online pendente de configuracao",
+                "Checkout online pendente de configuração",
               )
             : t(
                 "PLANS_RECURRING_AUTOMATIC_THIAGOIAZZETTI",
-                "Cobranca recorrente automatica no cartao",
+                "Cobrança recorrente automática no cartão",
               )}
         </div>
       </div>
@@ -254,7 +254,7 @@ export default function PlansPage({ mode = "public" }) {
             error?.message ||
               t(
                 "PLANS_ERROR_LOAD_THIAGOIAZZETTI",
-                "Nao foi possivel carregar os planos",
+                "Não foi possível carregar os planos",
               ),
           );
           setPlans([]);
@@ -318,7 +318,7 @@ export default function PlansPage({ mode = "public" }) {
       setMessage(
         t(
           "PLANS_MESSAGE_LOGIN_REQUIRED_THIAGOIAZZETTI",
-          "Crie uma conta ou faca login como aluno para contratar.",
+          "Crie uma conta ou faça login como aluno para contratar.",
         ),
       );
       return;
@@ -326,7 +326,7 @@ export default function PlansPage({ mode = "public" }) {
 
     setSelectedPlanId(plan.id);
     setMessage(
-      `${t("PLANS_MESSAGE_PLAN_SELECTED_THIAGOIAZZETTI", "Plano")} ${plan.name} ${t("PLANS_MESSAGE_FILL_CARD_THIAGOIAZZETTI", "selecionado. Preencha os dados do cartao para concluir a assinatura.")}`,
+      `${t("PLANS_MESSAGE_PLAN_SELECTED_THIAGOIAZZETTI", "Plano")} ${plan.name} ${t("PLANS_MESSAGE_FILL_CARD_THIAGOIAZZETTI", "selecionado. Preencha os dados do cartão para concluir a assinatura.")}`,
     );
   };
 
@@ -396,7 +396,7 @@ export default function PlansPage({ mode = "public" }) {
         error?.message ||
           t(
             "PLANS_MESSAGE_SAVE_ERROR_THIAGOIAZZETTI",
-            "Nao foi possivel salvar o plano",
+            "Não foi possível salvar o plano",
           ),
       );
     } finally {
@@ -410,7 +410,7 @@ export default function PlansPage({ mode = "public" }) {
     const confirmed = window.confirm(
       t(
         "PLANS_CONFIRM_DELETE_THIAGOIAZZETTI",
-        "Tem certeza que deseja excluir este plano? Esta acao nao pode ser desfeita.",
+        "Tem certeza que deseja excluir este plano? Esta ação não pode ser desfeita.",
       ),
     );
 
@@ -432,7 +432,7 @@ export default function PlansPage({ mode = "public" }) {
         error?.message ||
           t(
             "PLANS_MESSAGE_DELETE_ERROR_THIAGOIAZZETTI",
-            "Nao foi possivel excluir o plano",
+            "Não foi possível excluir o plano",
           ),
       );
     } finally {
@@ -451,7 +451,7 @@ export default function PlansPage({ mode = "public" }) {
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/68">
               {t(
                 "PLANS_SUBTITLE_THIAGOIAZZETTI",
-                "Aqui voce ve os planos criados pelo personal e pode contratar a opcao ideal quando estiver logado como aluno.",
+                "Aqui você vê os planos criados pelo personal e pode contratar a opção ideal quando estiver logado como aluno.",
               )}
             </p>
           </div>
@@ -536,7 +536,7 @@ export default function PlansPage({ mode = "public" }) {
             </label>
 
             <label className="text-sm text-white/70 md:col-span-2">
-              {t("PLANS_DESCRIPTION_LABEL_THIAGOIAZZETTI", "Descricao")}
+              {t("PLANS_DESCRIPTION_LABEL_THIAGOIAZZETTI", "Descrição")}
               <textarea
                 rows={3}
                 value={form.description}
@@ -574,7 +574,7 @@ export default function PlansPage({ mode = "public" }) {
                     : editingPlanId
                       ? t(
                           "PLANS_SAVE_CHANGES_THIAGOIAZZETTI",
-                          "Salvar alteracoes",
+                          "Salvar alterações",
                         )
                       : t("PLANS_CREATE_BUTTON_THIAGOIAZZETTI", "Criar plano")}
                 </button>
@@ -641,7 +641,7 @@ export default function PlansPage({ mode = "public" }) {
         <section className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-white/70">
           {t(
             "PLANS_CHECKOUT_HINT_THIAGOIAZZETTI",
-            "O checkout recorrente fica disponivel apos o login do aluno. Se ainda nao tiver conta, faca seu cadastro vinculado ao tenant e volte para escolher o plano.",
+            "O checkout recorrente fica disponível após o login do aluno. Se ainda não tiver conta, faça seu cadastro vinculado ao tenant e volte para escolher o plano.",
           )}
         </section>
       ) : null}

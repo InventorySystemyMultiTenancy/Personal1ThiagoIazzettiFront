@@ -19,7 +19,7 @@ export function getTenantFromHost() {
 
     // If host is exactly the domain, no subdomain present.
     if (host === domain || host.endsWith(`.${domain}`) === false) {
-      // also treat localhost and plain hostnames as no-subdomain
+      // also treat localhost and plain hostnamês as no-subdomain
       return null;
     }
 

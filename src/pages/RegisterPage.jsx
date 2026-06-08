@@ -50,7 +50,7 @@ export default function RegisterPage() {
         registerError?.message ||
           t(
             "REGISTER_ERROR_GENERIC_THIAGOIAZZETTI",
-            "Nao foi possivel cadastrar",
+            "Não foi possível cadastrar",
           ),
       );
     } finally {
@@ -88,7 +88,7 @@ export default function RegisterPage() {
           <p className="mt-4 max-w-xl text-base leading-8 text-white/70">
             {t(
               "REGISTER_SUBTITLE_THIAGOIAZZETTI",
-              "O cadastro cria o usuario do aluno e amarra a conta ao tenant informado. Depois do registro, o login vai direto para sua area.",
+              "O cadastro cria o usuário do aluno e amarra a conta ao tenant informado. Depois do registro, o login vai direto para sua area.",
             )}
           </p>
 
@@ -103,7 +103,7 @@ export default function RegisterPage() {
               <p className="mt-1">
                 {t(
                   "REGISTER_CARD_PLAN_TEXT_THIAGOIAZZETTI",
-                  "Escolha o plano e confirme a adesao.",
+                  "Escolha o plano e confirme a adesão.",
                 )}
               </p>
             </div>
@@ -163,7 +163,7 @@ export default function RegisterPage() {
                   className="w-full bg-transparent text-white outline-none placeholder:text-white/30"
                   placeholder={t(
                     "REGISTER_EMAIL_PLACEHOLDER_THIAGOIAZZETTI",
-                    "voce@exemplo.com",
+                    "você@exemplo.com",
                   )}
                   required
                 />
@@ -258,7 +258,7 @@ export default function RegisterPage() {
               to="/login"
               className="text-[#b5f03c] transition hover:text-white"
             >
-              {t("REGISTER_LINK_HAVE_ACCOUNT_THIAGOIAZZETTI", "Ja tenho conta")}
+              {t("REGISTER_LINK_HAVE_ACCOUNT_THIAGOIAZZETTI", "Já tenho conta")}
             </Link>
             <Link to="/" className="transition hover:text-white">
               {t(

@@ -81,7 +81,7 @@ function getDueFallback(planDueDate) {
       key: "unknown",
       label: "Sem status",
       shortLabel: "Sem status",
-      detail: "Sem historico de cobranca ou vencimento informado",
+      detail: "Sem histárico de cobrança ou vencimento informado",
       badgeClass: "border-white/20 bg-white/10 text-white/70",
       cardClass: "border-white/10",
       accentClass: "text-white/75",
@@ -192,8 +192,8 @@ function buildMappedStatus(key, detail) {
 
   return {
     key: "overdue",
-    label: "Mensalidade nao paga",
-    shortLabel: "Nao pago",
+    label: "Mensalidade não paga",
+    shortLabel: "Não pago",
     detail,
     badgeClass: "border-red-500/45 bg-red-500/20 text-red-200",
     cardClass: "border-red-500/35 bg-[rgba(127,29,29,0.24)]",
@@ -251,31 +251,31 @@ export function getBillingStatus(entity) {
     return getDueFallback(entity?.planDueDate || subscription?.nextPaymentDate);
   }
 
-  let detail = "Status de cobranca atualizado pelo backend";
+  let detail = "Status de cobrança atualizado pelo backend";
   if (resolvedKey === "paid") {
     detail = nextChargeAt
-      ? `Proxima cobranca em ${nextChargeAt}`
+      ? `Próxima cobrança em ${nextChargeAt}`
       : paidAt
-        ? `Ultimo pagamento em ${paidAt}`
+        ? `Último pagamento em ${paidAt}`
         : detail;
   } else if (resolvedKey === "pending") {
     detail = nextChargeAt
-      ? `Aguardando confirmacao ate ${nextChargeAt}`
-      : "Aguardando confirmacao da cobranca";
+      ? `Aguardando confirmação até ${nextChargeAt}`
+      : "Aguardando confirmação da cobrança";
   } else if (resolvedKey === "paused") {
     detail = nextChargeAt
       ? `Retomada prevista para ${nextChargeAt}`
       : "O backend marcou a assinatura como pausada";
   } else if (resolvedKey === "canceled") {
     detail = paidAt
-      ? `Ultimo ciclo pago em ${paidAt}`
+      ? `Último ciclo pago em ${paidAt}`
       : "A assinatura foi interrompida";
   } else if (paidAt) {
-    detail = `Ultima tentativa registrada em ${paidAt}`;
+    detail = `Última tentativa registrada em ${paidAt}`;
   } else if (nextChargeAt) {
     detail = `Vencimento associado em ${nextChargeAt}`;
   } else {
-    detail = "Existe pendencia de pagamento para este ciclo";
+    detail = "Existe pendência de pagamento para este ciclo";
   }
 
   return buildMappedStatus(resolvedKey, detail);

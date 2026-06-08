@@ -64,7 +64,7 @@ const CLIENT_AGENDA_FALLBACKS = {
   },
   "es-ES": {
     CLIENT_AGENDA_LABEL_THIAGOIAZZETTI: "Agenda del alumno",
-    CLIENT_AGENDA_TITLE_THIAGOIAZZETTI: "Tus horarios y orientaciones",
+    CLIENT_AGENDA_TITLE_THIAGOIAZZETTI: "Tus horários y orientaciones",
     CLIENT_AGENDA_SUBTITLE_THIAGOIAZZETTI:
       "Aqui aparecen los compromisos que tu personal trainer registró para ti, incluyendo entrenamiento y dieta.",
     CLIENT_AGENDA_LOADING_THIAGOIAZZETTI: "Cargando agenda...",
@@ -213,7 +213,7 @@ export default function ClientAgendaPage() {
             error?.message ||
               t(
                 "CLIENT_AGENDA_ERROR_LOAD_THIAGOIAZZETTI",
-                "Nao foi possivel carregar agenda",
+                "Não foi possível carregar agenda",
               ),
           );
         }
@@ -268,7 +268,7 @@ export default function ClientAgendaPage() {
       setMessage(
         t(
           "CLIENT_AGENDA_ATTENDANCE_UPDATED_THIAGOIAZZETTI",
-          "Presenca atualizada",
+          "Presença atualizada",
         ),
       );
     } catch (error) {
@@ -276,7 +276,7 @@ export default function ClientAgendaPage() {
         error?.message ||
           t(
             "CLIENT_AGENDA_ATTENDANCE_ERROR_THIAGOIAZZETTI",
-            "Nao foi possivel confirmar presenca",
+            "Não foi possível confirmar presença",
           ),
       );
     }
@@ -307,10 +307,10 @@ export default function ClientAgendaPage() {
         prev.map((ev) => (ev.id === event.id ? updated : ev)),
       );
       setMessage(
-        "Solicitacao de cancelamento enviada para aprovacao do personal.",
+        "Solicitação de cancelamento enviada para aprovação do personal.",
       );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel solicitar cancelamento.");
+      setMessage(error?.message || "Não foi possível solicitar cancelamento.");
     }
   };
 
@@ -322,14 +322,14 @@ export default function ClientAgendaPage() {
   const handleRequestReschedule = async (event) => {
     if (!canRequestChange(event)) {
       setMessage(
-        "Remarcacao so pode ser solicitada com no minimo 2h de antecedencia.",
+        "Remarcação só pode ser solicitada com no mínimo 2h de antecedência.",
       );
       return;
     }
 
     const nextStart = new Date(rescheduleStartsAt);
     if (!rescheduleStartsAt || Number.isNaN(nextStart.getTime())) {
-      setMessage("Informe um novo horario valido para remarcacao.");
+      setMessage("Informe um novo horário válido para remarcação.");
       return;
     }
 
@@ -359,10 +359,10 @@ export default function ClientAgendaPage() {
       setRescheduleEventId("");
       setRescheduleStartsAt("");
       setMessage(
-        "Solicitacao de remarcacao enviada para aprovacao do personal.",
+        "Solicitação de remarcação enviada para aprovação do personal.",
       );
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel solicitar remarcacao.");
+      setMessage(error?.message || "Não foi possível solicitar remarcação.");
     }
   };
 
@@ -377,13 +377,13 @@ export default function ClientAgendaPage() {
             <h1 className="mt-2 font-title text-4xl text-[#d4f7a0]">
               {t(
                 "CLIENT_AGENDA_TITLE_THIAGOIAZZETTI",
-                "Seus horarios e orientacoes",
+                "Seus horários e orientações",
               )}
             </h1>
             <p className="mt-3 text-sm text-white/68">
               {t(
                 "CLIENT_AGENDA_SUBTITLE_THIAGOIAZZETTI",
-                "Aqui aparecem os compromissos que seu personal cadastrou para voce, incluindo treino e dieta.",
+                "Aqui aparecem os compromissos que seu personal cadastrou para você, incluindo treino e dieta.",
               )}
             </p>
           </div>
@@ -546,15 +546,15 @@ export default function ClientAgendaPage() {
                     ) : null}
                     {event.changeRequestStatus === "PENDING" ? (
                       <p className="mt-2 text-xs text-amber-200">
-                        Solicitacao pendente:{" "}
+                        Solicitação pendente:{" "}
                         {event.changeRequestType === "RESCHEDULE"
-                          ? "Remarcacao"
+                          ? "Remarcação"
                           : "Cancelamento"}
                       </p>
                     ) : null}
                     {event.changeRequestStatus === "REJECTED" ? (
                       <p className="mt-2 text-xs text-red-200">
-                        Solicitacao anterior recusada pelo personal.
+                        Solicitação anterior recusada pelo personal.
                       </p>
                     ) : null}
                     <div className="mt-3 flex gap-2">
@@ -566,7 +566,7 @@ export default function ClientAgendaPage() {
                         <CheckCircle2 size={13} />
                         {t(
                           "CLIENT_AGENDA_CONFIRM_ATTENDANCE_THIAGOIAZZETTI",
-                          "Confirmar presenca",
+                          "Confirmar presença",
                         )}
                       </button>
                       {canRequestChange(event) ? (
@@ -593,7 +593,7 @@ export default function ClientAgendaPage() {
                     {rescheduleEventId === event.id ? (
                       <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
                         <label className="text-xs text-white/70">
-                          Novo horario (mesma semana)
+                          Novo horário (mêsma semana)
                           <input
                             type="datetime-local"
                             value={rescheduleStartsAt}
@@ -609,7 +609,7 @@ export default function ClientAgendaPage() {
                             onClick={() => handleRequestReschedule(event)}
                             className="rounded-lg border border-sky-400/35 px-3 py-1.5 text-xs text-sky-200"
                           >
-                            Enviar remarcacao
+                            Enviar remarcação
                           </button>
                           <button
                             type="button"

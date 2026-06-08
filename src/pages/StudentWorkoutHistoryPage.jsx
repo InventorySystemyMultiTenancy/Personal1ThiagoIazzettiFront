@@ -126,7 +126,7 @@ export default function StudentWorkoutHistoryPage() {
         if (!cancelled) {
           setSessions([]);
           setMessage(
-            error?.message || "Nao foi possivel carregar historico de treinos.",
+            error?.message || "Não foi possível carregar histórico de treinos.",
           );
         }
       } finally {
@@ -180,7 +180,7 @@ export default function StudentWorkoutHistoryPage() {
           {studentName}
         </h1>
         <p className="mt-3 text-sm text-white/68">
-          Calendario com sessoes finalizadas, tempo gasto e cargas por
+          Calendario com sessões finalizadas, tempo gasto e cargas por
           exercicio.
         </p>
       </section>
@@ -263,7 +263,7 @@ export default function StudentWorkoutHistoryPage() {
                   ))}
                   {daySessions.length > 2 ? (
                     <p className="text-[10px] text-white/55">
-                      +{daySessions.length - 2} sessoes
+                      +{daySessions.length - 2} sessões
                     </p>
                   ) : null}
                   {daySessions.length > 0 ? (
@@ -308,7 +308,7 @@ export default function StudentWorkoutHistoryPage() {
                 <div className="mt-2 grid gap-2 text-sm md:grid-cols-2">
                   <p className="flex items-center gap-2 text-white/65">
                     <Clock3 size={14} className="text-white/45" />
-                    Inicio: {formatDateTime(session.startedAt)}
+                    Início: {formatDateTime(session.startedAt)}
                   </p>
                   <p className="flex items-center gap-2 text-white/65">
                     <CalendarDays size={14} className="text-white/45" />
@@ -319,7 +319,7 @@ export default function StudentWorkoutHistoryPage() {
                 <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
                   {(session.items || []).length === 0 ? (
                     <p className="text-sm text-white/55">
-                      Sem exercicios registrados nesta sessao.
+                      Sem exercicios registrados nesta sessão.
                     </p>
                   ) : (
                     (session.items || []).map((item) => (

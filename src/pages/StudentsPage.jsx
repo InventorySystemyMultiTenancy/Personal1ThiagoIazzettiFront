@@ -22,7 +22,7 @@ export default function StudentsPage() {
       <p className="mt-1 font-body text-sm text-premium-anthracite/70">
         {t(
           "STUDENTS_SUBTITLE_THIAGOIAZZETTI",
-          "Visao consolidada de objetivos e progresso.",
+          "Visão consolidada de objetivos e progresso.",
         )}
       </p>
 
