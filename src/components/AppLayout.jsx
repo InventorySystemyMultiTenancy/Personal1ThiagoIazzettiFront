@@ -13,6 +13,7 @@ import {
   PartyPopper,
   Menu,
   X,
+  UserRound,
 } from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
 import SidebarLink from "./SidebarLink.jsx";
@@ -67,6 +68,11 @@ export default function AppLayout() {
       label: t("NAV_EVENTS_THIAGOIAZZETTI", "Eventos"),
       path: "admin/eventos",
       icon: PartyPopper,
+    },
+    {
+      label: t("NAV_MY_DATA_THIAGOIAZZETTI", "Meus dados"),
+      path: "admin/meus-dados",
+      icon: UserRound,
     },
     {
       label: t("NAV_PHYSICAL_ASSESSMENT_THIAGOIAZZETTI", "Avaliação Física"),
