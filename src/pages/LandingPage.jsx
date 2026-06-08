@@ -52,6 +52,7 @@ export default function LandingPage() {
   const [showPlans, setShowPlans] = useState(false);
   const [expandedPlanId, setExpandedPlanId] = useState("");
   const [activePlanIndex, setActivePlanIndex] = useState(0);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const [footerProfile, setFooterProfile] = useState(DEFAULT_FOOTER_PROFILE);
@@ -109,6 +110,23 @@ export default function LandingPage() {
       setActivePlanIndex(0);
     }
   }, [activePlanIndex, plans.length]);
+
+  useEffect(() => {
+    if (
+      !showPlans ||
+      plans.length <= 1 ||
+      isCarouselPaused ||
+      expandedPlanId
+    ) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setActivePlanIndex((current) => (current + 1) % plans.length);
+    }, 4200);
+
+    return () => window.clearInterval(timer);
+  }, [expandedPlanId, isCarouselPaused, plans.length, showPlans]);
 
   useEffect(() => {
     setFooterProfile(loadFooterProfile(tenantFromHost || "default"));
@@ -351,7 +369,13 @@ export default function LandingPage() {
                 </a>
               </div>
             ) : (
-              <div className="relative overflow-hidden rounded-[2rem] border border-[#b5f03c]/20 bg-[#07120b]/45 px-3 py-8 shadow-[0_0_60px_rgba(181,240,60,0.12)] sm:px-8 lg:px-14">
+              <div
+                className="relative overflow-hidden rounded-[2rem] border border-[#b5f03c]/20 bg-[#07120b]/45 px-3 py-6 shadow-[0_0_60px_rgba(181,240,60,0.12)] sm:px-8 sm:py-8 lg:px-14"
+                onMouseEnter={() => setIsCarouselPaused(true)}
+                onMouseLeave={() => setIsCarouselPaused(false)}
+                onFocus={() => setIsCarouselPaused(true)}
+                onBlur={() => setIsCarouselPaused(false)}
+              >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(181,240,60,0.16),transparent_34%),linear-gradient(90deg,rgba(181,240,60,0.08),transparent_26%,transparent_74%,rgba(181,240,60,0.08))]" />
                 <div className="pointer-events-none absolute inset-x-0 bottom-8 hidden justify-center gap-2 opacity-70 sm:flex">
                   {[...Array(8)].map((_, index) => (
@@ -371,7 +395,7 @@ export default function LandingPage() {
                   <ChevronLeft size={22} />
                 </button>
 
-                <div className="relative z-10 mx-auto h-[520px] max-w-6xl sm:h-[500px] lg:h-[470px]">
+                <div className="relative z-10 mx-auto h-[390px] max-w-6xl sm:h-[410px] lg:h-[420px]">
                   {plans.map((plan, index) => {
                     const summary = getPlanSummary(plan);
                     const description = String(plan.description || "").trim();
@@ -384,18 +408,18 @@ export default function LandingPage() {
                     );
                     const isActive = position === 0;
                     const isVisible = Math.abs(position) <= 1;
-                    const translateX = position * 64;
+                    const translateX = position * 58;
 
                     return (
                       <article
                         key={plan.id}
-                        className={`absolute left-1/2 top-1/2 w-[min(82vw,420px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[1.6rem] border p-6 text-left transition-all duration-500 sm:w-[420px] ${
+                        className={`absolute left-1/2 top-1/2 w-[min(76vw,420px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[1.6rem] border p-5 text-left transition-all duration-500 sm:w-[420px] sm:p-6 ${
                           isActive
                             ? "z-20 border-[#b5f03c]/60 bg-[#0d2517]/95 opacity-100 shadow-[0_0_48px_rgba(181,240,60,0.28)]"
                             : "z-10 border-white/10 bg-[#142018]/80 opacity-60 shadow-2xl"
                         } ${isVisible ? "" : "pointer-events-none opacity-0"}`}
                         style={{
-                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 1 : 0.78})`,
+                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 0.96 : 0.74})`,
                         }}
                       >
                         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(181,240,60,0.14),transparent_36%),radial-gradient(circle_at_top_right,rgba(181,240,60,0.18),transparent_34%)]" />
@@ -409,7 +433,7 @@ export default function LandingPage() {
 
                           {(summary || description) && (
                             <div className="mt-4 space-y-3">
-                              <p className="min-h-[96px] text-sm leading-6 text-white/68">
+                              <p className="min-h-[88px] text-sm leading-6 text-white/68">
                                 {isExpanded
                                   ? description
                                   : summary || description}
