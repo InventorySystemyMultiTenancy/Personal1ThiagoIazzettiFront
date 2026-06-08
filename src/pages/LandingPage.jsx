@@ -370,22 +370,13 @@ export default function LandingPage() {
               </div>
             ) : (
               <div
-                className="relative overflow-hidden rounded-[2rem] border border-[#b5f03c]/20 bg-[#07120b]/45 px-3 py-6 shadow-[0_0_60px_rgba(181,240,60,0.12)] sm:px-8 sm:py-8 lg:px-14"
+                className="relative overflow-hidden rounded-[2rem] border border-[#b5f03c]/20 bg-[#07120b]/45 px-3 py-8 shadow-[0_0_60px_rgba(181,240,60,0.12)] sm:px-8 sm:py-10 lg:px-14"
                 onMouseEnter={() => setIsCarouselPaused(true)}
                 onMouseLeave={() => setIsCarouselPaused(false)}
                 onFocus={() => setIsCarouselPaused(true)}
                 onBlur={() => setIsCarouselPaused(false)}
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(181,240,60,0.16),transparent_34%),linear-gradient(90deg,rgba(181,240,60,0.08),transparent_26%,transparent_74%,rgba(181,240,60,0.08))]" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-8 hidden justify-center gap-2 opacity-70 sm:flex">
-                  {[...Array(8)].map((_, index) => (
-                    <span
-                      key={index}
-                      className="h-3 w-9 skew-x-[-25deg] bg-[#b5f03c] shadow-[0_0_18px_rgba(181,240,60,0.65)]"
-                    />
-                  ))}
-                </div>
-
                 <button
                   type="button"
                   onClick={goToPreviousPlan}
@@ -395,7 +386,7 @@ export default function LandingPage() {
                   <ChevronLeft size={22} />
                 </button>
 
-                <div className="relative z-10 mx-auto h-[390px] max-w-6xl sm:h-[410px] lg:h-[420px]">
+                <div className="relative z-10 mx-auto h-[450px] max-w-6xl overflow-visible sm:h-[460px] lg:h-[470px]">
                   {plans.map((plan, index) => {
                     const summary = getPlanSummary(plan);
                     const description = String(plan.description || "").trim();
@@ -408,32 +399,38 @@ export default function LandingPage() {
                     );
                     const isActive = position === 0;
                     const isVisible = Math.abs(position) <= 1;
-                    const translateX = position * 58;
+                    const translateX = position * 52;
 
                     return (
                       <article
                         key={plan.id}
-                        className={`absolute left-1/2 top-1/2 w-[min(76vw,420px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[1.6rem] border p-5 text-left transition-all duration-500 sm:w-[420px] sm:p-6 ${
+                        className={`absolute left-1/2 top-[54%] flex h-[390px] w-[min(72vw,390px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.6rem] border p-5 text-left transition-all duration-500 sm:h-[400px] sm:w-[400px] sm:p-6 lg:w-[420px] ${
                           isActive
                             ? "z-20 border-[#b5f03c]/60 bg-[#0d2517]/95 opacity-100 shadow-[0_0_48px_rgba(181,240,60,0.28)]"
                             : "z-10 border-white/10 bg-[#142018]/80 opacity-60 shadow-2xl"
                         } ${isVisible ? "" : "pointer-events-none opacity-0"}`}
                         style={{
-                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 0.96 : 0.74})`,
+                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 0.94 : 0.7})`,
                         }}
                       >
                         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(181,240,60,0.14),transparent_36%),radial-gradient(circle_at_top_right,rgba(181,240,60,0.18),transparent_34%)]" />
-                        <div className="relative">
+                        <div className="relative flex h-full flex-col">
                           <p className="text-xs font-black uppercase tracking-[0.28em] text-[#b5f03c]">
                             {t("HOME_PLAN_LABEL_THIAGOIAZZETTI", "Plano")}
                           </p>
-                          <h3 className="mt-2 text-2xl font-black uppercase leading-tight text-white">
+                          <h3 className="mt-2 line-clamp-2 text-2xl font-black uppercase leading-tight text-white">
                             {plan.name}
                           </h3>
 
                           {(summary || description) && (
                             <div className="mt-4 space-y-3">
-                              <p className="min-h-[88px] text-sm leading-6 text-white/68">
+                              <p
+                                className={`min-h-[104px] text-sm leading-6 text-white/68 ${
+                                  isExpanded
+                                    ? "max-h-[132px] overflow-y-auto pr-1"
+                                    : "line-clamp-5"
+                                }`}
+                              >
                                 {isExpanded
                                   ? description
                                   : summary || description}
@@ -454,7 +451,7 @@ export default function LandingPage() {
                             </div>
                           )}
 
-                          <p className="mt-7 text-4xl font-black leading-none text-[#b5f03c] drop-shadow-[0_0_12px_rgba(181,240,60,0.45)]">
+                          <p className="mt-auto pt-5 text-4xl font-black leading-none text-[#b5f03c] drop-shadow-[0_0_12px_rgba(181,240,60,0.45)]">
                             {formatCurrency(
                               (plan.monthlyPriceCents || 0) / 100,
                             )}
@@ -467,7 +464,7 @@ export default function LandingPage() {
                             href={whatsappLink()}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`mt-7 flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-black uppercase tracking-wide transition ${
+                            className={`mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-black uppercase tracking-wide transition ${
                               isActive
                                 ? "bg-[#b5f03c] text-black shadow-[0_0_28px_rgba(181,240,60,0.45)] hover:brightness-110"
                                 : "bg-white/10 text-white/70"
@@ -495,7 +492,16 @@ export default function LandingPage() {
                   <ChevronRight size={22} />
                 </button>
 
-                <div className="relative z-10 mt-2 flex justify-center gap-2">
+                <div className="relative z-10 -mt-2 hidden justify-center gap-2 opacity-80 sm:flex">
+                  {[...Array(8)].map((_, index) => (
+                    <span
+                      key={index}
+                      className="h-3 w-9 skew-x-[-25deg] bg-[#b5f03c] shadow-[0_0_18px_rgba(181,240,60,0.65)]"
+                    />
+                  ))}
+                </div>
+
+                <div className="relative z-10 mt-4 flex justify-center gap-2">
                   {plans.map((plan, index) => (
                     <button
                       key={plan.id}
