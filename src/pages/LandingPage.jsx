@@ -408,7 +408,7 @@ export default function LandingPage() {
                 </button>
 
                 <div
-                  className="relative z-10 mx-auto h-[430px] max-w-6xl touch-pan-y overflow-visible sm:h-[440px] lg:h-[450px]"
+                  className="relative z-10 mx-auto h-[620px] max-w-6xl touch-pan-y overflow-visible sm:h-[640px] lg:h-[660px]"
                   onTouchStart={handleCarouselTouchStart}
                   onTouchEnd={handleCarouselTouchEnd}
                 >
@@ -430,7 +430,7 @@ export default function LandingPage() {
                     return (
                       <article
                         key={plan.id}
-                        className={`absolute left-1/2 top-1/2 flex h-[285px] w-[min(64vw,310px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.25rem] border p-4 text-left transition-all duration-500 sm:h-[300px] sm:w-[330px] sm:p-5 lg:h-[315px] lg:w-[350px] ${
+                        className={`absolute left-1/2 top-[61%] flex h-[285px] w-[min(64vw,310px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.25rem] border p-4 text-left transition-all duration-500 sm:h-[300px] sm:w-[330px] sm:p-5 lg:h-[315px] lg:w-[350px] ${
                           isActive
                             ? "z-20 border-[#b5f03c]/60 bg-[#0d2517]/95 opacity-100 shadow-[0_0_48px_rgba(181,240,60,0.28)]"
                             : "z-10 border-white/10 bg-[#142018]/80 opacity-60 shadow-2xl"
