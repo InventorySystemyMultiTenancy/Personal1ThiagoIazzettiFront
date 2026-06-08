@@ -29,8 +29,40 @@ function formatDateTime(value) {
   }).format(date);
 }
 
+function createLocalOffsetISOString(datePart, timePart, seconds = "00") {
+  if (!datePart || !timePart) return "";
+  const offsetMinutes = -new Date().getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const absolute = Math.abs(offsetMinutes);
+  const offsetHours = String(Math.floor(absolute / 60)).padStart(2, "0");
+  const offsetRemainder = String(absolute % 60).padStart(2, "0");
+  return `${datePart}T${timePart}:${seconds}${sign}${offsetHours}:${offsetRemainder}`;
+}
+
+function getEventStartValue(event) {
+  return (
+    event?.startsAt ||
+    event?.startAt ||
+    event?.start ||
+    event?.dateTime ||
+    event?.datetime ||
+    (event?.date && event?.time
+      ? createLocalOffsetISOString(event.date, event.time)
+      : "")
+  );
+}
+
+function normalizePersonalEvent(event) {
+  const startsAt = getEventStartValue(event);
+  return {
+    ...event,
+    startsAt,
+    participants: Array.isArray(event?.participants) ? event.participants : [],
+  };
+}
+
 function isPastEvent(event) {
-  const date = new Date(event?.endsAt || event?.startsAt);
+  const date = new Date(event?.endsAt || getEventStartValue(event));
   return !Number.isNaN(date.getTime()) && date.getTime() < Date.now();
 }
 
@@ -61,10 +93,12 @@ export default function AdminEventsPage() {
         listStudents(tenantId),
         listPersonalEvents(tenantId),
       ]);
-      const rows = Array.isArray(eventRows) ? eventRows : [];
+      const rows = (Array.isArray(eventRows) ? eventRows : []).map(
+        normalizePersonalEvent,
+      );
       const expiredEvents = rows.filter((event) => event?.id && isPastEvent(event));
       if (expiredEvents.length > 0) {
-        await Promise.all(
+        Promise.allSettled(
           expiredEvents.map((event) => deletePersonalEvent(event.id, tenantId)),
         );
       }
@@ -123,7 +157,11 @@ export default function AdminEventsPage() {
     }
 
     try {
-      await createPersonalEvent(form, tenantId);
+      const payload = {
+        ...form,
+        startsAt: createLocalOffsetISOString(form.date, form.time),
+      };
+      const created = await createPersonalEvent(payload, tenantId);
       setForm({
         title: "",
         date: todayInputValue(),
@@ -133,6 +171,18 @@ export default function AdminEventsPage() {
         alunoIds: [],
       });
       await loadData();
+      if (created?.id) {
+        const normalizedCreated = normalizePersonalEvent({
+          ...payload,
+          ...created,
+        });
+        setEvents((current) =>
+          current.some((item) => item.id === normalizedCreated.id) ||
+          isPastEvent(normalizedCreated)
+            ? current
+            : [normalizedCreated, ...current],
+        );
+      }
       setMessage("Evento criado com sucesso.");
     } catch (error) {
       setMessage(error?.message || "Não foi possível criar o evento.");
