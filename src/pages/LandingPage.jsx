@@ -401,10 +401,10 @@ export default function LandingPage() {
                 <button
                   type="button"
                   onClick={goToPreviousPlan}
-                  className="absolute left-4 top-[57%] z-30 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:flex lg:left-7"
+                  className="absolute -left-3 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/55 text-[#b5f03c] shadow-[0_0_18px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:flex lg:-left-4"
                   aria-label="Plano anterior"
                 >
-                  <ChevronLeft size={22} />
+                  <ChevronLeft size={17} />
                 </button>
 
                 <div
@@ -430,7 +430,7 @@ export default function LandingPage() {
                     return (
                       <article
                         key={plan.id}
-                        className={`absolute left-1/2 top-[57%] flex h-[285px] w-[min(64vw,310px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.25rem] border p-4 text-left transition-all duration-500 sm:h-[300px] sm:w-[330px] sm:p-5 lg:h-[315px] lg:w-[350px] ${
+                        className={`absolute left-1/2 top-1/2 flex h-[285px] w-[min(64vw,310px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.25rem] border p-4 text-left transition-all duration-500 sm:h-[300px] sm:w-[330px] sm:p-5 lg:h-[315px] lg:w-[350px] ${
                           isActive
                             ? "z-20 border-[#b5f03c]/60 bg-[#0d2517]/95 opacity-100 shadow-[0_0_48px_rgba(181,240,60,0.28)]"
                             : "z-10 border-white/10 bg-[#142018]/80 opacity-60 shadow-2xl"
@@ -512,10 +512,10 @@ export default function LandingPage() {
                 <button
                   type="button"
                   onClick={goToNextPlan}
-                  className="absolute right-4 top-[57%] z-30 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:flex lg:right-7"
+                  className="absolute -right-3 top-1/2 z-30 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/55 text-[#b5f03c] shadow-[0_0_18px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:flex lg:-right-4"
                   aria-label="Próximo plano"
                 >
-                  <ChevronRight size={22} />
+                  <ChevronRight size={17} />
                 </button>
 
                 <div className="relative z-10 -mt-2 hidden justify-center gap-2 opacity-80 sm:flex">
