@@ -377,11 +377,11 @@ export default function LandingPage() {
                 onBlur={() => setIsCarouselPaused(false)}
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(181,240,60,0.16),transparent_34%),linear-gradient(90deg,rgba(181,240,60,0.08),transparent_26%,transparent_74%,rgba(181,240,60,0.08))]" />
-                <div className="relative z-10 mx-auto h-[350px] max-w-6xl overflow-visible sm:h-[370px] lg:h-[390px]">
+                <div className="relative z-10 mx-auto h-[430px] max-w-6xl overflow-visible sm:h-[440px] lg:h-[450px]">
                   <button
                     type="button"
                     onClick={goToPreviousPlan}
-                    className="absolute left-1 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:left-3"
+                    className="absolute left-1 top-[57%] z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:left-3"
                     aria-label="Plano anterior"
                   >
                     <ChevronLeft size={22} />
@@ -399,18 +399,18 @@ export default function LandingPage() {
                     );
                     const isActive = position === 0;
                     const isVisible = Math.abs(position) <= 1;
-                    const translateX = position * 50;
+                    const translateX = position * 46;
 
                     return (
                       <article
                         key={plan.id}
-                        className={`absolute left-1/2 top-1/2 flex h-[318px] w-[min(68vw,330px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.35rem] border p-4 text-left transition-all duration-500 sm:h-[335px] sm:w-[350px] sm:p-5 lg:h-[350px] lg:w-[370px] ${
+                        className={`absolute left-1/2 top-[57%] flex h-[285px] w-[min(64vw,310px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.25rem] border p-4 text-left transition-all duration-500 sm:h-[300px] sm:w-[330px] sm:p-5 lg:h-[315px] lg:w-[350px] ${
                           isActive
                             ? "z-20 border-[#b5f03c]/60 bg-[#0d2517]/95 opacity-100 shadow-[0_0_48px_rgba(181,240,60,0.28)]"
                             : "z-10 border-white/10 bg-[#142018]/80 opacity-60 shadow-2xl"
                         } ${isVisible ? "" : "pointer-events-none opacity-0"}`}
                         style={{
-                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 0.9 : 0.64})`,
+                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 1 : 0.72})`,
                         }}
                       >
                         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(181,240,60,0.14),transparent_36%),radial-gradient(circle_at_top_right,rgba(181,240,60,0.18),transparent_34%)]" />
@@ -425,10 +425,10 @@ export default function LandingPage() {
                           {(summary || description) && (
                             <div className="mt-4 space-y-3">
                               <p
-                                className={`min-h-[82px] text-sm leading-5 text-white/68 ${
+                                className={`min-h-[66px] text-sm leading-5 text-white/68 ${
                                   isExpanded
-                                    ? "max-h-[104px] overflow-y-auto pr-1"
-                                    : "line-clamp-4"
+                                    ? "max-h-[88px] overflow-y-auto pr-1"
+                                    : "line-clamp-3"
                                 }`}
                               >
                                 {isExpanded
@@ -451,7 +451,7 @@ export default function LandingPage() {
                             </div>
                           )}
 
-                          <p className="mt-auto pt-4 text-3xl font-black leading-none text-[#b5f03c] drop-shadow-[0_0_12px_rgba(181,240,60,0.45)] sm:text-4xl">
+                          <p className="mt-auto pt-3 text-3xl font-black leading-none text-[#b5f03c] drop-shadow-[0_0_12px_rgba(181,240,60,0.45)] sm:text-4xl">
                             {formatCurrency(
                               (plan.monthlyPriceCents || 0) / 100,
                             )}
@@ -484,7 +484,7 @@ export default function LandingPage() {
                   <button
                     type="button"
                     onClick={goToNextPlan}
-                    className="absolute right-1 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:right-3"
+                    className="absolute right-1 top-[57%] z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:right-3"
                     aria-label="Próximo plano"
                   >
                     <ChevronRight size={22} />
