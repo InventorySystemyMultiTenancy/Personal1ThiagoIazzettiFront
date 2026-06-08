@@ -338,6 +338,13 @@ export async function updateStudent(studentId, payload, tenantId) {
   });
 }
 
+export async function deleteStudent(studentId, tenantId) {
+  return request(`/alunos/${studentId}`, {
+    method: "DELETE",
+    tenantId,
+  });
+}
+
 export async function updateMyProfile(payload, tenantId) {
   return request(`/alunos/me`, { method: "PATCH", body: payload, tenantId });
 }

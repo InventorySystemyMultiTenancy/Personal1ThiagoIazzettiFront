@@ -22,6 +22,8 @@ import {
   formatCurrency,
   formatDate,
   listAgendaEvents,
+  deleteAgendaEvent,
+  deleteStudent,
   listDiets,
   listStudentPlans,
   listStudents,
@@ -261,6 +263,7 @@ export default function AdminDashboardPage() {
   const [studentFormErrors, setStudentFormErrors] = useState({});
   const [activeTab, setActiveTab] = useState("visao-geral");
   const [editingStudentId, setEditingStudentId] = useState("");
+  const [deletingStudentId, setDeletingStudentId] = useState("");
   const [editStudentForm, setEditStudentForm] = useState({
     fullName: "",
     email: "",
@@ -764,6 +767,10 @@ export default function AdminDashboardPage() {
 
   const handleSaveStudent = async (studentId) => {
     try {
+      const currentStudent = students.find((item) => item.id === studentId);
+      const wasActive = currentStudent?.isActive !== false;
+      const willBeActive = Boolean(editStudentForm.isActive);
+      const isDeactivating = wasActive && !willBeActive;
       const updated = await updateStudent(
         studentId,
         {
@@ -772,18 +779,42 @@ export default function AdminDashboardPage() {
           phone: editStudentForm.phone || null,
           birthDate: editStudentForm.birthDate || null,
           alunoPlanId: editStudentForm.alunoPlanId || null,
-          planDueDate: editStudentForm.planDueDate || null,
-          isActive: Boolean(editStudentForm.isActive),
+          planDueDate: isDeactivating
+            ? null
+            : editStudentForm.planDueDate || null,
+          isActive: willBeActive,
+          cancelRecurringSubscription: isDeactivating,
+          disableRecurringPayment: isDeactivating,
+          releaseScheduledEvents: isDeactivating,
+          clearScheduledWorkouts: isDeactivating,
         },
         tenantId,
       );
 
+      if (isDeactivating) {
+        const events = await listAgendaEvents(tenantId, { alunoId: studentId });
+        const deletions = (Array.isArray(events) ? events : [])
+          .filter((event) => event?.id)
+          .map((event) => deleteAgendaEvent(event.id, tenantId));
+
+        await Promise.all(deletions);
+      }
+
       setStudents((current) =>
-        current.map((item) => (item.id === studentId ? updated : item)),
+        current.map((item) =>
+          item.id === studentId
+            ? {
+                ...updated,
+                planDueDate: isDeactivating ? null : updated.planDueDate,
+              }
+            : item,
+        ),
       );
       setEditingStudentId("");
       setMessage(
-        `${t("ADMIN_DASH_STUDENT_UPDATED_THIAGOIAZZETTI", "Aluno atualizado")}: ${updated.fullName}`,
+        isDeactivating
+          ? `${updated.fullName} foi inativado. Horarios liberados e recorrencia desligada.`
+          : `${t("ADMIN_DASH_STUDENT_UPDATED_THIAGOIAZZETTI", "Aluno atualizado")}: ${updated.fullName}`,
       );
     } catch (error) {
       setMessage(
@@ -793,6 +824,32 @@ export default function AdminDashboardPage() {
             "Nao foi possivel atualizar o aluno",
           ),
       );
+    }
+  };
+
+  const handleDeleteStudent = async (student) => {
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir o aluno "${student.fullName}"? Essa acao apaga o aluno do banco de dados e nao pode ser desfeita.`,
+    );
+
+    if (!confirmed) return;
+
+    setDeletingStudentId(student.id);
+    try {
+      await deleteStudent(student.id, tenantId);
+      setStudents((current) => current.filter((item) => item.id !== student.id));
+      if (editingStudentId === student.id) {
+        setEditingStudentId("");
+      }
+      setMessage(`${student.fullName} foi excluido do banco de dados.`);
+    } catch (error) {
+      setMessage(
+        error?.status === 404
+          ? "A rota DELETE /alunos/:id ainda nao existe no backend. Use o prompt gerado em docs/backend-delete-student-prompt.md para implementar."
+          : error?.message || "Nao foi possivel excluir o aluno.",
+      );
+    } finally {
+      setDeletingStudentId("");
     }
   };
 
@@ -1668,8 +1725,25 @@ export default function AdminDashboardPage() {
                               startEditStudent(student);
                             }}
                             className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-[#b5f03c]/30 hover:text-[#b5f03c]"
+                            title="Editar aluno"
                           >
                             <Edit2 size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDeleteStudent(student);
+                            }}
+                            disabled={deletingStudentId === student.id}
+                            className="rounded-lg border border-red-400/20 p-1.5 text-red-200/45 transition hover:border-red-300/50 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Excluir aluno"
+                          >
+                            {deletingStudentId === student.id ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={13} />
+                            )}
                           </button>
                         </div>
                       </div>
@@ -1743,7 +1817,11 @@ export default function AdminDashboardPage() {
                       </div>
 
                       {editingStudentId === student.id ? (
-                        <div className="mt-4 rounded-xl border border-white/[0.07] bg-black/30 p-4">
+                        <div
+                          className="mt-4 rounded-xl border border-white/[0.07] bg-black/30 p-4"
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        >
                           <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[#b5f03c]/60">
                             {t(
                               "ADMIN_DASH_EDIT_STUDENT_THIAGOIAZZETTI",
@@ -1855,20 +1933,42 @@ export default function AdminDashboardPage() {
                             </label>
                             <button
                               type="button"
-                              onClick={() => handleSaveStudent(student.id)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleSaveStudent(student.id);
+                              }}
                               className="rounded-lg bg-[#b5f03c] px-4 py-2 text-xs font-bold text-black transition hover:brightness-110"
                             >
                               {t("ADMIN_DASH_SAVE_THIAGOIAZZETTI", "Salvar")}
                             </button>
                             <button
                               type="button"
-                              onClick={() => setEditingStudentId("")}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setEditingStudentId("");
+                              }}
                               className="rounded-lg border border-white/[0.07] px-4 py-2 text-xs text-white/45 transition hover:text-white"
                             >
                               {t(
                                 "ADMIN_DASH_CANCEL_THIAGOIAZZETTI",
                                 "Cancelar",
                               )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDeleteStudent(student);
+                              }}
+                              disabled={deletingStudentId === student.id}
+                              className="inline-flex items-center gap-2 rounded-lg border border-red-400/25 px-4 py-2 text-xs font-bold text-red-200/70 transition hover:border-red-300/60 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {deletingStudentId === student.id ? (
+                                <Loader2 size={13} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={13} />
+                              )}
+                              Excluir aluno
                             </button>
                           </div>
                         </div>
