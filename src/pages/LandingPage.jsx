@@ -377,16 +377,16 @@ export default function LandingPage() {
                 onBlur={() => setIsCarouselPaused(false)}
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(181,240,60,0.16),transparent_34%),linear-gradient(90deg,rgba(181,240,60,0.08),transparent_26%,transparent_74%,rgba(181,240,60,0.08))]" />
-                <button
-                  type="button"
-                  onClick={goToPreviousPlan}
-                  className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:left-5"
-                  aria-label="Plano anterior"
-                >
-                  <ChevronLeft size={22} />
-                </button>
+                <div className="relative z-10 mx-auto h-[350px] max-w-6xl overflow-visible sm:h-[370px] lg:h-[390px]">
+                  <button
+                    type="button"
+                    onClick={goToPreviousPlan}
+                    className="absolute left-1 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:left-3"
+                    aria-label="Plano anterior"
+                  >
+                    <ChevronLeft size={22} />
+                  </button>
 
-                <div className="relative z-10 mx-auto h-[450px] max-w-6xl overflow-visible sm:h-[460px] lg:h-[470px]">
                   {plans.map((plan, index) => {
                     const summary = getPlanSummary(plan);
                     const description = String(plan.description || "").trim();
@@ -399,18 +399,18 @@ export default function LandingPage() {
                     );
                     const isActive = position === 0;
                     const isVisible = Math.abs(position) <= 1;
-                    const translateX = position * 52;
+                    const translateX = position * 50;
 
                     return (
                       <article
                         key={plan.id}
-                        className={`absolute left-1/2 top-[54%] flex h-[390px] w-[min(72vw,390px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.6rem] border p-5 text-left transition-all duration-500 sm:h-[400px] sm:w-[400px] sm:p-6 lg:w-[420px] ${
+                        className={`absolute left-1/2 top-1/2 flex h-[318px] w-[min(68vw,330px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.35rem] border p-4 text-left transition-all duration-500 sm:h-[335px] sm:w-[350px] sm:p-5 lg:h-[350px] lg:w-[370px] ${
                           isActive
                             ? "z-20 border-[#b5f03c]/60 bg-[#0d2517]/95 opacity-100 shadow-[0_0_48px_rgba(181,240,60,0.28)]"
                             : "z-10 border-white/10 bg-[#142018]/80 opacity-60 shadow-2xl"
                         } ${isVisible ? "" : "pointer-events-none opacity-0"}`}
                         style={{
-                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 0.94 : 0.7})`,
+                          transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 0.9 : 0.64})`,
                         }}
                       >
                         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(181,240,60,0.14),transparent_36%),radial-gradient(circle_at_top_right,rgba(181,240,60,0.18),transparent_34%)]" />
@@ -418,17 +418,17 @@ export default function LandingPage() {
                           <p className="text-xs font-black uppercase tracking-[0.28em] text-[#b5f03c]">
                             {t("HOME_PLAN_LABEL_THIAGOIAZZETTI", "Plano")}
                           </p>
-                          <h3 className="mt-2 line-clamp-2 text-2xl font-black uppercase leading-tight text-white">
+                          <h3 className="mt-2 line-clamp-2 text-xl font-black uppercase leading-tight text-white sm:text-2xl">
                             {plan.name}
                           </h3>
 
                           {(summary || description) && (
                             <div className="mt-4 space-y-3">
                               <p
-                                className={`min-h-[104px] text-sm leading-6 text-white/68 ${
+                                className={`min-h-[82px] text-sm leading-5 text-white/68 ${
                                   isExpanded
-                                    ? "max-h-[132px] overflow-y-auto pr-1"
-                                    : "line-clamp-5"
+                                    ? "max-h-[104px] overflow-y-auto pr-1"
+                                    : "line-clamp-4"
                                 }`}
                               >
                                 {isExpanded
@@ -451,7 +451,7 @@ export default function LandingPage() {
                             </div>
                           )}
 
-                          <p className="mt-auto pt-5 text-4xl font-black leading-none text-[#b5f03c] drop-shadow-[0_0_12px_rgba(181,240,60,0.45)]">
+                          <p className="mt-auto pt-4 text-3xl font-black leading-none text-[#b5f03c] drop-shadow-[0_0_12px_rgba(181,240,60,0.45)] sm:text-4xl">
                             {formatCurrency(
                               (plan.monthlyPriceCents || 0) / 100,
                             )}
@@ -464,7 +464,7 @@ export default function LandingPage() {
                             href={whatsappLink()}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-black uppercase tracking-wide transition ${
+                            className={`mt-4 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-black uppercase tracking-wide transition ${
                               isActive
                                 ? "bg-[#b5f03c] text-black shadow-[0_0_28px_rgba(181,240,60,0.45)] hover:brightness-110"
                                 : "bg-white/10 text-white/70"
@@ -481,16 +481,15 @@ export default function LandingPage() {
                       </article>
                     );
                   })}
+                  <button
+                    type="button"
+                    onClick={goToNextPlan}
+                    className="absolute right-1 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:right-3"
+                    aria-label="Próximo plano"
+                  >
+                    <ChevronRight size={22} />
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={goToNextPlan}
-                  className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#b5f03c]/40 bg-black/45 text-[#b5f03c] shadow-[0_0_24px_rgba(181,240,60,0.22)] transition hover:bg-[#b5f03c] hover:text-black sm:right-5"
-                  aria-label="Próximo plano"
-                >
-                  <ChevronRight size={22} />
-                </button>
 
                 <div className="relative z-10 -mt-2 hidden justify-center gap-2 opacity-80 sm:flex">
                   {[...Array(8)].map((_, index) => (
