@@ -391,7 +391,7 @@ export default function LandingPage() {
               </div>
             ) : (
               <div
-                className="relative overflow-hidden rounded-[2rem] border border-[#b5f03c]/20 bg-[#07120b]/45 px-3 py-8 shadow-[0_0_60px_rgba(181,240,60,0.12)] sm:px-8 sm:py-10 lg:px-14"
+                className="relative overflow-hidden rounded-[2rem] border border-[#b5f03c]/20 bg-[#07120b]/45 px-3 py-5 shadow-[0_0_60px_rgba(181,240,60,0.12)] sm:px-8 sm:py-6 lg:px-14"
                 onMouseEnter={() => setIsCarouselPaused(true)}
                 onMouseLeave={() => setIsCarouselPaused(false)}
                 onFocus={() => setIsCarouselPaused(true)}
@@ -408,7 +408,7 @@ export default function LandingPage() {
                 </button>
 
                 <div
-                  className="relative z-10 mx-auto h-[620px] w-full touch-pan-y overflow-visible sm:h-[640px] lg:h-[660px]"
+                  className="relative z-10 mx-auto h-[430px] w-full touch-pan-y overflow-visible sm:h-[455px] lg:h-[485px]"
                   onTouchStart={handleCarouselTouchStart}
                   onTouchEnd={handleCarouselTouchEnd}
                 >
@@ -430,7 +430,7 @@ export default function LandingPage() {
                     return (
                       <article
                         key={plan.id}
-                        className={`absolute left-1/2 top-[61%] flex h-[320px] w-[min(72vw,350px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.35rem] border p-4 text-left transition-all duration-500 sm:h-[340px] sm:w-[370px] sm:p-5 lg:h-[360px] lg:w-[410px] ${
+                        className={`absolute left-1/2 top-1/2 flex h-[320px] w-[min(72vw,350px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[1.35rem] border p-4 text-left transition-all duration-500 sm:left-[56%] sm:h-[340px] sm:w-[370px] sm:p-5 lg:h-[360px] lg:w-[410px] ${
                           isActive
                             ? "z-20 border-[#b5f03c]/60 bg-[#0d2517]/95 opacity-100 shadow-[0_0_48px_rgba(181,240,60,0.28)]"
                             : "z-10 border-white/10 bg-[#142018]/80 opacity-60 shadow-2xl"
@@ -518,7 +518,7 @@ export default function LandingPage() {
                   <ChevronRight size={17} />
                 </button>
 
-                <div className="relative z-10 -mt-2 hidden justify-center gap-2 opacity-80 sm:flex">
+                <div className="relative z-10 -mt-8 hidden justify-center gap-2 opacity-80 sm:flex">
                   {[...Array(8)].map((_, index) => (
                     <span
                       key={index}
@@ -527,7 +527,7 @@ export default function LandingPage() {
                   ))}
                 </div>
 
-                <div className="relative z-10 mt-4 flex justify-center gap-2">
+                <div className="relative z-10 mt-3 flex justify-center gap-2">
                   {plans.map((plan, index) => (
                     <button
                       key={plan.id}
