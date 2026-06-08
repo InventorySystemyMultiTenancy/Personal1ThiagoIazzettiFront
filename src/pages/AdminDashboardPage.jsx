@@ -24,6 +24,7 @@ import {
   listAgendaEvents,
   deleteAgendaEvent,
   deleteStudent,
+  deleteMessage,
   listDiets,
   listStudentPlans,
   listStudents,
@@ -345,8 +346,8 @@ export default function AdminDashboardPage() {
     if (alreadySelected || occupied) {
       setMessage(
         occupied
-          ? "Horario ocupado na agenda. Escolha outro slot."
-          : "Esse horario ja foi selecionado.",
+          ? "Horário ocupado na agenda. Escolha outro slot."
+          : "Esse horário já foi selecionado.",
       );
       return;
     }
@@ -416,7 +417,7 @@ export default function AdminDashboardPage() {
       setWorkoutTemplates(items);
       return items;
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel carregar templates de treino");
+      setMessage(error?.message || "Não foi possível carregar templates de treino");
       return [];
     } finally {
       setLoadingWorkoutTemplates(false);
@@ -442,7 +443,7 @@ export default function AdminDashboardPage() {
       setOccupiedAgenda(occupied);
       return occupied;
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel carregar a agenda ocupada");
+      setMessage(error?.message || "Não foi possível carregar a agenda ocupada");
       return [];
     } finally {
       setLoadingAgenda(false);
@@ -675,7 +676,7 @@ export default function AdminDashboardPage() {
         Object.keys(nextErrors).some((field) =>
           field.startsWith("trainingSchedule"),
         )
-          ? "Revise os campos destacados em treinos e horarios."
+          ? "Revise os campos destacados em treinos e horários."
           : t(
               "ADMIN_DASH_STUDENT_REQUIRED_THIAGOIAZZETTI",
               "Nome e email sao obrigatorios",
@@ -722,7 +723,7 @@ export default function AdminDashboardPage() {
       );
     } catch (error) {
       if (error?.status === 409) {
-        setMessage("Conflito de agenda: ja existe treino no horario escolhido.");
+        setMessage("Conflito de agenda: já existe treino no horário escolhido.");
         return;
       }
 
@@ -746,7 +747,7 @@ export default function AdminDashboardPage() {
         error?.message ||
           t(
             "ADMIN_DASH_STUDENT_CREATE_ERROR_THIAGOIAZZETTI",
-            "Nao foi possivel criar o aluno",
+            "Não foi possível criar o aluno",
           ),
       );
     }
@@ -813,7 +814,7 @@ export default function AdminDashboardPage() {
       setEditingStudentId("");
       setMessage(
         isDeactivating
-          ? `${updated.fullName} foi inativado. Horarios liberados e recorrencia desligada.`
+          ? `${updated.fullName} foi inativado. Horários liberados e recorrência desligada.`
           : `${t("ADMIN_DASH_STUDENT_UPDATED_THIAGOIAZZETTI", "Aluno atualizado")}: ${updated.fullName}`,
       );
     } catch (error) {
@@ -821,7 +822,7 @@ export default function AdminDashboardPage() {
         error?.message ||
           t(
             "ADMIN_DASH_STUDENT_UPDATE_ERROR_THIAGOIAZZETTI",
-            "Nao foi possivel atualizar o aluno",
+            "Não foi possível atualizar o aluno",
           ),
       );
     }
@@ -846,7 +847,7 @@ export default function AdminDashboardPage() {
       setMessage(
         error?.status === 404
           ? "A rota DELETE /alunos/:id ainda nao existe no backend. Use o prompt gerado em docs/backend-delete-student-prompt.md para implementar."
-          : error?.message || "Nao foi possivel excluir o aluno.",
+          : error?.message || "Não foi possível excluir o aluno.",
       );
     } finally {
       setDeletingStudentId("");
@@ -877,7 +878,7 @@ export default function AdminDashboardPage() {
         error?.message ||
           t(
             "ADMIN_DASH_PLAN_CREATE_ERROR_THIAGOIAZZETTI",
-            "Nao foi possivel criar o plano",
+            "Não foi possível criar o plano",
           ),
       );
     }
@@ -1227,7 +1228,7 @@ export default function AdminDashboardPage() {
                       Agenda de treinos
                     </h3>
                     <p className="mt-1 text-xs text-white/45">
-                      Selecione slots livres e vincule cada horario a um template ou treino simples.
+                      Selecione slots livres e vincule cada horário a um template ou treino simples.
                     </p>
                   </div>
                   <button
@@ -1250,7 +1251,7 @@ export default function AdminDashboardPage() {
                   <div className="mt-4 space-y-4">
                     <div className="grid gap-3 md:grid-cols-3">
                       <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                        Inicio
+                        Início
                         <input
                           type="date"
                           value={newStudentForm.trainingSchedule.startsOn}
@@ -1264,7 +1265,7 @@ export default function AdminDashboardPage() {
                         />
                       </label>
                       <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                        Recorrencia ate
+                        Recorrência até
                         <input
                           type="date"
                           value={newStudentForm.trainingSchedule.recurrenceUntil}
@@ -1344,7 +1345,7 @@ export default function AdminDashboardPage() {
                                         ? "border-[#b5f03c]/60 bg-[#b5f03c]/15 text-[#b5f03c]"
                                         : "border-white/[0.07] bg-white/[0.03] text-white/45 hover:border-[#b5f03c]/35 hover:text-white"
                                   }`}
-                                  title={occupied ? "Horario ocupado" : "Selecionar horario"}
+                                  title={occupied ? "Horário ocupado" : "Selecionar horário"}
                                 >
                                   {occupied ? "Ocupado" : selected ? "Selecionado" : "Livre"}
                                 </button>
@@ -1376,7 +1377,7 @@ export default function AdminDashboardPage() {
 
                     {newStudentForm.trainingSchedule.days.length === 0 ? (
                       <p className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-sm text-white/45">
-                        Nenhum horario selecionado.
+                        Nenhum horário selecionado.
                       </p>
                     ) : (
                       <div className="space-y-3">
@@ -1404,7 +1405,7 @@ export default function AdminDashboardPage() {
                                   type="button"
                                   onClick={() => removeTrainingSlot(slot.id)}
                                   className="rounded-lg border border-white/[0.07] p-2 text-white/45 transition hover:text-red-300"
-                                  title="Remover horario"
+                                  title="Remover horário"
                                 >
                                   <Trash2 size={14} />
                                 </button>
@@ -1457,7 +1458,7 @@ export default function AdminDashboardPage() {
                                 ) : (
                                   <>
                                     <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-                                      Titulo
+                                      Título
                                       <input
                                         type="text"
                                         value={slot.title}
@@ -2156,6 +2157,7 @@ function ChatPanel({ students }) {
   const [selectedWorkoutId, setSelectedWorkoutId] = useState("");
   const [selectedDietId, setSelectedDietId] = useState("");
   const [sendingForward, setSendingForward] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState("");
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
   const selectedAlunoIdRef = useRef(null);
@@ -2241,6 +2243,26 @@ function ChatPanel({ students }) {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    if (!messageId || String(messageId).startsWith("opt-")) return;
+    const confirmed = window.confirm("Excluir esta mensagem?");
+    if (!confirmed) return;
+
+    setDeletingMessageId(messageId);
+    try {
+      await deleteMessage(messageId);
+      setMessages((prev) => prev.filter((message) => message.id !== messageId));
+    } catch (error) {
+      window.alert(
+        error?.status === 404
+          ? "A rota DELETE /messages/:id ainda não existe no backend. Use o prompt em docs/backend-delete-event-message-prompt.md."
+          : error?.message || "Não foi possível excluir a mensagem.",
+      );
+    } finally {
+      setDeletingMessageId("");
     }
   };
 
@@ -2389,8 +2411,26 @@ function ChatPanel({ students }) {
                   return (
                     <div
                       key={msg.id}
-                      className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                      className={`group flex items-end gap-2 ${isMe ? "justify-end" : "justify-start"}`}
                     >
+                      {!isMe ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMessage(msg.id)}
+                          disabled={
+                            deletingMessageId === msg.id ||
+                            String(msg.id).startsWith("opt-")
+                          }
+                          className="mb-1 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.07] text-white/20 opacity-0 transition hover:border-red-300/50 hover:text-red-200 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-20"
+                          title="Excluir mensagem"
+                        >
+                          {deletingMessageId === msg.id ? (
+                            <Loader2 size={13} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={13} />
+                          )}
+                        </button>
+                      ) : null}
                       <div
                         className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm leading-6 ${
                           isMe
@@ -2436,6 +2476,24 @@ function ChatPanel({ students }) {
                           })}
                         </p>
                       </div>
+                      {isMe ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMessage(msg.id)}
+                          disabled={
+                            deletingMessageId === msg.id ||
+                            String(msg.id).startsWith("opt-")
+                          }
+                          className="mb-1 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.07] text-white/20 opacity-0 transition hover:border-red-300/50 hover:text-red-200 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-20"
+                          title="Excluir mensagem"
+                        >
+                          {deletingMessageId === msg.id ? (
+                            <Loader2 size={13} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={13} />
+                          )}
+                        </button>
+                      ) : null}
                     </div>
                   );
                 })

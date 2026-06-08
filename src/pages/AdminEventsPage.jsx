@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Loader2, MapPin, Users } from "lucide-react";
+import { CalendarDays, Loader2, MapPin, Trash2, Users } from "lucide-react";
 import {
   createPersonalEvent,
+  deletePersonalEvent,
   listPersonalEvents,
   listStudents,
 } from "../lib/api.js";
@@ -28,12 +29,18 @@ function formatDateTime(value) {
   }).format(date);
 }
 
+function isPastEvent(event) {
+  const date = new Date(event?.endsAt || event?.startsAt);
+  return !Number.isNaN(date.getTime()) && date.getTime() < Date.now();
+}
+
 export default function AdminEventsPage() {
   const { tenantId } = useTenant();
   const { t } = useI18n();
   const [students, setStudents] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deletingEventId, setDeletingEventId] = useState("");
   const [message, setMessage] = useState("");
   const [form, setForm] = useState({
     title: "",
@@ -54,10 +61,17 @@ export default function AdminEventsPage() {
         listStudents(tenantId),
         listPersonalEvents(tenantId),
       ]);
+      const rows = Array.isArray(eventRows) ? eventRows : [];
+      const expiredEvents = rows.filter((event) => event?.id && isPastEvent(event));
+      if (expiredEvents.length > 0) {
+        await Promise.all(
+          expiredEvents.map((event) => deletePersonalEvent(event.id, tenantId)),
+        );
+      }
       setStudents(Array.isArray(studentRows) ? studentRows : []);
-      setEvents(eventRows);
+      setEvents(rows.filter((event) => !isPastEvent(event)));
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel carregar eventos.");
+      setMessage(error?.message || "Não foi possível carregar eventos.");
     } finally {
       setLoading(false);
     }
@@ -104,7 +118,7 @@ export default function AdminEventsPage() {
     event.preventDefault();
     setMessage("");
     if (!form.title || !form.date || !form.time) {
-      setMessage("Titulo, data e horario sao obrigatorios.");
+      setMessage("Título, data e horário são obrigatórios.");
       return;
     }
 
@@ -121,7 +135,30 @@ export default function AdminEventsPage() {
       await loadData();
       setMessage("Evento criado com sucesso.");
     } catch (error) {
-      setMessage(error?.message || "Nao foi possivel criar o evento.");
+      setMessage(error?.message || "Não foi possível criar o evento.");
+    }
+  };
+
+  const handleDeleteEvent = async (event) => {
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir o evento "${event.title}"?`,
+    );
+
+    if (!confirmed) return;
+
+    setDeletingEventId(event.id);
+    try {
+      await deletePersonalEvent(event.id, tenantId);
+      setEvents((current) => current.filter((item) => item.id !== event.id));
+      setMessage("Evento excluído com sucesso.");
+    } catch (error) {
+      setMessage(
+        error?.status === 404
+          ? "A rota DELETE /personal-events/:id ainda não existe no backend. Use o prompt em docs/backend-delete-event-message-prompt.md."
+          : error?.message || "Não foi possível excluir o evento.",
+      );
+    } finally {
+      setDeletingEventId("");
     }
   };
 
@@ -135,7 +172,7 @@ export default function AdminEventsPage() {
               {t("EVENTS_TITLE", "Eventos")}
             </h1>
             <p className="text-sm text-white/50">
-              Crie eventos e acompanhe quem confirmou presenca.
+              Crie eventos e acompanhe quem confirmou presença.
             </p>
           </div>
         </div>
@@ -159,7 +196,7 @@ export default function AdminEventsPage() {
               onChange={(e) =>
                 setForm((current) => ({ ...current, title: e.target.value }))
               }
-              placeholder="Titulo"
+              placeholder="Título"
               className="rounded-md border border-white/[0.06] bg-[#0b0b0b] px-3 py-2 text-white"
             />
             <div className="grid gap-3 sm:grid-cols-2">
@@ -199,7 +236,7 @@ export default function AdminEventsPage() {
                   description: e.target.value,
                 }))
               }
-              placeholder="Descricao"
+              placeholder="Descrição"
               rows={4}
               className="resize-none rounded-md border border-white/[0.06] bg-[#0b0b0b] px-3 py-2 text-white"
             />
@@ -274,9 +311,24 @@ export default function AdminEventsPage() {
                         </p>
                       ) : null}
                     </div>
-                    <div className="flex items-center gap-2 rounded-full border border-[#b5f03c]/25 px-3 py-1 text-xs text-[#b5f03c]">
-                      <Users size={13} />
-                      {event.going.length} confirmados
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-full border border-[#b5f03c]/25 px-3 py-1 text-xs text-[#b5f03c]">
+                        <Users size={13} />
+                        {event.going.length} confirmados
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEvent(event)}
+                        disabled={deletingEventId === event.id}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-400/25 text-red-200/60 transition hover:border-red-300/60 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        title="Excluir evento"
+                      >
+                        {deletingEventId === event.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={14} />
+                        )}
+                      </button>
                     </div>
                   </div>
                   {event.description ? (
@@ -296,7 +348,7 @@ export default function AdminEventsPage() {
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-red-300">
-                        Nao vai
+                        Não vai
                       </p>
                       <p className="mt-1 text-xs text-white/55">
                         {event.notGoing

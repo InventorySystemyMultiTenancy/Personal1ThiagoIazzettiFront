@@ -2,11 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Star, Play, ChevronDown, X } from "lucide-react";
 import { getTenantFromHost, useTenant } from "../contexts/TenantContext.jsx";
-import { listPublicStudentPlans, formatCurrency } from "../lib/api.js";
+import {
+  getStoredSession,
+  listPublicStudentPlans,
+  formatCurrency,
+} from "../lib/api.js";
 import LanguageSwitcher from "../components/LanguageSwitcher.jsx";
 import { useI18n } from "../contexts/I18nContext.jsx";
 
 const WHATSAPP_NUMBER = "5511965949300";
+const FOOTER_PROFILE_STORAGE_PREFIX = "thiago_footer_profile";
+const DEFAULT_FOOTER_PROFILE = {
+  name: "THIAGO IAZZETTI",
+  cref: "",
+  description:
+    "Personal trainer especializado em musculação e transformação corporal.",
+  story: "",
+};
 
 function whatsappLink() {
   // wa.me opens native app on mobile and web on desktop
@@ -20,7 +32,12 @@ export default function LandingPage() {
   const [showPlans, setShowPlans] = useState(false);
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
+  const [footerProfile, setFooterProfile] = useState(DEFAULT_FOOTER_PROFILE);
+  const [editingFooter, setEditingFooter] = useState(false);
   const plansRef = useRef(null);
+  const storedSession = getStoredSession();
+  const isPersonalAdmin = storedSession?.user?.role === "PERSONAL";
+  const footerStorageKey = `${FOOTER_PROFILE_STORAGE_PREFIX}_${tenantFromHost || "default"}`;
   const marqueeItems = [
     t("HOME_MARQUEE_MUSCULATION_THIAGOIAZZETTI", "Musculacao"),
     t("HOME_MARQUEE_WEIGHT_LOSS_THIAGOIAZZETTI", "Emagrecimento"),
@@ -30,8 +47,8 @@ export default function LandingPage() {
     t("HOME_MARQUEE_FUNCTIONAL_THIAGOIAZZETTI", "Treino Funcional"),
     t("HOME_MARQUEE_HIIT_THIAGOIAZZETTI", "HIIT"),
     t("HOME_MARQUEE_MOBILITY_THIAGOIAZZETTI", "Mobilidade"),
-    t("HOME_MARQUEE_STRENGTH_THIAGOIAZZETTI", "Forca"),
-    t("HOME_MARQUEE_ENDURANCE_THIAGOIAZZETTI", "Resistencia"),
+    t("HOME_MARQUEE_STRENGTH_THIAGOIAZZETTI", "Força"),
+    t("HOME_MARQUEE_ENDURANCE_THIAGOIAZZETTI", "Resistência"),
   ];
 
   useEffect(() => {
@@ -68,6 +85,29 @@ export default function LandingPage() {
       plansRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [showPlans]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(footerStorageKey);
+      if (saved) {
+        setFooterProfile({
+          ...DEFAULT_FOOTER_PROFILE,
+          ...JSON.parse(saved),
+        });
+      }
+    } catch {
+      setFooterProfile(DEFAULT_FOOTER_PROFILE);
+    }
+  }, [footerStorageKey]);
+
+  const updateFooterProfile = (field, value) => {
+    setFooterProfile((current) => ({ ...current, [field]: value }));
+  };
+
+  const saveFooterProfile = () => {
+    localStorage.setItem(footerStorageKey, JSON.stringify(footerProfile));
+    setEditingFooter(false);
+  };
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0a0a0a] text-white">
@@ -163,7 +203,7 @@ export default function LandingPage() {
               <p className="mt-4 max-w-lg text-sm leading-6 text-white/60">
                 {t(
                   "HOME_HERO_DESCRIPTION_THIAGOIAZZETTI",
-                  "Libere seu potencial com planos de treino personalizados, especialmente para voce.",
+                  "Libere seu potencial com planos de treino personalizados, especialmente para você.",
                 )}
               </p>
 
@@ -208,7 +248,7 @@ export default function LandingPage() {
               <p className="text-sm leading-6 text-white/60">
                 {t(
                   "HOME_STATS_DESCRIPTION_THIAGOIAZZETTI",
-                  "Libere seu potencial com planos de treino personalizados, especialmente para voce.",
+                  "Libere seu potencial com planos de treino personalizados, especialmente para você.",
                 )}
               </p>
 
@@ -263,7 +303,7 @@ export default function LandingPage() {
                 <p className="text-white/40">
                   {t(
                     "HOME_NO_PLANS_THIAGOIAZZETTI",
-                    "Nenhum plano disponivel no momento.",
+                    "Nenhum plano disponível no momento.",
                   )}
                 </p>
                 <a
@@ -355,15 +395,92 @@ export default function LandingPage() {
                 className="h-10 w-10 rounded-full bg-white/10 object-contain p-1"
               />
               <span className="font-bold tracking-wide text-[#b5f03c]">
-                THIAGO IAZZETTI
+                {footerProfile.name || DEFAULT_FOOTER_PROFILE.name}
               </span>
             </div>
-            <p className="text-sm text-white/50">
-              {t(
-                "FOOTER_BRAND_DESCRIPTION_THIAGOIAZZETTI",
-                "Personal trainer especializado em musculacao e transformacao corporal.",
-              )}
-            </p>
+            {editingFooter && isPersonalAdmin ? (
+              <div className="space-y-2">
+                <input
+                  value={footerProfile.name}
+                  onChange={(event) =>
+                    updateFooterProfile("name", event.target.value)
+                  }
+                  className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/50"
+                  placeholder="Nome exibido"
+                />
+                <input
+                  value={footerProfile.cref}
+                  onChange={(event) =>
+                    updateFooterProfile("cref", event.target.value)
+                  }
+                  className="w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/50"
+                  placeholder="CREF"
+                />
+                <textarea
+                  value={footerProfile.description}
+                  onChange={(event) =>
+                    updateFooterProfile("description", event.target.value)
+                  }
+                  rows={3}
+                  className="w-full resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/50"
+                  placeholder="Descrição curta"
+                />
+                <textarea
+                  value={footerProfile.story}
+                  onChange={(event) =>
+                    updateFooterProfile("story", event.target.value)
+                  }
+                  rows={4}
+                  className="w-full resize-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/50"
+                  placeholder="História resumida"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={saveFooterProfile}
+                    className="rounded-md bg-[#b5f03c] px-3 py-2 text-xs font-bold text-black"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingFooter(false)}
+                    className="rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white/60"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-white/50">
+                  {footerProfile.description ||
+                    t(
+                      "FOOTER_BRAND_DESCRIPTION_THIAGOIAZZETTI",
+                      DEFAULT_FOOTER_PROFILE.description,
+                    )}
+                </p>
+                {footerProfile.cref ? (
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-[#b5f03c]/70">
+                    CREF: {footerProfile.cref}
+                  </p>
+                ) : null}
+                {footerProfile.story ? (
+                  <p className="mt-3 text-sm leading-6 text-white/45">
+                    {footerProfile.story}
+                  </p>
+                ) : null}
+                {isPersonalAdmin ? (
+                  <button
+                    type="button"
+                    onClick={() => setEditingFooter(true)}
+                    className="mt-3 rounded-md border border-[#b5f03c]/30 px-3 py-2 text-xs font-bold text-[#b5f03c] transition hover:bg-[#b5f03c]/10"
+                  >
+                    Editar rodapé
+                  </button>
+                ) : null}
+              </>
+            )}
           </div>
 
           {/* Links */}
@@ -424,7 +541,7 @@ export default function LandingPage() {
             © {new Date().getFullYear()}{" "}
             {t(
               "FOOTER_COPYRIGHT_TEXT_THIAGOIAZZETTI",
-              "Thiago Iazzetti. Todos os direitos reservados.",
+              `${footerProfile.name || "Thiago Iazzetti"}. Todos os direitos reservados.`,
             )}
           </p>
         </div>

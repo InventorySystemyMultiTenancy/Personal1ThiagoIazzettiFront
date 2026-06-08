@@ -452,6 +452,13 @@ export async function createPersonalEvent(payload, tenantId) {
   return response?.event || response;
 }
 
+export async function deletePersonalEvent(eventId, tenantId) {
+  return request(`/personal-events/${eventId}`, {
+    method: "DELETE",
+    tenantId,
+  });
+}
+
 export async function listMyPersonalEvents(tenantId) {
   const response = await request("/personal-events/me", { tenantId });
   return Array.isArray(response?.events) ? response.events : [];
@@ -711,6 +718,12 @@ export async function sendMessage(alunoId, content) {
     body: { content },
   });
   return response?.message || response;
+}
+
+export async function deleteMessage(messageId) {
+  return request(`/messages/${messageId}`, {
+    method: "DELETE",
+  });
 }
 
 // Aluno: list my conversation
