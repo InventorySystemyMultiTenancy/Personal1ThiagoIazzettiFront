@@ -17,6 +17,7 @@ import {
   createRecurringSubscription,
   formatCurrency,
   formatDate,
+  getBillingIntervalSuffix,
   getRecurringSubscription,
   getMyStudentProfile,
   renewPixRecurringSubscription,
@@ -37,14 +38,19 @@ function resolveStudentId(user, profile) {
 }
 
 function getFrequencyLabel(plan) {
-  const frequency = Number(plan?.frequency || 1);
-  const frequencyType = plan?.frequencyType || "months";
+  const frequency = Number(
+    plan?.billingIntervalMonths ??
+      plan?.billing_interval_months ??
+      plan?.frequency ??
+      1,
+  );
+  const frequencyType = plan?.frequency_type || plan?.frequencyType || "months";
 
   if (frequencyType === "days") {
     return frequency === 1 ? "por dia" : `a cada ${frequency} dias`;
   }
 
-  return frequency === 1 ? "por mês" : `a cada ${frequency} mêses`;
+  return getBillingIntervalSuffix(plan).replace("/", "por");
 }
 
 function buildFieldId(prefix, field) {
@@ -900,7 +906,8 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
               ) : (
                 <>
                   <CreditCard size={16} />
-                  Assinar por {formatCurrency(plan.transactionAmount)}
+                  Assinar por {formatCurrency(plan.transactionAmount)}{" "}
+                  {getBillingIntervalSuffix(plan)}
                 </>
               )}
             </button>

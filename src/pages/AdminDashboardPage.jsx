@@ -19,8 +19,12 @@ import {
 import {
   createStudent,
   createStudentPlan,
+  BILLING_INTERVAL_OPTIONS,
   formatCurrency,
   formatDate,
+  getBillingIntervalSuffix,
+  getPlanBillingIntervalMonths,
+  isValidBillingIntervalMonths,
   listAgendaEvents,
   deleteAgendaEvent,
   deleteStudent,
@@ -293,6 +297,8 @@ export default function AdminDashboardPage() {
     name: "",
     description: "",
     monthlyPriceCents: 0,
+    billingIntervalMonths: 1,
+    isActive: true,
   });
 
   const fieldClass = (fieldName, className) =>
@@ -860,7 +866,13 @@ export default function AdminDashboardPage() {
 
   const resetPlanForm = () => {
     setEditingPlanId("");
-    setNewPlanForm({ name: "", description: "", monthlyPriceCents: 0 });
+    setNewPlanForm({
+      name: "",
+      description: "",
+      monthlyPriceCents: 0,
+      billingIntervalMonths: 1,
+      isActive: true,
+    });
   };
 
   const startEditPlan = (plan) => {
@@ -869,6 +881,8 @@ export default function AdminDashboardPage() {
       name: plan.name || "",
       description: plan.description || "",
       monthlyPriceCents: Number(plan.monthlyPriceCents || 0),
+      billingIntervalMonths: getPlanBillingIntervalMonths(plan),
+      isActive: plan.isActive !== false,
     });
     setMessage(`Editando plano: ${plan.name}`);
   };
@@ -882,6 +896,16 @@ export default function AdminDashboardPage() {
           "Nome do plano e obrigatorio",
         ),
       );
+      return;
+    }
+
+    if (!isValidBillingIntervalMonths(newPlanForm.billingIntervalMonths)) {
+      setMessage("Escolha uma recorrência de cobrança válida.");
+      return;
+    }
+
+    if (Number(newPlanForm.monthlyPriceCents) <= 0) {
+      setMessage("Informe um valor de cobrança válido.");
       return;
     }
 
@@ -1268,7 +1292,8 @@ export default function AdminDashboardPage() {
                     {plans.map((plan) => (
                       <option key={plan.id} value={plan.id}>
                         {plan.name} —{" "}
-                        {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
+                        {formatCurrency((plan.monthlyPriceCents || 0) / 100)}{" "}
+                        {getBillingIntervalSuffix(plan)}
                       </option>
                     ))}
                   </select>
@@ -1820,15 +1845,14 @@ export default function AdminDashboardPage() {
                           <p className="text-white/25 text-[10px]">
                             {t(
                               "ADMIN_DASH_COL_MONTHLY_THIAGOIAZZETTI",
-                              "Mensalidade",
+                              "Cobrança",
                             )}
                           </p>
                           <p className="mt-0.5 font-semibold text-[#b5f03c]">
                             {student.alunoPlan
-                              ? formatCurrency(
-                                  (student.alunoPlan.monthlyPriceCents || 0) /
-                                    100,
-                                )
+                              ? `${formatCurrency(
+                                  (student.alunoPlan.monthlyPriceCents || 0) / 100,
+                                )} ${getBillingIntervalSuffix(student.alunoPlan)}`
                               : "—"}
                           </p>
                         </div>
@@ -2076,7 +2100,7 @@ export default function AdminDashboardPage() {
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
                   {t(
                     "ADMIN_DASH_PLAN_PRICE_LABEL_THIAGOIAZZETTI",
-                    "Preço mensal (R$)",
+                    "Valor da cobrança (R$)",
                   )}
                   <input
                     type="number"
@@ -2095,6 +2119,39 @@ export default function AdminDashboardPage() {
                     step="0.01"
                     min="0"
                   />
+                </label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+                  {t(
+                    "ADMIN_DASH_PLAN_BILLING_INTERVAL_LABEL_THIAGOIAZZETTI",
+                    "Recorrência de cobrança",
+                  )}
+                  <select
+                    required
+                    value={newPlanForm.billingIntervalMonths}
+                    onChange={(e) =>
+                      setNewPlanForm((prev) => ({
+                        ...prev,
+                        billingIntervalMonths: Number(e.target.value),
+                      }))
+                    }
+                    className={`mt-2 w-full rounded-lg border bg-white/[0.04] px-3 py-2.5 text-sm font-normal text-white outline-none transition focus:border-[#b5f03c]/40 ${
+                      isValidBillingIntervalMonths(
+                        newPlanForm.billingIntervalMonths,
+                      )
+                        ? "border-white/[0.07]"
+                        : "border-red-400/70"
+                    }`}
+                  >
+                    {BILLING_INTERVAL_OPTIONS.map((option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                        className="bg-[#111] text-white"
+                      >
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
               <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
@@ -2115,6 +2172,19 @@ export default function AdminDashboardPage() {
                   )}
                   rows={3}
                 />
+              </label>
+              <label className="inline-flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/60">
+                <input
+                  type="checkbox"
+                  checked={newPlanForm.isActive}
+                  onChange={(e) =>
+                    setNewPlanForm((prev) => ({
+                      ...prev,
+                      isActive: e.target.checked,
+                    }))
+                  }
+                />
+                {t("ADMIN_DASH_ACTIVE_PLAN_THIAGOIAZZETTI", "Plano ativo")}
               </label>
               <div className="flex flex-wrap items-center gap-3">
                 <button
@@ -2185,7 +2255,7 @@ export default function AdminDashboardPage() {
                       <p className="text-lg font-black text-[#b5f03c]">
                         {formatCurrency((plan.monthlyPriceCents || 0) / 100)}
                         <span className="text-xs font-normal text-white/35">
-                          {t("ADMIN_DASH_PER_MONTH_THIAGOIAZZETTI", "/mês")}
+                          {getBillingIntervalSuffix(plan)}
                         </span>
                       </p>
                       <div className="flex items-center gap-1.5">

@@ -14,6 +14,7 @@ import { getTenantFromHost, useTenant } from "../contexts/TenantContext.jsx";
 import {
   listPublicStudentPlans,
   formatCurrency,
+  getBillingIntervalSuffix,
 } from "../lib/api.js";
 import {
   DEFAULT_FOOTER_PROFILE,
@@ -500,10 +501,11 @@ export default function LandingPage() {
 
                           <p className="mt-auto pt-3 text-3xl font-black leading-none text-[#b5f03c] drop-shadow-[0_0_12px_rgba(181,240,60,0.45)] sm:text-4xl">
                             {formatCurrency(
-                              (plan.monthlyPriceCents || 0) / 100,
+                              plan.transactionAmount ??
+                                (plan.monthlyPriceCents || 0) / 100,
                             )}
                             <span className="text-sm font-normal text-white/45">
-                              {t("HOME_PER_MONTH_THIAGOIAZZETTI", "/mês")}
+                              {getBillingIntervalSuffix(plan)}
                             </span>
                           </p>
 

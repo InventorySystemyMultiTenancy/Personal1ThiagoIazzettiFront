@@ -56,6 +56,41 @@ export function formatCurrency(value) {
   }).format(Number(value || 0));
 }
 
+export const BILLING_INTERVAL_OPTIONS = [
+  { value: 1, label: "Mensal", suffix: "/ mês" },
+  { value: 3, label: "Trimestral", suffix: "/ trimestre" },
+  { value: 6, label: "Semestral", suffix: "/ semestre" },
+  { value: 12, label: "Anual", suffix: "/ ano" },
+];
+
+export function isValidBillingIntervalMonths(value) {
+  const interval = Number(value);
+  return BILLING_INTERVAL_OPTIONS.some((option) => option.value === interval);
+}
+
+export function getPlanBillingIntervalMonths(plan) {
+  const interval = Number(
+    plan?.billingIntervalMonths ??
+      plan?.billing_interval_months ??
+      plan?.frequency ??
+      plan?.repetition ??
+      1,
+  );
+
+  return isValidBillingIntervalMonths(interval) ? interval : 1;
+}
+
+export function getBillingIntervalSuffix(planOrInterval) {
+  const interval =
+    typeof planOrInterval === "object"
+      ? getPlanBillingIntervalMonths(planOrInterval)
+      : Number(planOrInterval);
+  return (
+    BILLING_INTERVAL_OPTIONS.find((option) => option.value === interval)
+      ?.suffix || "/ mês"
+  );
+}
+
 export function formatDate(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -99,8 +134,14 @@ function normalizeRecurringPlan(plan) {
       plan.price ??
       Number(plan.monthlyPriceCents || 0) / 100,
   );
+  const billingIntervalMonths = getPlanBillingIntervalMonths(plan);
   const frequency = Number(
-    plan.frequency ?? plan.repetition ?? plan.interval_count ?? 1,
+    plan.frequency ??
+      plan.billingIntervalMonths ??
+      plan.billing_interval_months ??
+      plan.repetition ??
+      plan.interval_count ??
+      billingIntervalMonths,
   );
   const id =
     plan.id ||
@@ -121,6 +162,7 @@ function normalizeRecurringPlan(plan) {
       ? transactionAmount
       : 0,
     frequency: Number.isFinite(frequency) && frequency > 0 ? frequency : 1,
+    billingIntervalMonths,
     frequencyType:
       plan.frequency_type ||
       plan.frequencyType ||

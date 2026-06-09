@@ -5,7 +5,11 @@ import RecurringSubscriptionForm from "../components/RecurringSubscriptionForm.j
 import {
   createStudentPlan,
   deleteStudentPlan,
+  BILLING_INTERVAL_OPTIONS,
   formatCurrency,
+  getBillingIntervalSuffix,
+  getPlanBillingIntervalMonths,
+  isValidBillingIntervalMonths,
   listRecurringSubscriptionPlans,
   listStudentPlans,
   updateStudentPlan,
@@ -23,7 +27,8 @@ const PLANS_PAGE_FALLBACKS = {
     PLANS_LINK_CONTINUE_THIAGOIAZZETTI: "Continue",
     PLANS_NEW_TITLE_THIAGOIAZZETTI: "New plan",
     PLANS_NAME_LABEL_THIAGOIAZZETTI: "Plan name",
-    PLANS_PRICE_LABEL_THIAGOIAZZETTI: "Monthly price (R$)",
+    PLANS_PRICE_LABEL_THIAGOIAZZETTI: "Billing amount (R$)",
+    PLANS_BILLING_INTERVAL_LABEL_THIAGOIAZZETTI: "Billing recurrence",
     PLANS_DESCRIPTION_LABEL_THIAGOIAZZETTI: "Description",
     PLANS_DESCRIPTION_PLACEHOLDER_THIAGOIAZZETTI:
       "Describe what is included in the plan",
@@ -53,7 +58,8 @@ const PLANS_PAGE_FALLBACKS = {
     PLANS_LINK_CONTINUE_THIAGOIAZZETTI: "Continua",
     PLANS_NEW_TITLE_THIAGOIAZZETTI: "Nuovo piano",
     PLANS_NAME_LABEL_THIAGOIAZZETTI: "Nome del piano",
-    PLANS_PRICE_LABEL_THIAGOIAZZETTI: "Prezzo mensile (R$)",
+    PLANS_PRICE_LABEL_THIAGOIAZZETTI: "Importo dell'addebito (R$)",
+    PLANS_BILLING_INTERVAL_LABEL_THIAGOIAZZETTI: "Ricorrenza di pagamento",
     PLANS_DESCRIPTION_LABEL_THIAGOIAZZETTI: "Descrizione",
     PLANS_DESCRIPTION_PLACEHOLDER_THIAGOIAZZETTI:
       "Descrivi cosa include il piano",
@@ -83,7 +89,8 @@ const PLANS_PAGE_FALLBACKS = {
     PLANS_LINK_CONTINUE_THIAGOIAZZETTI: "Continuar",
     PLANS_NEW_TITLE_THIAGOIAZZETTI: "Nuevo plan",
     PLANS_NAME_LABEL_THIAGOIAZZETTI: "Nombre del plan",
-    PLANS_PRICE_LABEL_THIAGOIAZZETTI: "Precio mensual (R$)",
+    PLANS_PRICE_LABEL_THIAGOIAZZETTI: "Valor del cobro (R$)",
+    PLANS_BILLING_INTERVAL_LABEL_THIAGOIAZZETTI: "Recurrencia de cobro",
     PLANS_DESCRIPTION_LABEL_THIAGOIAZZETTI: "Descripcion",
     PLANS_DESCRIPTION_PLACEHOLDER_THIAGOIAZZETTI:
       "Describe lo que incluye el plan",
@@ -127,8 +134,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
   const price = Number(
     plan.transactionAmount ?? Number(plan.monthlyPriceCents || 0) / 100,
   );
-  const frequencyType = plan.frequencyType || "months";
-  const frequency = Number(plan.frequency || 1);
+  const billingSuffix = getBillingIntervalSuffix(plan);
 
   return (
     <article
@@ -165,13 +171,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
           {formatCurrency(price)}
         </span>
         <span className="pb-1 text-sm text-white/50">
-          {frequencyType === "months"
-            ? frequency === 1
-              ? t("PLANS_PER_MONTH_THIAGOIAZZETTI", "/mês")
-              : `${t("PLANS_EVERY_THIAGOIAZZETTI", "/")}${frequency} ${t("PLANS_MONTHS_THIAGOIAZZETTI", "mêses")}`
-            : frequency === 1
-              ? t("PLANS_PER_DAY_THIAGOIAZZETTI", "/dia")
-              : `${t("PLANS_EVERY_THIAGOIAZZETTI", "/")}${frequency} ${t("PLANS_DAYS_THIAGOIAZZETTI", "dias")}`}
+          {billingSuffix}
         </span>
       </div>
 
@@ -227,6 +227,7 @@ export default function PlansPage({ mode = "public" }) {
     name: "",
     description: "",
     monthlyPrice: "",
+    billingIntervalMonths: "1",
     isActive: true,
   });
 
@@ -297,6 +298,7 @@ export default function PlansPage({ mode = "public" }) {
       name: "",
       description: "",
       monthlyPrice: "",
+      billingIntervalMonths: "1",
       isActive: true,
     });
   };
@@ -308,6 +310,7 @@ export default function PlansPage({ mode = "public" }) {
         name: plan.name || "",
         description: plan.description || "",
         monthlyPrice: String(Number(plan.monthlyPriceCents || 0) / 100),
+        billingIntervalMonths: String(getPlanBillingIntervalMonths(plan)),
         isActive: plan.isActive !== false,
       });
       setMessage(`Editando plano: ${plan.name}`);
@@ -337,9 +340,14 @@ export default function PlansPage({ mode = "public" }) {
       setMessage(
         t(
           "PLANS_MESSAGE_REQUIRED_FIELDS_THIAGOIAZZETTI",
-          "Nome e preco mensal sao obrigatorios",
+          "Nome e valor da cobrança sao obrigatorios",
         ),
       );
+      return;
+    }
+
+    if (!isValidBillingIntervalMonths(form.billingIntervalMonths)) {
+      setMessage("Escolha uma recorrência de cobrança válida.");
       return;
     }
 
@@ -348,7 +356,7 @@ export default function PlansPage({ mode = "public" }) {
       setMessage(
         t(
           "PLANS_MESSAGE_INVALID_PRICE_THIAGOIAZZETTI",
-          "Preco mensal invalido",
+          "Valor da cobrança invalido",
         ),
       );
       return;
@@ -361,6 +369,7 @@ export default function PlansPage({ mode = "public" }) {
         name: form.name.trim(),
         description: form.description.trim() || null,
         monthlyPriceCents: Math.round(monthlyPriceNumber * 100),
+        billingIntervalMonths: Number(form.billingIntervalMonths),
         isActive: form.isActive,
       };
 
@@ -521,7 +530,7 @@ export default function PlansPage({ mode = "public" }) {
             </label>
 
             <label className="text-sm text-white/70 md:col-span-1">
-              {t("PLANS_PRICE_LABEL_THIAGOIAZZETTI", "Preco mensal (R$)")}
+              {t("PLANS_PRICE_LABEL_THIAGOIAZZETTI", "Valor da cobrança (R$)")}
               <input
                 type="number"
                 min="0"
@@ -533,6 +542,34 @@ export default function PlansPage({ mode = "public" }) {
                 className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-2 text-white outline-none"
                 placeholder="99.90"
               />
+            </label>
+
+            <label className="text-sm text-white/70 md:col-span-1">
+              {t(
+                "PLANS_BILLING_INTERVAL_LABEL_THIAGOIAZZETTI",
+                "Recorrência de cobrança",
+              )}
+              <select
+                required
+                value={form.billingIntervalMonths}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    billingIntervalMonths: e.target.value,
+                  }))
+                }
+                className={`mt-2 w-full rounded-xl border bg-black/25 px-4 py-2 text-white outline-none ${
+                  isValidBillingIntervalMonths(form.billingIntervalMonths)
+                    ? "border-white/10"
+                    : "border-red-400/70"
+                }`}
+              >
+                {BILLING_INTERVAL_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="text-sm text-white/70 md:col-span-2">
