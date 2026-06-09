@@ -30,7 +30,9 @@ import {
   listStudents,
   listWorkoutPlanTemplates,
   listWorkoutPlans,
+  deleteStudentPlan,
   updateStudent,
+  updateStudentPlan,
   listMessages,
   sendMessage,
 } from "../lib/api.js";
@@ -265,6 +267,8 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState("visao-geral");
   const [editingStudentId, setEditingStudentId] = useState("");
   const [deletingStudentId, setDeletingStudentId] = useState("");
+  const [editingPlanId, setEditingPlanId] = useState("");
+  const [deletingPlanId, setDeletingPlanId] = useState("");
   const [editStudentForm, setEditStudentForm] = useState({
     fullName: "",
     email: "",
@@ -854,7 +858,22 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleCreatePlan = async (e) => {
+  const resetPlanForm = () => {
+    setEditingPlanId("");
+    setNewPlanForm({ name: "", description: "", monthlyPriceCents: 0 });
+  };
+
+  const startEditPlan = (plan) => {
+    setEditingPlanId(plan.id);
+    setNewPlanForm({
+      name: plan.name || "",
+      description: plan.description || "",
+      monthlyPriceCents: Number(plan.monthlyPriceCents || 0),
+    });
+    setMessage(`Editando plano: ${plan.name}`);
+  };
+
+  const handleSavePlan = async (e) => {
     e.preventDefault();
     if (!newPlanForm.name.trim()) {
       setMessage(
@@ -867,12 +886,25 @@ export default function AdminDashboardPage() {
     }
 
     try {
-      const created = await createStudentPlan(newPlanForm, tenantId);
-      setPlans((current) => [created, ...current]);
-      setNewPlanForm({ name: "", description: "", monthlyPriceCents: 0 });
-      setMessage(
-        `${t("ADMIN_DASH_PLAN_CREATED_THIAGOIAZZETTI", "Plano criado com sucesso")}: ${created.name}`,
-      );
+      if (editingPlanId) {
+        const updated = await updateStudentPlan(
+          editingPlanId,
+          newPlanForm,
+          tenantId,
+        );
+        setPlans((current) =>
+          current.map((plan) => (plan.id === editingPlanId ? updated : plan)),
+        );
+        resetPlanForm();
+        setMessage(`Plano atualizado com sucesso: ${updated.name}`);
+      } else {
+        const created = await createStudentPlan(newPlanForm, tenantId);
+        setPlans((current) => [created, ...current]);
+        resetPlanForm();
+        setMessage(
+          `${t("ADMIN_DASH_PLAN_CREATED_THIAGOIAZZETTI", "Plano criado com sucesso")}: ${created.name}`,
+        );
+      }
     } catch (error) {
       setMessage(
         error?.message ||
@@ -881,6 +913,28 @@ export default function AdminDashboardPage() {
             "Não foi possível criar o plano",
           ),
       );
+    }
+  };
+
+  const handleDeletePlan = async (plan) => {
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir o plano "${plan.name}"?`,
+    );
+
+    if (!confirmed) return;
+
+    setDeletingPlanId(plan.id);
+    try {
+      await deleteStudentPlan(plan.id, tenantId);
+      setPlans((current) => current.filter((item) => item.id !== plan.id));
+      if (editingPlanId === plan.id) {
+        resetPlanForm();
+      }
+      setMessage(`Plano excluído com sucesso: ${plan.name}`);
+    } catch (error) {
+      setMessage(error?.message || "Não foi possível excluir o plano.");
+    } finally {
+      setDeletingPlanId("");
     }
   };
 
@@ -1988,9 +2042,14 @@ export default function AdminDashboardPage() {
         <div className="space-y-6">
           <article className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6">
             <h2 className="mb-5 text-sm font-bold text-white/60">
-              {t("ADMIN_DASH_CREATE_PLAN_THIAGOIAZZETTI", "Criar novo plano")}
+              {editingPlanId
+                ? t("ADMIN_DASH_EDIT_PLAN_THIAGOIAZZETTI", "Editar plano")
+                : t(
+                    "ADMIN_DASH_CREATE_PLAN_THIAGOIAZZETTI",
+                    "Criar novo plano",
+                  )}
             </h2>
-            <form className="space-y-4" onSubmit={handleCreatePlan}>
+            <form className="space-y-4" onSubmit={handleSavePlan}>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
                   {t(
@@ -2057,16 +2116,32 @@ export default function AdminDashboardPage() {
                   rows={3}
                 />
               </label>
-              <button
-                type="submit"
-                className="flex items-center gap-2 rounded-lg bg-[#b5f03c] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
-              >
-                <Plus size={14} />
-                {t(
-                  "ADMIN_DASH_CREATE_PLAN_BUTTON_THIAGOIAZZETTI",
-                  "Criar plano",
-                )}
-              </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 rounded-lg bg-[#b5f03c] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-black transition hover:brightness-110"
+                >
+                  <Plus size={14} />
+                  {editingPlanId
+                    ? t(
+                        "ADMIN_DASH_SAVE_PLAN_BUTTON_THIAGOIAZZETTI",
+                        "Salvar plano",
+                      )
+                    : t(
+                        "ADMIN_DASH_CREATE_PLAN_BUTTON_THIAGOIAZZETTI",
+                        "Criar plano",
+                      )}
+                </button>
+                {editingPlanId ? (
+                  <button
+                    type="button"
+                    onClick={resetPlanForm}
+                    className="rounded-lg border border-white/[0.07] px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-white/55 transition hover:border-white/20 hover:text-white"
+                  >
+                    {t("ADMIN_DASH_CANCEL_PLAN_EDIT_THIAGOIAZZETTI", "Cancelar")}
+                  </button>
+                ) : null}
+              </div>
             </form>
           </article>
 
@@ -2116,15 +2191,24 @@ export default function AdminDashboardPage() {
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
+                          onClick={() => startEditPlan(plan)}
                           className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-[#b5f03c]/30 hover:text-[#b5f03c]"
+                          title="Editar plano"
                         >
                           <Edit2 size={13} />
                         </button>
                         <button
                           type="button"
+                          onClick={() => handleDeletePlan(plan)}
+                          disabled={deletingPlanId === plan.id}
                           className="rounded-lg border border-white/[0.07] p-1.5 text-white/35 transition hover:border-red-400/30 hover:text-red-400"
+                          title="Excluir plano"
                         >
-                          <Trash2 size={13} />
+                          {deletingPlanId === plan.id ? (
+                            <Loader2 size={13} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={13} />
+                          )}
                         </button>
                       </div>
                     </div>
