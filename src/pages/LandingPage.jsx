@@ -70,6 +70,7 @@ export default function LandingPage() {
     t("HOME_MARQUEE_STRENGTH_THIAGOIAZZETTI", "Força"),
     t("HOME_MARQUEE_ENDURANCE_THIAGOIAZZETTI", "Resistência"),
   ];
+  const plansEmojiMarquee = ["🏋️", "💪🏼", "🏆", "🏅", "🏋️‍♂️", "👟"];
 
   useEffect(() => {
     if (!showPlans) return;
@@ -399,7 +400,27 @@ export default function LandingPage() {
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(181,240,60,0.16),transparent_34%),linear-gradient(90deg,rgba(181,240,60,0.08),transparent_26%,transparent_74%,rgba(181,240,60,0.08))]" />
                 <div
-                  className="relative z-10 mx-auto h-[500px] w-full touch-pan-y overflow-visible sm:h-[520px] lg:h-[540px]"
+                  className="relative z-10 mx-auto mb-4 max-w-5xl overflow-hidden rounded-full border border-[#b5f03c]/20 bg-black/25 py-3 shadow-[0_0_26px_rgba(181,240,60,0.12)]"
+                  aria-hidden="true"
+                >
+                  <div
+                    className="flex w-max items-center gap-8 whitespace-nowrap text-3xl sm:text-4xl"
+                    style={{ animation: "marquee 16s linear infinite" }}
+                  >
+                    {[...plansEmojiMarquee, ...plansEmojiMarquee, ...plansEmojiMarquee, ...plansEmojiMarquee].map(
+                      (emoji, index) => (
+                        <span
+                          key={`${emoji}-${index}`}
+                          className="drop-shadow-[0_0_12px_rgba(181,240,60,0.45)]"
+                        >
+                          {emoji}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                </div>
+                <div
+                  className="relative z-10 mx-auto h-[440px] w-full touch-pan-y overflow-visible sm:h-[460px] lg:h-[480px]"
                   onTouchStart={handleCarouselTouchStart}
                   onTouchEnd={handleCarouselTouchEnd}
                 >
