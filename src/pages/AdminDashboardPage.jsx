@@ -281,6 +281,8 @@ export default function AdminDashboardPage() {
     alunoPlanId: "",
     planDueDate: "",
     isActive: true,
+    password: "",
+    confirmPassword: "",
   });
 
   // Form states for creating/editing
@@ -773,32 +775,51 @@ export default function AdminDashboardPage() {
       alunoPlanId: student.alunoPlanId || "",
       planDueDate: toDateInputValue(student.planDueDate),
       isActive: student.isActive !== false,
+      password: "",
+      confirmPassword: "",
     });
   };
 
   const handleSaveStudent = async (studentId) => {
     try {
+      const password = editStudentForm.password.trim();
+      const confirmPassword = editStudentForm.confirmPassword.trim();
+
+      if (password && password.length < 6) {
+        setMessage("A nova senha deve ter pelo menos 6 caracteres.");
+        return;
+      }
+
+      if (password && password !== confirmPassword) {
+        setMessage("A confirmação da nova senha não confere.");
+        return;
+      }
+
       const currentStudent = students.find((item) => item.id === studentId);
       const wasActive = currentStudent?.isActive !== false;
       const willBeActive = Boolean(editStudentForm.isActive);
       const isDeactivating = wasActive && !willBeActive;
+      const payload = {
+        fullName: editStudentForm.fullName,
+        email: editStudentForm.email || null,
+        phone: editStudentForm.phone || null,
+        birthDate: editStudentForm.birthDate || null,
+        alunoPlanId: editStudentForm.alunoPlanId || null,
+        planDueDate: isDeactivating ? null : editStudentForm.planDueDate || null,
+        isActive: willBeActive,
+        cancelRecurringSubscription: isDeactivating,
+        disableRecurringPayment: isDeactivating,
+        releaseScheduledEvents: isDeactivating,
+        clearScheduledWorkouts: isDeactivating,
+      };
+
+      if (password) {
+        payload.password = password;
+      }
+
       const updated = await updateStudent(
         studentId,
-        {
-          fullName: editStudentForm.fullName,
-          email: editStudentForm.email || null,
-          phone: editStudentForm.phone || null,
-          birthDate: editStudentForm.birthDate || null,
-          alunoPlanId: editStudentForm.alunoPlanId || null,
-          planDueDate: isDeactivating
-            ? null
-            : editStudentForm.planDueDate || null,
-          isActive: willBeActive,
-          cancelRecurringSubscription: isDeactivating,
-          disableRecurringPayment: isDeactivating,
-          releaseScheduledEvents: isDeactivating,
-          clearScheduledWorkouts: isDeactivating,
-        },
+        payload,
         tenantId,
       );
 
@@ -822,12 +843,22 @@ export default function AdminDashboardPage() {
         ),
       );
       setEditingStudentId("");
+      setEditStudentForm((current) => ({
+        ...current,
+        password: "",
+        confirmPassword: "",
+      }));
       setMessage(
         isDeactivating
           ? `${updated.fullName} foi inativado. Horários liberados e recorrência desligada.`
           : `${t("ADMIN_DASH_STUDENT_UPDATED_THIAGOIAZZETTI", "Aluno atualizado")}: ${updated.fullName}`,
       );
     } catch (error) {
+      if (error?.message === "Aluno does not have a linked login user") {
+        setMessage("Este aluno ainda não possui acesso de login vinculado.");
+        return;
+      }
+
       setMessage(
         error?.message ||
           t(
@@ -1991,6 +2022,32 @@ export default function AdminDashboardPage() {
                                 }))
                               }
                               className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
+                            />
+                            <input
+                              type="password"
+                              value={editStudentForm.password}
+                              onChange={(e) =>
+                                setEditStudentForm((prev) => ({
+                                  ...prev,
+                                  password: e.target.value,
+                                }))
+                              }
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
+                              placeholder="Nova senha"
+                              autoComplete="new-password"
+                            />
+                            <input
+                              type="password"
+                              value={editStudentForm.confirmPassword}
+                              onChange={(e) =>
+                                setEditStudentForm((prev) => ({
+                                  ...prev,
+                                  confirmPassword: e.target.value,
+                                }))
+                              }
+                              className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none focus:border-[#b5f03c]/40"
+                              placeholder="Confirmar nova senha"
+                              autoComplete="new-password"
                             />
                           </div>
                           <div className="mt-3 flex items-center gap-2">
