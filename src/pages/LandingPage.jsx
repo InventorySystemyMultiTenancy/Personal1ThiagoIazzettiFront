@@ -187,11 +187,9 @@ export default function LandingPage() {
             "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")",
         }}
       />
-      <img
-        src="/meioameioimagem.png"
-        alt=""
+      <div
+        className="landing-page-bg-image pointer-events-none fixed inset-0 z-0 opacity-25"
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-25"
       />
       {/* NAV + HERO + MARQUEE — tudo numa tela só */}
       <div className="relative z-10 flex flex-col lg:min-h-screen">
@@ -597,6 +595,19 @@ export default function LandingPage() {
       </div>{" "}
       {/* fim do wrapper min-h-screen */}
       <style>{`
+        .landing-page-bg-image {
+          background-image: url("/meioameioimagem.png");
+          background-position: center;
+          background-repeat: no-repeat;
+          background-size: contain;
+        }
+
+        @media (min-width: 768px) {
+          .landing-page-bg-image {
+            background-size: cover;
+          }
+        }
+
         @keyframes marquee {
           from { transform: translateX(0); }
           to { transform: translateX(-50%); }
