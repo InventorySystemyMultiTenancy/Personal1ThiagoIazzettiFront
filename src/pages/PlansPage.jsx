@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Crown, Loader2, ShieldCheck } from "lucide-react";
+import { Check, Crown, Image, Loader2, ShieldCheck, X } from "lucide-react";
 import RecurringSubscriptionForm from "../components/RecurringSubscriptionForm.jsx";
 import {
   createStudentPlan,
@@ -130,21 +130,65 @@ function translatePlanPage(rawT, locale, key, fallback = "") {
   return hasRemoteValue ? remoteValue : localValue || fallback || key;
 }
 
+function getPlanImageUrl(plan) {
+  return plan?.imageUrl || plan?.image_url || "";
+}
+
+async function readPlanImageAsDataUrl(file) {
+  if (!file?.type?.startsWith("image/")) {
+    throw new Error("Selecione um arquivo de imagem.");
+  }
+
+  const image = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new window.Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const maxSize = 1400;
+  const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  context.drawImage(image, 0, 0, width, height);
+
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
+
 function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
   const price = Number(
     plan.transactionAmount ?? Number(plan.monthlyPriceCents || 0) / 100,
   );
   const billingSuffix = getBillingIntervalSuffix(plan);
+  const imageUrl = getPlanImageUrl(plan);
 
   return (
     <article
-      className={`flex h-full flex-col rounded-[1.75rem] border bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)] transition ${
+      className={`relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)] transition ${
         selected
           ? "border-[#b5f03c]/70 ring-1 ring-[#b5f03c]/45"
           : "border-white/10"
       }`}
     >
-      <div className="flex items-start justify-between gap-4">
+      {imageUrl ? (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-35"
+            style={{ backgroundImage: `url("${imageUrl}")` }}
+          />
+          <div className="pointer-events-none absolute inset-0 bg-black/45" />
+        </>
+      ) : null}
+      <div className="relative z-10 flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-white/40">
             {t("PLANS_PLAN_LABEL_THIAGOIAZZETTI", "Plano")}
@@ -158,7 +202,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
         </div>
       </div>
 
-      <p className="mt-4 text-sm leading-7 text-white/68">
+      <p className="relative z-10 mt-4 text-sm leading-7 text-white/75">
         {plan.description ||
           t(
             "PLANS_PREMIUM_DESCRIPTION_THIAGOIAZZETTI",
@@ -166,7 +210,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
           )}
       </p>
 
-      <div className="mt-6 flex items-end gap-2">
+      <div className="relative z-10 mt-6 flex items-end gap-2">
         <span className="font-title text-4xl text-white">
           {formatCurrency(price)}
         </span>
@@ -175,7 +219,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
         </span>
       </div>
 
-      <div className="mt-6 space-y-3 text-sm text-white/70">
+      <div className="relative z-10 mt-6 space-y-3 text-sm text-white/75">
         <div className="flex items-center gap-2">
           <ShieldCheck size={16} className="text-[#b5f03c]" />
           {t("PLANS_PROTECTED_CONTRACT_THIAGOIAZZETTI", "Contrato protegido")}
@@ -197,7 +241,7 @@ function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
       <button
         type="button"
         onClick={() => onSelect(plan)}
-        className={`mt-6 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+        className={`relative z-10 mt-6 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
           selected
             ? "bg-white text-black"
             : "bg-[#b5f03c] text-black hover:brightness-110"
@@ -229,7 +273,9 @@ export default function PlansPage({ mode = "public" }) {
     monthlyPrice: "",
     billingIntervalMonths: "1",
     isActive: true,
+    imageUrl: "",
   });
+  const [imageProcessing, setImageProcessing] = useState(false);
 
   const isAdminMode = mode === "admin";
   const recurringPersonalId =
@@ -300,6 +346,7 @@ export default function PlansPage({ mode = "public" }) {
       monthlyPrice: "",
       billingIntervalMonths: "1",
       isActive: true,
+      imageUrl: "",
     });
   };
 
@@ -312,6 +359,7 @@ export default function PlansPage({ mode = "public" }) {
         monthlyPrice: String(Number(plan.monthlyPriceCents || 0) / 100),
         billingIntervalMonths: String(getPlanBillingIntervalMonths(plan)),
         isActive: plan.isActive !== false,
+        imageUrl: getPlanImageUrl(plan),
       });
       setMessage(`Editando plano: ${plan.name}`);
       return;
@@ -331,6 +379,23 @@ export default function PlansPage({ mode = "public" }) {
     setMessage(
       `${t("PLANS_MESSAGE_PLAN_SELECTED_THIAGOIAZZETTI", "Plano")} ${plan.name} ${t("PLANS_MESSAGE_FILL_CARD_THIAGOIAZZETTI", "selecionado. Preencha os dados do cartão para concluir a assinatura.")}`,
     );
+  };
+
+  const handlePlanImageChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      setImageProcessing(true);
+      const imageUrl = await readPlanImageAsDataUrl(file);
+      setForm((prev) => ({ ...prev, imageUrl }));
+      setMessage("");
+    } catch (error) {
+      setMessage(error?.message || "Não foi possível carregar a imagem.");
+    } finally {
+      setImageProcessing(false);
+    }
   };
 
   const handleAdminSave = async (event) => {
@@ -371,6 +436,7 @@ export default function PlansPage({ mode = "public" }) {
         monthlyPriceCents: Math.round(monthlyPriceNumber * 100),
         billingIntervalMonths: Number(form.billingIntervalMonths),
         isActive: form.isActive,
+        imageUrl: form.imageUrl || null,
       };
 
       if (editingPlanId) {
@@ -572,6 +638,53 @@ export default function PlansPage({ mode = "public" }) {
               </select>
             </label>
 
+            <div className="text-sm text-white/70 md:col-span-1">
+              <span>Imagem do plano</span>
+              <div className="mt-2 overflow-hidden rounded-xl border border-white/10 bg-black/25">
+                {form.imageUrl ? (
+                  <div
+                    className="h-36 bg-cover bg-center"
+                    style={{ backgroundImage: `url("${form.imageUrl}")` }}
+                    aria-label="Preview da imagem do plano"
+                  />
+                ) : (
+                  <div className="flex h-36 items-center justify-center bg-white/[0.03] text-white/35">
+                    <Image size={28} />
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-2 border-t border-white/10 p-3">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#b5f03c] px-4 py-2 text-xs font-bold text-black transition hover:brightness-110">
+                    <Image size={14} />
+                    {imageProcessing
+                      ? "Carregando..."
+                      : form.imageUrl
+                        ? "Trocar imagem"
+                        : "Selecionar imagem"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePlanImageChange}
+                      disabled={saving || imageProcessing}
+                      className="sr-only"
+                    />
+                  </label>
+                  {form.imageUrl ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({ ...prev, imageUrl: null }))
+                      }
+                      disabled={saving || imageProcessing}
+                      className="inline-flex items-center gap-2 rounded-xl border border-red-400/45 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-200 transition hover:bg-red-500/20 disabled:opacity-60"
+                    >
+                      <X size={14} />
+                      Remover
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
             <label className="text-sm text-white/70 md:col-span-2">
               {t("PLANS_DESCRIPTION_LABEL_THIAGOIAZZETTI", "Descrição")}
               <textarea
@@ -603,10 +716,10 @@ export default function PlansPage({ mode = "public" }) {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || imageProcessing}
                   className="rounded-2xl bg-[#b5f03c] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
                 >
-                  {saving
+                  {saving || imageProcessing
                     ? t("PLANS_SAVING_THIAGOIAZZETTI", "Salvando...")
                     : editingPlanId
                       ? t(

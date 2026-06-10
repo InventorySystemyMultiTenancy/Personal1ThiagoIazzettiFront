@@ -38,6 +38,10 @@ function getPlanSummary(plan) {
   return `${text.slice(0, 117).trim()}...`;
 }
 
+function getPlanImageUrl(plan) {
+  return plan?.imageUrl || plan?.image_url || "";
+}
+
 function getCarouselPosition(index, activeIndex, total) {
   const raw = index - activeIndex;
   if (raw > total / 2) return raw - total;
@@ -442,6 +446,7 @@ export default function LandingPage() {
                   {plans.map((plan, index) => {
                     const summary = getPlanSummary(plan);
                     const description = String(plan.description || "").trim();
+                    const imageUrl = getPlanImageUrl(plan);
                     const isExpanded = expandedPlanId === plan.id;
                     const canExpand = description && description !== summary;
                     const position = getCarouselPosition(
@@ -465,8 +470,17 @@ export default function LandingPage() {
                           transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${isActive ? 1 : 0.78})`,
                         }}
                       >
+                        {imageUrl ? (
+                          <>
+                            <div
+                              className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-35"
+                              style={{ backgroundImage: `url("${imageUrl}")` }}
+                            />
+                            <div className="pointer-events-none absolute inset-0 bg-black/45" />
+                          </>
+                        ) : null}
                         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(181,240,60,0.14),transparent_36%),radial-gradient(circle_at_top_right,rgba(181,240,60,0.18),transparent_34%)]" />
-                        <div className="relative flex h-full flex-col">
+                        <div className="relative z-10 flex h-full flex-col">
                           <p className="text-xs font-black uppercase tracking-[0.28em] text-[#b5f03c]">
                             {t("HOME_PLAN_LABEL_THIAGOIAZZETTI", "Plano")}
                           </p>
