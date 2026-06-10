@@ -596,14 +596,16 @@ export default function LandingPage() {
       {/* fim do wrapper min-h-screen */}
       <style>{`
         .landing-page-bg-image {
-          background-image: url("/meioameioimagem.png");
+          background-image: url("/horizontalmeioameio.png");
           background-position: center;
           background-repeat: no-repeat;
-          background-size: contain;
+          background-size: cover;
         }
 
         @media (min-width: 768px) {
           .landing-page-bg-image {
+            background-image: url("/meioameioimagem.png");
+            background-position: center 58%;
             background-size: cover;
           }
         }
