@@ -3,10 +3,22 @@ import {
   Activity,
   Calculator,
   Camera,
+  Image as ImageIcon,
   Ruler,
   Save,
   Timer,
+  X,
 } from "lucide-react";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import {
   ApiError,
@@ -89,6 +101,23 @@ function getCalculationMethodItems(method) {
   }
 
   return [{ label: "Metodo", value: String(method).replaceAll("_", " ") }];
+}
+
+function readMetric(item, keys) {
+  for (const key of keys) {
+    const value = item?.[key];
+    if (value !== undefined && value !== null && value !== "") {
+      const parsed = Number(String(value).replace(",", "."));
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+  }
+  return null;
+}
+
+function getAssessmentPhotos(assessment) {
+  return Array.isArray(assessment?.photos)
+    ? assessment.photos.filter(Boolean)
+    : [];
 }
 
 function normalizeRows(result) {
@@ -230,7 +259,7 @@ function RunningTable({ result }) {
   );
 }
 
-function HistoryTable({ assessments }) {
+function HistoryTable({ assessments, onSelect }) {
   if (!assessments.length) {
     return (
       <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-white/50">
@@ -250,12 +279,25 @@ function HistoryTable({ assessments }) {
             <th className="px-3 py-3">IMC</th>
             <th className="px-3 py-3">Gordura</th>
             <th className="px-3 py-3">Massa magra</th>
+            <th className="px-3 py-3">Fotos</th>
             <th className="px-3 py-3">Obs.</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/[0.05]">
           {assessments.map((item, index) => (
-            <tr key={item.id || `${item.date}-${index}`}>
+            <tr
+              key={item.id || `${item.date}-${index}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelect(item)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelect(item);
+                }
+              }}
+              className="cursor-pointer transition hover:bg-white/[0.035]"
+            >
               <td className="px-3 py-3 text-white/80">{formatDate(item.date)}</td>
               <td className="px-3 py-3 text-white/70">
                 {formatValue(item.weightKg ?? item.weight, " kg")}
@@ -270,6 +312,16 @@ function HistoryTable({ assessments }) {
               <td className="px-3 py-3 text-white/70">
                 {formatValue(item.leanMass, " kg")}
               </td>
+              <td className="px-3 py-3 text-white/70">
+                {getAssessmentPhotos(item).length > 0 ? (
+                  <span className="inline-flex items-center gap-1 text-[#b5f03c]">
+                    <ImageIcon size={14} />
+                    {getAssessmentPhotos(item).length}
+                  </span>
+                ) : (
+                  "-"
+                )}
+              </td>
               <td className="max-w-[220px] truncate px-3 py-3 text-white/50">
                 {item.notes || "-"}
               </td>
@@ -277,6 +329,80 @@ function HistoryTable({ assessments }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function AssessmentCharts({ data }) {
+  if (data.length === 0) {
+    return (
+      <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-white/50">
+        Salve avaliacoes para acompanhar a evolucao em graficos.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-white/[0.06] bg-white/[0.015] p-4">
+      <h2 className="text-base font-semibold text-white">Graficos de evolucao</h2>
+      <div className="mt-4 h-72">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid stroke="#222" strokeDasharray="3 3" />
+            <XAxis dataKey="date" stroke="#aaa" fontSize={12} />
+            <YAxis stroke="#aaa" fontSize={12} />
+            <Tooltip
+              contentStyle={{
+                background: "#0b0b0b",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 6,
+                color: "#fff",
+              }}
+            />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="weight"
+              stroke="#82ca9d"
+              name="Peso (kg)"
+              dot={false}
+              connectNulls
+            />
+            <Line
+              type="monotone"
+              dataKey="fat"
+              stroke="#8884d8"
+              name="Gordura (%)"
+              dot={false}
+              connectNulls
+            />
+            <Line
+              type="monotone"
+              dataKey="leanMass"
+              stroke="#facc15"
+              name="Massa magra (kg)"
+              dot={false}
+              connectNulls
+            />
+            <Line
+              type="monotone"
+              dataKey="leanMassPercentage"
+              stroke="#fb923c"
+              name="Massa magra (%)"
+              dot={false}
+              connectNulls
+            />
+            <Line
+              type="monotone"
+              dataKey="fatWeight"
+              stroke="#f43f5e"
+              name="Peso gordura (kg)"
+              dot={false}
+              connectNulls
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
@@ -291,6 +417,8 @@ export default function PhysicalAssessmentPage() {
   const [performanceResult, setPerformanceResult] = useState(null);
   const [caloriesResult, setCaloriesResult] = useState(null);
   const [converterResult, setConverterResult] = useState(null);
+  const [selectedAssessment, setSelectedAssessment] = useState(null);
+  const [showEvolutionPhotos, setShowEvolutionPhotos] = useState(false);
   const [message, setMessage] = useState("");
   const [loadingAction, setLoadingAction] = useState("");
 
@@ -327,6 +455,44 @@ export default function PhysicalAssessmentPage() {
     () => students.find((student) => String(student.id) === String(selectedStudentId)),
     [selectedStudentId, students],
   );
+
+  const chartData = useMemo(() => {
+    return assessments
+      .slice()
+      .sort((left, right) =>
+        String(left.date || left.createdAt || "").localeCompare(
+          String(right.date || right.createdAt || ""),
+        ),
+      )
+      .map((item) => ({
+        date: formatDate(item.date || item.createdAt),
+        weight: readMetric(item, ["weightKg", "weight"]),
+        fat: readMetric(item, ["fatPercentage", "fat"]),
+        leanMass: readMetric(item, ["leanMass"]),
+        leanMassPercentage: readMetric(item, ["leanMassPercentage"]),
+        fatWeight: readMetric(item, ["fatWeight"]),
+      }));
+  }, [assessments]);
+
+  const evolutionPhotos = useMemo(() => {
+    const withPhotos = assessments
+      .filter((assessment) => getAssessmentPhotos(assessment).length > 0)
+      .slice()
+      .sort((left, right) =>
+        String(left.date || left.createdAt || "").localeCompare(
+          String(right.date || right.createdAt || ""),
+        ),
+      );
+
+    if (withPhotos.length === 0) {
+      return { first: null, latest: null };
+    }
+
+    return {
+      first: withPhotos[0],
+      latest: withPhotos[withPhotos.length - 1],
+    };
+  }, [assessments]);
 
   useEffect(() => {
     let mounted = true;
@@ -732,14 +898,30 @@ export default function PhysicalAssessmentPage() {
             />
           )}
 
+          <AssessmentCharts data={chartData} />
+
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-base font-semibold text-white">Historico</h2>
-              <p className="text-xs text-white/42">
-                {selectedStudent?.fullName || selectedStudent?.name || ""}
-              </p>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <p className="text-xs text-white/42">
+                  {selectedStudent?.fullName || selectedStudent?.name || ""}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowEvolutionPhotos(true)}
+                  disabled={!evolutionPhotos.first}
+                  className="inline-flex h-8 items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.035] px-3 text-xs font-semibold text-white/70 transition hover:border-[#b5f03c]/35 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ImageIcon size={14} />
+                  Ver evolucao
+                </button>
+              </div>
             </div>
-            <HistoryTable assessments={assessments} />
+            <HistoryTable
+              assessments={assessments}
+              onSelect={setSelectedAssessment}
+            />
           </div>
         </section>
       )}
@@ -975,6 +1157,147 @@ export default function PhysicalAssessmentPage() {
             />
           )}
         </section>
+      )}
+
+      {showEvolutionPhotos && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-8">
+          <section className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-md border border-white/[0.08] bg-[#0b0b0b] p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                  Evolucao por fotos
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-white">
+                  {selectedStudent?.fullName || selectedStudent?.name || "Aluno"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEvolutionPhotos(false)}
+                className="rounded-md border border-white/[0.08] p-2 text-white/60 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {evolutionPhotos.first && evolutionPhotos.latest ? (
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {[
+                  { label: "Primeira foto", assessment: evolutionPhotos.first },
+                  { label: "Ultimo historico", assessment: evolutionPhotos.latest },
+                ].map((item) => (
+                  <article
+                    key={item.label}
+                    className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3"
+                  >
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                      {item.label}
+                    </p>
+                    <p className="mt-1 text-sm text-white/65">
+                      {formatDate(item.assessment.date || item.assessment.createdAt)}
+                    </p>
+                    <img
+                      src={getAssessmentPhotos(item.assessment)[0]}
+                      alt={item.label}
+                      className="mt-3 max-h-[62vh] w-full rounded-md border border-white/[0.06] object-contain"
+                    />
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-md border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-white/55">
+                Nenhuma foto encontrada nos historicos salvos.
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {selectedAssessment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-8">
+          <section className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-md border border-white/[0.08] bg-[#0b0b0b] p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                  Avaliacao salva
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-white">
+                  {formatDate(selectedAssessment.date || selectedAssessment.createdAt)}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedAssessment(null)}
+                className="rounded-md border border-white/[0.08] p-2 text-white/60 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-5">
+              <ResultCards
+                items={[
+                  {
+                    label: "Peso",
+                    value: selectedAssessment.weightKg ?? selectedAssessment.weight,
+                    suffix: " kg",
+                  },
+                  {
+                    label: "Altura",
+                    value: selectedAssessment.heightCm ?? selectedAssessment.height,
+                    suffix: " cm",
+                  },
+                  { label: "IMC", value: selectedAssessment.bmi },
+                  {
+                    label: "Gordura",
+                    value:
+                      selectedAssessment.fatPercentage ?? selectedAssessment.fat,
+                    suffix: "%",
+                  },
+                  {
+                    label: "Massa magra",
+                    value: selectedAssessment.leanMass,
+                    suffix: " kg",
+                  },
+                  {
+                    label: "TMB",
+                    value: selectedAssessment.basalMetabolicRate,
+                    suffix: " kcal",
+                  },
+                ]}
+              />
+            </div>
+
+            {selectedAssessment.notes && (
+              <div className="mt-4 rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
+                <p className="text-xs text-white/40">Observacoes</p>
+                <p className="mt-1 text-sm leading-6 text-white/75">
+                  {selectedAssessment.notes}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-5">
+              <h3 className="font-semibold text-white">Fotos</h3>
+              {getAssessmentPhotos(selectedAssessment).length > 0 ? (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {getAssessmentPhotos(selectedAssessment).map((photo, index) => (
+                    <img
+                      key={`${photo}-${index}`}
+                      src={photo}
+                      alt={`foto-avaliacao-${index + 1}`}
+                      className="max-h-96 w-full rounded-md border border-white/[0.06] object-contain"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3 rounded-md border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-white/50">
+                  Nenhuma foto registrada nesta avaliacao.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );
