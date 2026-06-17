@@ -1,32 +1,39 @@
-import { useEffect, useState, useMemo } from "react";
-import { useAuth } from "../contexts/AuthContext.jsx";
-import { useI18n } from "../contexts/I18nContext.jsx";
+import { useEffect, useMemo, useState } from "react";
 import {
-  listStudents,
+  Activity,
+  Calculator,
+  Camera,
+  Gauge,
+  Ruler,
+  Save,
+  Timer,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext.jsx";
+import {
+  ApiError,
+  calculatePhysicalAssessment,
+  calculateRunningCalories,
+  calculateRunningPace,
+  calculateRunningPerformance,
+  convertRunningDistance,
+  createAssessment,
   getMyStudentProfile,
   listAssessments,
-  createAssessment,
-  deleteAssessment,
-  updateStudent,
-  updateMyProfile,
+  listStudents,
 } from "../lib/api.js";
-import {
-  Camera,
-  Image as ImageIcon,
-  X,
-} from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
 
 const BRAZIL_TIME_ZONE = "America/Sao_Paulo";
+
+const tabs = [
+  { id: "physical", label: "Avaliacao fisica" },
+  { id: "performance", label: "Corrida: desempenho" },
+  { id: "pace", label: "Corrida: ritmo" },
+  { id: "calories", label: "Corrida: calorias" },
+  { id: "converter", label: "Conversores" },
+];
+
+const targetPerformanceDistances = [1000, 3000, 5000, 10000, 21096.84, 42200];
+const targetPaceDistances = [1000, 5000, 10000, 21097.5, 42195];
 
 function getTodayInBrazil() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -35,1013 +42,1019 @@ function getTodayInBrazil() {
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(new Date());
-
-  const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
-  );
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-function toBrazilDateInputValue(value) {
-  if (!value) return "";
-  const raw = String(value);
-  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
-
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return raw.slice(0, 10);
-
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: BRAZIL_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
-  );
-  return `${values.year}-${values.month}-${values.day}`;
+function readNumber(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const parsed = Number(String(value).replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
-function formatBrazilDate(value) {
+function formatValue(value, suffix = "") {
+  if (value === null || value === undefined || value === "") return "-";
+  if (value === "-") return "-";
+  if (typeof value === "number") {
+    return `${new Intl.NumberFormat("pt-BR", {
+      maximumFractionDigits: 2,
+    }).format(value)}${suffix}`;
+  }
+  return `${value}${suffix}`;
+}
+
+function formatDate(value) {
   if (!value) return "-";
   const raw = String(value);
   if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
     const [year, month, day] = raw.slice(0, 10).split("-");
     return `${day}/${month}/${year}`;
   }
-
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) return raw;
-
   return new Intl.DateTimeFormat("pt-BR", {
     timeZone: BRAZIL_TIME_ZONE,
   }).format(date);
 }
 
-export default function PhysicalAssessmentPage() {
-  const { user, isPersonal } = useAuth();
-  const { t } = useI18n();
+function getErrorMessage(error) {
+  if (error instanceof ApiError) return error.message;
+  return error?.message || "Nao foi possivel concluir a operacao.";
+}
 
-  const [students, setStudents] = useState([]);
-  const [selectedStudentId, setSelectedStudentId] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [assessments, setAssessments] = useState([]);
-  const [selectedAssessment, setSelectedAssessment] = useState(null);
-  const [showEvolutionPhotos, setShowEvolutionPhotos] = useState(false);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileDraft, setProfileDraft] = useState(null);
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [form, setForm] = useState({
-    date: getTodayInBrazil(),
-    weight: "",
-    height: "",
-    leanMass: "",
-    leanMassPercentage: "",
-    fatWeight: "",
-    gender: "",
-    fat: "",
-    photos: [],
-    notes: "",
-  });
+function normalizeRows(result) {
+  if (Array.isArray(result)) return result;
+  const candidates = [
+    result?.rows,
+    result?.table,
+    result?.results,
+    result?.predictions,
+    result?.estimates,
+    result?.equivalents,
+    result?.equivalentTimes,
+    result?.targetResults,
+    result?.targets,
+    result?.paces,
+  ];
+  return candidates.find(Array.isArray) || [];
+}
 
-  const isInitialProfileComplete = (candidate) =>
-    Boolean(
-      (candidate?.fullName || candidate?.name || "").trim() &&
-        (candidate?.birthDate || candidate?.birthdate) &&
-        (candidate?.gender || "").trim(),
+function pick(row, keys) {
+  for (const key of keys) {
+    if (row?.[key] !== undefined && row?.[key] !== null) return row[key];
+  }
+  return "-";
+}
+
+function SectionHeader({ icon: Icon, title, subtitle }) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[#b5f03c]/25 bg-[#b5f03c]/10 text-[#b5f03c]">
+            <Icon size={16} />
+          </span>
+          <h2 className="text-lg font-semibold text-white">{title}</h2>
+        </div>
+        {subtitle && <p className="mt-2 text-sm text-white/50">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-medium text-white/55">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function TextInput(props) {
+  return (
+    <input
+      {...props}
+      className={`h-10 w-full rounded-md border border-white/[0.08] bg-[#0b0b0b] px-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[#b5f03c]/45 ${props.className || ""}`}
+    />
+  );
+}
+
+function SelectInput(props) {
+  return (
+    <select
+      {...props}
+      className={`h-10 w-full rounded-md border border-white/[0.08] bg-[#0b0b0b] px-3 text-sm text-white outline-none transition focus:border-[#b5f03c]/45 ${props.className || ""}`}
+    />
+  );
+}
+
+function ResultCards({ items }) {
+  const visibleItems = items.filter((item) => item.value !== undefined);
+  if (visibleItems.length === 0) return null;
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {visibleItems.map((item) => (
+        <article
+          key={item.label}
+          className="rounded-md border border-white/[0.06] bg-white/[0.025] p-3"
+        >
+          <p className="text-xs text-white/42">{item.label}</p>
+          <p className="mt-1 text-lg font-semibold text-white">
+            {formatValue(item.value, item.suffix)}
+          </p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function RunningTable({ result }) {
+  const rows = normalizeRows(result);
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="overflow-x-auto rounded-md border border-white/[0.06]">
+      <table className="min-w-full text-left text-sm">
+        <thead className="bg-white/[0.04] text-xs uppercase tracking-[0.16em] text-white/38">
+          <tr>
+            <th className="px-3 py-3">Distancia</th>
+            <th className="px-3 py-3">Tempo estimado</th>
+            <th className="px-3 py-3">Ritmo/km</th>
+            <th className="px-3 py-3">Ritmo/milha</th>
+            <th className="px-3 py-3">Velocidade</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/[0.05]">
+          {rows.map((row, index) => (
+            <tr key={row.id || `${pick(row, ["distanceMeters", "distance"])}-${index}`}>
+              <td className="px-3 py-3 text-white/80">
+                {pick(row, [
+                  "distance",
+                  "distanceLabel",
+                  "targetDistance",
+                  "targetDistanceLabel",
+                  "distanceMeters",
+                  "targetDistanceMeters",
+                ])}
+              </td>
+              <td className="px-3 py-3 text-white/72">
+                {pick(row, ["estimatedTime", "time", "timeFormatted"])}
+              </td>
+              <td className="px-3 py-3 text-white/72">
+                {pick(row, ["pacePerKm", "paceKm", "pacePerKilometer"])}
+              </td>
+              <td className="px-3 py-3 text-white/72">
+                {pick(row, ["pacePerMile", "paceMile"])}
+              </td>
+              <td className="px-3 py-3 text-white/72">
+                {formatValue(pick(row, ["speedKmh", "speedKmH", "averageSpeedKmh"]), " km/h")}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function HistoryTable({ assessments }) {
+  if (!assessments.length) {
+    return (
+      <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-white/50">
+        Nenhuma avaliacao registrada para este aluno.
+      </div>
     );
-
-  const getDateInputValue = (value) => {
-    return toBrazilDateInputValue(value);
-  };
-
-  const profilePhoto = profile?.photo || profile?.photoUrl || null;
-  const profileName =
-    profile?.fullName || profile?.name || user?.email || "Aluno";
-  const currentProfileDraft = profileDraft || {
-    name: profile?.name || profile?.fullName || "",
-    birthdate: getDateInputValue(profile?.birthdate || profile?.birthDate),
-    gender: profile?.gender || "",
-    photo: profile?.photo || profile?.photoUrl || "",
-  };
-  const draftPhoto = currentProfileDraft.photo || profilePhoto;
-  const showProfileForm =
-    Boolean(profile) && (!profile.profileCompleted || isEditingProfile);
-  const selectedPhotos = Array.isArray(selectedAssessment?.photos)
-    ? selectedAssessment.photos
-    : [];
-
-  const formatAssessmentDate = (value) => {
-    if (!value) return "-";
-    return formatBrazilDate(value);
-  };
-
-  useEffect(() => {
-    async function load() {
-      if (isPersonal) {
-        try {
-          const data = await listStudents();
-          setStudents(Array.isArray(data) ? data : []);
-        } catch {
-          setStudents([]);
-        }
-      } else {
-        // client: load own profile
-        try {
-          const p = await getMyStudentProfile();
-          setSelectedStudentId(String(p?.id || user?.id));
-          setProfile(p || null);
-          const a = await listAssessments(p?.id || user?.id);
-          setAssessments(Array.isArray(a) ? a : []);
-        } catch {
-          const id = user?.id || "me";
-          setSelectedStudentId(String(id));
-          setProfile(null);
-          setAssessments([]);
-        }
-      }
-    }
-
-    load();
-  }, [isPersonal, user]);
-
-  useEffect(() => {
-    if (!selectedStudentId) return;
-    // if admin, try to find profile in students list
-    (async () => {
-      try {
-        const found = students.find(
-          (s) => String(s.id) === String(selectedStudentId),
-        );
-        if (found) setProfile(found);
-
-        const a = await listAssessments(selectedStudentId);
-        setAssessments(Array.isArray(a) ? a : []);
-      } catch {
-        setAssessments([]);
-      }
-    })();
-  }, [selectedStudentId, students]);
-
-  const chartData = useMemo(() => {
-    const arr = (assessments || [])
-      .slice()
-      .reverse()
-      .map((it) => ({
-        date: toBrazilDateInputValue(it.date),
-        weight: it.weight ? Number(it.weight) : null,
-        leanMass: it.leanMass ? Number(it.leanMass) : null,
-        leanMassPercentage: it.leanMassPercentage
-          ? Number(it.leanMassPercentage)
-          : null,
-        fatWeight: it.fatWeight ? Number(it.fatWeight) : null,
-        fat: it.fatPercentage ?? (it.fat ? Number(it.fat) : null),
-      }));
-
-    return arr;
-  }, [assessments]);
-
-  const evolutionPhotos = useMemo(() => {
-    const withPhotos = (assessments || [])
-      .filter((assessment) => Array.isArray(assessment.photos) && assessment.photos[0])
-      .slice()
-      .sort((a, b) => {
-        const left = toBrazilDateInputValue(a.date || a.createdAt);
-        const right = toBrazilDateInputValue(b.date || b.createdAt);
-        if (!left) return 1;
-        if (!right) return -1;
-        return left.localeCompare(right);
-      });
-
-    if (withPhotos.length === 0) {
-      return { first: null, latest: null };
-    }
-
-    return {
-      first: withPhotos[0],
-      latest: withPhotos[withPhotos.length - 1],
-    };
-  }, [assessments]);
-
-  // Compress image to reduce payload size
-  async function compressImage(file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          let width = img.width;
-          let height = img.height;
-
-          // Resize if larger than 1200px
-          if (width > 1200 || height > 1200) {
-            const ratio = Math.min(1200 / width, 1200 / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Compress to JPEG with 70% quality
-          const compressed = canvas.toDataURL("image/jpeg", 0.7);
-          resolve(compressed);
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function handleProfileDraftChange(changes) {
-    setProfileDraft((current) => ({
-      ...currentProfileDraft,
-      ...(current || {}),
-      ...changes,
-    }));
-  }
-
-  async function handleSaveProfile() {
-    const updated = { ...(profile || {}), ...currentProfileDraft };
-    const profileCompleted =
-      updated.profileCompleted || isInitialProfileComplete(updated);
-
-    const payload = {
-      fullName: updated.name || updated.fullName || undefined,
-      birthDate: updated.birthdate || updated.birthDate || undefined,
-      gender: updated.gender || undefined,
-      photoUrl: updated.photo || updated.photoUrl || undefined,
-      profileCompleted,
-    };
-
-    setSavingProfile(true);
-    try {
-      if (isPersonal && selectedStudentId) {
-        const saved = await updateStudent(selectedStudentId, payload);
-        setProfile(saved || { ...updated, profileCompleted });
-      } else {
-        const saved = await updateMyProfile(payload);
-        setProfile(saved || { ...updated, profileCompleted });
-      }
-      setProfileDraft(null);
-      if (profileCompleted) {
-        setIsEditingProfile(false);
-      }
-    } finally {
-      setSavingProfile(false);
-    }
-  }
-
-  function handlePhotoUpload(e) {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    // Limit to 3 photos max
-    const filesToProcess = files.slice(0, 3);
-
-    Promise.all(
-      filesToProcess.map(async (file) => {
-        // Validate file size (max 5MB per file before compression)
-        if (file.size > 5 * 1024 * 1024) {
-          console.warn("File too large, will be compressed");
-        }
-        return compressImage(file);
-      }),
-    ).then((results) => {
-      // Save photos array to profile (first use-case)
-      handleProfileDraftChange({ photo: results[0], photos: results });
-    });
-  }
-
-  function handleAddAssessment() {
-    if (!selectedStudentId) return;
-    // validation
-    if (!form.date) return;
-    if (
-      !form.weight &&
-      !form.height &&
-      !form.fat &&
-      !form.leanMass &&
-      !form.leanMassPercentage &&
-      !form.fatWeight
-    ) {
-      return;
-    }
-
-    const entry = { ...form };
-
-    (async () => {
-      try {
-        const payload = {
-          alunoId: selectedStudentId,
-          date: entry.date,
-          weight: entry.weight
-            ? parseFloat(String(entry.weight).replace(",", "."))
-            : null,
-          height: entry.height
-            ? parseFloat(String(entry.height).replace(",", "."))
-            : null,
-          leanMass: entry.leanMass
-            ? parseFloat(String(entry.leanMass).replace(",", "."))
-            : null,
-          leanMassPercentage: entry.leanMassPercentage
-            ? parseFloat(String(entry.leanMassPercentage).replace(",", "."))
-            : null,
-          fatWeight: entry.fatWeight
-            ? parseFloat(String(entry.fatWeight).replace(",", "."))
-            : null,
-          fatPercentage: entry.fat
-            ? parseFloat(String(entry.fat).replace(",", "."))
-            : null,
-          notes: entry.notes,
-          photos: Array.isArray(entry.photos) ? entry.photos : [],
-        };
-
-        const created = await createAssessment(payload);
-        const nextAssessment = created || entry;
-        setAssessments((s) => [nextAssessment, ...s]);
-        setSelectedAssessment(nextAssessment);
-      } catch {
-        // fallback to local state
-        setAssessments((s) => [entry, ...s]);
-        setSelectedAssessment(entry);
-      }
-    })();
-  }
-
-  function handleDeleteAssessment(id) {
-    if (!selectedStudentId) return;
-    (async () => {
-      try {
-        await deleteAssessment(id);
-        setAssessments((s) => s.filter((a) => a.id !== id));
-        setSelectedAssessment((current) =>
-          current?.id === id ? null : current,
-        );
-      } catch {
-        // optimistic local delete
-        setAssessments((s) => s.filter((a) => a.id !== id));
-        setSelectedAssessment((current) =>
-          current?.id === id ? null : current,
-        );
-      }
-    })();
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">
-        {t("PHYS_ASSESS_TITLE", "Avaliação Física")}
-      </h1>
+    <div className="overflow-x-auto rounded-md border border-white/[0.06]">
+      <table className="min-w-full text-left text-sm">
+        <thead className="bg-white/[0.04] text-xs uppercase tracking-[0.16em] text-white/38">
+          <tr>
+            <th className="px-3 py-3">Data</th>
+            <th className="px-3 py-3">Peso</th>
+            <th className="px-3 py-3">Altura</th>
+            <th className="px-3 py-3">IMC</th>
+            <th className="px-3 py-3">Gordura</th>
+            <th className="px-3 py-3">Massa magra</th>
+            <th className="px-3 py-3">Obs.</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/[0.05]">
+          {assessments.map((item, index) => (
+            <tr key={item.id || `${item.date}-${index}`}>
+              <td className="px-3 py-3 text-white/80">{formatDate(item.date)}</td>
+              <td className="px-3 py-3 text-white/70">
+                {formatValue(item.weightKg ?? item.weight, " kg")}
+              </td>
+              <td className="px-3 py-3 text-white/70">
+                {formatValue(item.heightCm ?? item.height, " cm")}
+              </td>
+              <td className="px-3 py-3 text-white/70">{formatValue(item.bmi)}</td>
+              <td className="px-3 py-3 text-white/70">
+                {formatValue(item.fatPercentage ?? item.fat, "%")}
+              </td>
+              <td className="px-3 py-3 text-white/70">
+                {formatValue(item.leanMass, " kg")}
+              </td>
+              <td className="max-w-[220px] truncate px-3 py-3 text-white/50">
+                {item.notes || "-"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-      {isPersonal && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-white/70 mb-2">
-            {t("SELECT_STUDENT", "Selecionar aluno")}
-          </label>
-          <select
-            className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
-            value={selectedStudentId || ""}
-            onChange={(e) => {
-              setIsEditingProfile(false);
-              setProfileDraft(null);
-              setSelectedStudentId(e.target.value);
-            }}
+export default function PhysicalAssessmentPage() {
+  const { user, isPersonal } = useAuth();
+  const [activeTab, setActiveTab] = useState("physical");
+  const [students, setStudents] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [assessments, setAssessments] = useState([]);
+  const [physicalResult, setPhysicalResult] = useState(null);
+  const [performanceResult, setPerformanceResult] = useState(null);
+  const [paceResult, setPaceResult] = useState(null);
+  const [caloriesResult, setCaloriesResult] = useState(null);
+  const [converterResult, setConverterResult] = useState(null);
+  const [message, setMessage] = useState("");
+  const [loadingAction, setLoadingAction] = useState("");
+
+  const [physicalForm, setPhysicalForm] = useState({
+    sex: "M",
+    age: "",
+    weightKg: "",
+    heightCm: "",
+    waistCm: "",
+    neckCm: "",
+    hipCm: "",
+    date: getTodayInBrazil(),
+    notes: "",
+    photos: [],
+  });
+  const [performanceForm, setPerformanceForm] = useState({
+    distanceMeters: "3000",
+    time: "00:15:15",
+  });
+  const [paceForm, setPaceForm] = useState({
+    distanceMeters: "5000",
+    time: "00:30:00",
+  });
+  const [caloriesForm, setCaloriesForm] = useState({
+    sex: "M",
+    weightKg: "",
+    distanceKm: "10",
+    timeMinutes: "55",
+    heightCm: "",
+    age: "",
+  });
+  const [converterForm, setConverterForm] = useState({
+    mode: "kilometers",
+    value: "5",
+  });
+
+  const selectedStudent = useMemo(
+    () => students.find((student) => String(student.id) === String(selectedStudentId)),
+    [selectedStudentId, students],
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadInitialData() {
+      try {
+        if (isPersonal) {
+          const data = await listStudents();
+          if (mounted) setStudents(Array.isArray(data) ? data : []);
+          return;
+        }
+
+        const profile = await getMyStudentProfile();
+        const ownId = String(profile?.id || user?.id || "");
+        if (mounted) {
+          setSelectedStudentId(ownId);
+          setStudents(profile ? [profile] : []);
+        }
+      } catch (error) {
+        if (mounted) setMessage(getErrorMessage(error));
+      }
+    }
+
+    loadInitialData();
+    return () => {
+      mounted = false;
+    };
+  }, [isPersonal, user]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadHistory() {
+      if (!selectedStudentId) {
+        setAssessments([]);
+        return;
+      }
+
+      try {
+        const data = await listAssessments(selectedStudentId);
+        if (mounted) setAssessments(Array.isArray(data) ? data : []);
+      } catch (error) {
+        if (mounted) {
+          setAssessments([]);
+          setMessage(getErrorMessage(error));
+        }
+      }
+    }
+
+    loadHistory();
+    return () => {
+      mounted = false;
+    };
+  }, [selectedStudentId]);
+
+  function updatePhysical(changes) {
+    setPhysicalForm((current) => ({ ...current, ...changes }));
+  }
+
+  function validatePhysical() {
+    const required = ["sex", "age", "weightKg", "heightCm", "waistCm", "neckCm"];
+    const missing = required.some((key) => !String(physicalForm[key] || "").trim());
+    if (missing) return "Preencha sexo, idade, peso em kg, altura em cm, cintura e pescoco.";
+    if (physicalForm.sex === "F" && !String(physicalForm.hipCm || "").trim()) {
+      return "Para sexo feminino, quadril e obrigatorio.";
+    }
+    return "";
+  }
+
+  function buildPhysicalPayload() {
+    const payload = {
+      sex: physicalForm.sex,
+      age: readNumber(physicalForm.age),
+      weightKg: readNumber(physicalForm.weightKg),
+      heightCm: readNumber(physicalForm.heightCm),
+      waistCm: readNumber(physicalForm.waistCm),
+      neckCm: readNumber(physicalForm.neckCm),
+    };
+    const hipCm = readNumber(physicalForm.hipCm);
+    if (hipCm !== null) payload.hipCm = hipCm;
+    return payload;
+  }
+
+  async function handleCalculatePhysical() {
+    setMessage("");
+    const validation = validatePhysical();
+    if (validation) {
+      setMessage(validation);
+      return;
+    }
+
+    setLoadingAction("physical");
+    try {
+      const result = await calculatePhysicalAssessment(buildPhysicalPayload());
+      setPhysicalResult(result);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setLoadingAction("");
+    }
+  }
+
+  async function handleSaveAssessment() {
+    setMessage("");
+    if (!selectedStudentId) {
+      setMessage("Selecione um aluno antes de salvar a avaliacao.");
+      return;
+    }
+
+    const validation = validatePhysical();
+    if (validation) {
+      setMessage(validation);
+      return;
+    }
+
+    setLoadingAction("save-assessment");
+    try {
+      const saved = await createAssessment({
+        alunoId: selectedStudentId,
+        date: physicalForm.date,
+        notes: physicalForm.notes,
+        photos: physicalForm.photos,
+        ...buildPhysicalPayload(),
+      });
+      setAssessments((current) => [saved?.assessment || saved, ...current]);
+      setMessage("Avaliacao salva com sucesso.");
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setLoadingAction("");
+    }
+  }
+
+  function isValidTime(value) {
+    return /^(\d{1,2}:)?[0-5]?\d:[0-5]\d$/.test(String(value || ""));
+  }
+
+  async function handleRunning(kind) {
+    setMessage("");
+    setLoadingAction(kind);
+    try {
+      if (kind === "performance") {
+        if (!performanceForm.distanceMeters || !isValidTime(performanceForm.time)) {
+          setMessage("Tempo aceita hh:mm:ss ou mm:ss.");
+          return;
+        }
+        const result = await calculateRunningPerformance({
+          distanceMeters: readNumber(performanceForm.distanceMeters),
+          time: performanceForm.time,
+          targetDistancesMeters: targetPerformanceDistances,
+        });
+        setPerformanceResult(result);
+      }
+
+      if (kind === "pace") {
+        if (!paceForm.distanceMeters || !isValidTime(paceForm.time)) {
+          setMessage("Tempo aceita hh:mm:ss ou mm:ss.");
+          return;
+        }
+        const result = await calculateRunningPace({
+          distanceMeters: readNumber(paceForm.distanceMeters),
+          time: paceForm.time,
+          targetDistancesMeters: targetPaceDistances,
+        });
+        setPaceResult(result);
+      }
+
+      if (kind === "calories") {
+        const result = await calculateRunningCalories({
+          sex: caloriesForm.sex,
+          weightKg: readNumber(caloriesForm.weightKg),
+          distanceKm: readNumber(caloriesForm.distanceKm),
+          timeMinutes: readNumber(caloriesForm.timeMinutes),
+          heightCm: readNumber(caloriesForm.heightCm),
+          age: readNumber(caloriesForm.age),
+        });
+        setCaloriesResult(result);
+      }
+
+      if (kind === "converter") {
+        const result = await convertRunningDistance({
+          [converterForm.mode]: readNumber(converterForm.value),
+        });
+        setConverterResult(result);
+      }
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setLoadingAction("");
+    }
+  }
+
+  async function handlePhotoUpload(event) {
+    const files = Array.from(event.target.files || []).slice(0, 3);
+    if (files.length === 0) return;
+
+    const photos = await Promise.all(
+      files.map(
+        (file) =>
+          new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+          }),
+      ),
+    );
+    updatePhysical({ photos });
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#b5f03c]/70">
+            Calculadoras
+          </p>
+          <h1 className="mt-2 text-2xl font-bold text-white">
+            Avaliacao fisica e corrida
+          </h1>
+          <p className="mt-2 text-sm text-white/50">
+            Altura sempre em cm, peso em kg e tempo em hh:mm:ss ou mm:ss.
+          </p>
+        </div>
+
+        {isPersonal && (
+          <div className="w-full sm:w-72">
+            <Field label="Aluno">
+              <SelectInput
+                value={selectedStudentId}
+                onChange={(event) => setSelectedStudentId(event.target.value)}
+              >
+                <option value="">Selecione para salvar historico</option>
+                {students.map((student) => (
+                  <option key={student.id} value={String(student.id)}>
+                    {student.fullName || student.name || student.email || student.id}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+          </div>
+        )}
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto border-b border-white/[0.06] pb-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`h-9 shrink-0 rounded-md px-3 text-sm font-semibold transition ${
+              activeTab === tab.id
+                ? "bg-[#b5f03c] text-black"
+                : "border border-white/[0.07] bg-white/[0.025] text-white/62 hover:border-[#b5f03c]/35 hover:text-white"
+            }`}
           >
-            <option value="">— {t("CHOOSE", "Escolher")} —</option>
-            {students.map((s) => (
-              <option key={s.id} value={String(s.id)}>
-                {s.fullName || s.name || s.email || s.id}
-              </option>
-            ))}
-          </select>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {message && (
+        <div className="rounded-md border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+          {message}
         </div>
       )}
 
-      {!selectedStudentId && (
-        <p className="text-sm text-white/50">
-          {t("NO_STUDENT_SELECTED", "Nenhum aluno selecionado")}
-        </p>
-      )}
+      {activeTab === "physical" && (
+        <section className="space-y-5">
+          <div className="rounded-md border border-white/[0.06] bg-white/[0.015] p-4">
+            <SectionHeader
+              icon={Calculator}
+              title="Avaliacao fisica"
+              subtitle="O backend calcula IMC, gordura, massas e TMB. No frontend fazemos apenas validacao basica."
+            />
 
-      {selectedStudentId && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {profile && (
-            <section className="lg:col-span-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-4">
-                <div className="h-20 w-20 overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04]">
-                  {profilePhoto ? (
-                    <img
-                      src={profilePhoto}
-                      alt={profileName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-white/35">
-                      {t("NO_PHOTO", "Sem foto")}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">
-                    {t("PROFILE", "Perfil")}
-                  </p>
-                  <h2 className="mt-1 text-xl font-semibold text-white">
-                    {profileName}
-                  </h2>
-                  <p className="mt-1 text-sm text-white/50">
-                    {profile?.gender || t("GENDER", "Genero")}
-                    {profile?.birthDate || profile?.birthdate
-                      ? ` - ${formatAssessmentDate(profile.birthDate || profile.birthdate)}`
-                      : ""}
-                  </p>
-                </div>
-                </div>
-                {isPersonal && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProfileDraft(null);
-                      setIsEditingProfile((current) => !current);
-                    }}
-                    className="rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-[#b5f03c]/40 hover:bg-white/[0.07]"
-                  >
-                    {isEditingProfile
-                      ? t("CLOSE", "Fechar")
-                      : t("EDIT_PROFILE", "Editar cadastro")}
-                  </button>
-                )}
-              </div>
-            </section>
-          )}
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <Field label="Sexo">
+                <SelectInput
+                  value={physicalForm.sex}
+                  onChange={(event) => updatePhysical({ sex: event.target.value })}
+                >
+                  <option value="M">Masculino</option>
+                  <option value="F">Feminino</option>
+                </SelectInput>
+              </Field>
+              <Field label="Idade">
+                <TextInput
+                  inputMode="numeric"
+                  value={physicalForm.age}
+                  onChange={(event) => updatePhysical({ age: event.target.value })}
+                />
+              </Field>
+              <Field label="Peso em kg">
+                <TextInput
+                  inputMode="decimal"
+                  value={physicalForm.weightKg}
+                  onChange={(event) => updatePhysical({ weightKg: event.target.value })}
+                />
+              </Field>
+              <Field label="Altura em cm">
+                <TextInput
+                  inputMode="decimal"
+                  value={physicalForm.heightCm}
+                  onChange={(event) => updatePhysical({ heightCm: event.target.value })}
+                />
+              </Field>
+              <Field label="Cintura em cm">
+                <TextInput
+                  inputMode="decimal"
+                  value={physicalForm.waistCm}
+                  onChange={(event) => updatePhysical({ waistCm: event.target.value })}
+                />
+              </Field>
+              <Field label="Pescoco em cm">
+                <TextInput
+                  inputMode="decimal"
+                  value={physicalForm.neckCm}
+                  onChange={(event) => updatePhysical({ neckCm: event.target.value })}
+                />
+              </Field>
+              <Field label="Quadril em cm">
+                <TextInput
+                  inputMode="decimal"
+                  placeholder={physicalForm.sex === "F" ? "Obrigatorio" : "Opcional"}
+                  value={physicalForm.hipCm}
+                  onChange={(event) => updatePhysical({ hipCm: event.target.value })}
+                />
+              </Field>
+              <Field label="Data">
+                <TextInput
+                  type="date"
+                  value={physicalForm.date}
+                  onChange={(event) => updatePhysical({ date: event.target.value })}
+                />
+              </Field>
+            </div>
 
-          {showProfileForm && (
-            <div className="col-span-1 rounded-lg border border-white/[0.06] bg-white/[0.01] p-4">
-              <h2 className="font-semibold mb-3">
-                {profile.profileCompleted
-                  ? t("EDIT_PROFILE", "Editar cadastro")
-                  : t("PROFILE", "Cadastro inicial")}
-              </h2>
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-28 w-28 rounded-lg overflow-hidden bg-white/5">
-                  {draftPhoto ? (
-                    <img
-                      src={draftPhoto}
-                      alt="foto"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-white/30">
-                      {t("NO_PHOTO", "Sem foto")}
-                    </div>
-                  )}
-                </div>
+            <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_auto]">
+              <Field label="Observacoes">
+                <TextInput
+                  value={physicalForm.notes}
+                  onChange={(event) => updatePhysical({ notes: event.target.value })}
+                />
+              </Field>
+              <div className="flex items-end gap-2">
                 <input
-                  id="profile-photo-upload"
+                  id="assessment-photos"
                   type="file"
                   accept="image/*"
                   multiple
+                  className="sr-only"
                   onChange={handlePhotoUpload}
-                  className="sr-only"
                 />
                 <label
-                  htmlFor="profile-photo-upload"
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-[#b5f03c]/40 hover:bg-white/[0.07]"
+                  htmlFor="assessment-photos"
+                  className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.035] px-3 text-sm font-semibold text-white/75 transition hover:border-[#b5f03c]/35 hover:text-white"
                 >
-                  <Camera size={16} className="text-[#b5f03c]" />
-                  {t("ADD_PHOTO", "Adicionar foto")}
+                  <Camera size={15} />
+                  Fotos
                 </label>
-
-                <label className="block w-full">
-                  <div className="text-xs text-white/60">
-                    {t("NAME", "Nome")}
-                  </div>
-                  <input
-                    value={currentProfileDraft.name}
-                    onChange={(e) =>
-                      handleProfileDraftChange({ name: e.target.value })
-                    }
-                    className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
-                  />
-                </label>
-
-                <label className="block w-full">
-                  <div className="text-xs text-white/60">
-                    {t("BIRTHDATE", "Data de nascimento")}
-                  </div>
-                  <input
-                    type="date"
-                    value={currentProfileDraft.birthdate}
-                    onChange={(e) =>
-                      handleProfileDraftChange({ birthdate: e.target.value })
-                    }
-                    className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
-                  />
-                </label>
-
-                <label className="block w-full">
-                  <div className="text-xs text-white/60">
-                    {t("GENDER", "Gênero")}
-                  </div>
-                  <input
-                    value={currentProfileDraft.gender}
-                    onChange={(e) =>
-                      handleProfileDraftChange({ gender: e.target.value })
-                    }
-                    className="w-full rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2 mt-1"
-                  />
-                </label>
-
-                <button
-                  type="button"
-                  onClick={handleSaveProfile}
-                  disabled={savingProfile}
-                  className="mt-2 w-full rounded-md bg-[#b5f03c] px-4 py-2 font-semibold text-black transition hover:brightness-110 disabled:opacity-50"
-                >
-                  {savingProfile
-                    ? t("SAVING", "Salvando...")
-                    : t("SAVE_PROFILE", "Salvar cadastro")}
-                </button>
               </div>
             </div>
-          )}
 
-          <div
-            className={`${showProfileForm ? "col-span-2" : "col-span-3"} rounded-lg border border-white/[0.06] bg-white/[0.01] p-4`}
-          >
-            <h2 className="font-semibold mb-3">
-              {t("ASSESSMENT", "Nova avaliação")}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-              <input
-                type="date"
-                value={form.date}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, date: e.target.value }))
-                }
-                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
-              />
-              <input
-                inputMode="decimal"
-                placeholder={t("WEIGHT", "Peso (kg)")}
-                value={form.weight}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, weight: e.target.value }))
-                }
-                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
-              />
-              <input
-                inputMode="decimal"
-                placeholder={t("HEIGHT", "Altura (m)")}
-                value={form.height}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, height: e.target.value }))
-                }
-                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
-              />
-              <input
-                inputMode="decimal"
-                placeholder={t("LEAN_MASS", "Massa magra (kg)")}
-                value={form.leanMass}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, leanMass: e.target.value }))
-                }
-                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
-              />
-              <input
-                inputMode="decimal"
-                placeholder={t("LEAN_MASS_PERCENTAGE", "Massa magra (%)")}
-                value={form.leanMassPercentage}
-                onChange={(e) =>
-                  setForm((s) => ({
-                    ...s,
-                    leanMassPercentage: e.target.value,
-                  }))
-                }
-                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
-              />
-              <input
-                inputMode="decimal"
-                placeholder={t("FAT_WEIGHT", "Peso de gordura (kg)")}
-                value={form.fatWeight}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, fatWeight: e.target.value }))
-                }
-                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
-              />
-              <input
-                inputMode="decimal"
-                placeholder={t("FAT", "Gordura (%)")}
-                value={form.fat}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, fat: e.target.value }))
-                }
-                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
-              />
-              {/* Age removed per request */}
-              <input
-                placeholder={t("NOTES", "Observações")}
-                value={form.notes}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, notes: e.target.value }))
-                }
-                className="rounded-md bg-[#0b0b0b] border border-white/[0.06] px-3 py-2"
-              />
-              <div className="flex items-center gap-3">
-                <input
-                  id="assessment-photo-upload"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    if (files.length === 0) return;
-
-                    // Limit to 3 photos max
-                    const filesToProcess = files.slice(0, 3);
-
-                    Promise.all(
-                      filesToProcess.map(async (file) => {
-                        if (file.size > 5 * 1024 * 1024) {
-                          console.warn("File too large, will be compressed");
-                        }
-                        return compressImage(file);
-                      }),
-                    ).then((results) => {
-                      setForm((s) => ({ ...s, photos: results }));
-                    });
-                  }}
-                  className="sr-only"
-                />
-                <label
-                  htmlFor="assessment-photo-upload"
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-[#b5f03c]/40 hover:bg-white/[0.07]"
-                >
-                  <Camera size={16} className="text-[#b5f03c]" />
-                  {t("ADD_PHOTO", "Adicionar foto")}
-                </label>
-                {form.photos.length > 0 && (
-                  <span className="text-xs text-white/45">
-                    {form.photos.length}{" "}
-                    {form.photos.length === 1 ? "foto" : "fotos"}
-                  </span>
-                )}
-              </div>
-            </div>
-            {Array.isArray(form.photos) && form.photos.length > 0 && (
-              <div className="mb-3 flex flex-wrap gap-2">
-                {form.photos.map((photo, index) => (
-                  <img
-                    key={`${photo}-${index}`}
-                    src={photo}
-                    alt={`preview-${index + 1}`}
-                    className="h-16 w-16 rounded-md border border-white/[0.06] object-cover"
-                  />
-                ))}
-              </div>
-            )}
-            <div className="flex gap-2">
-              <button
-                onClick={handleAddAssessment}
-                disabled={!selectedStudentId || !form.date}
-                className="rounded-md bg-[#b5f03c] px-4 py-2 text-black font-semibold disabled:opacity-40"
-              >
-                {t("SAVE", "Salvar")}
-              </button>
-            </div>
-
-            <hr className="my-4 border-white/[0.04]" />
-
-            <h3 className="font-semibold mb-2">{t("HISTORY", "Histórico")}</h3>
-            {assessments.length === 0 && (
-              <p className="text-sm text-white/50">
-                {t("NO_HISTORY", "Nenhuma avaliação registrada")}
+            {physicalForm.photos.length > 0 && (
+              <p className="mt-2 text-xs text-white/45">
+                {physicalForm.photos.length} foto(s) pronta(s) para salvar.
               </p>
             )}
 
-            <div className="space-y-2">
-              {assessments.map((a) => (
-                <div
-                  role="button"
-                  tabIndex={0}
-                  key={a.id}
-                  onClick={() => setSelectedAssessment(a)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setSelectedAssessment(a);
-                    }
-                  }}
-                  className="flex w-full items-center justify-between rounded-md border border-white/[0.04] p-3 text-left transition hover:border-[#b5f03c]/35 hover:bg-white/[0.03]"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-white/[0.05] bg-white/[0.03]">
-                      {Array.isArray(a.photos) && a.photos[0] ? (
-                        <img
-                          src={a.photos[0]}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : profilePhoto ? (
-                        <img
-                          src={profilePhoto}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-white/25">
-                          <ImageIcon size={16} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium">
-                        {formatAssessmentDate(a.date)}
-                      </div>
-                      <div className="text-xs text-white/50">
-                        {t("WEIGHT", "Peso")}: {a.weight} kg —{" "}
-                        {t("HEIGHT", "Altura")}: {a.height} —{" "}
-                        {t("LEAN_MASS", "Massa magra")}: {a.leanMass ?? "-"} kg
-                        — {t("LEAN_MASS_PERCENTAGE", "Massa magra")}:
-                        {a.leanMassPercentage ?? "-"}% —{" "}
-                        {t("FAT_WEIGHT", "Peso gordura")}: {a.fatWeight ?? "-"}{" "}
-                        kg — {t("FAT", "Gordura")}: {a.fatPercentage ?? a.fat}%
-                      </div>
-                      {a.notes && (
-                        <div className="text-xs text-white/40 mt-1">
-                          {a.notes}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {isPersonal && (
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleDeleteAssessment(a.id);
-                        }}
-                        className="text-xs text-red-400"
-                      >
-                        {t("DELETE", "Excluir")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6">
-              <h3 className="font-semibold mb-2">
-                {t("EVOLUTION", "Evolução")}
-              </h3>
-              <div style={{ width: "100%", height: 240 }}>
-                <ResponsiveContainer>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#222" />
-                    <XAxis dataKey="date" stroke="#aaa" />
-                    <YAxis stroke="#aaa" />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="weight"
-                      stroke="#82ca9d"
-                      name={t("WEIGHT", "Peso (kg)")}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="fat"
-                      stroke="#8884d8"
-                      name={t("FAT", "Gordura (%)")}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="leanMass"
-                      stroke="#facc15"
-                      name={t("LEAN_MASS", "Massa magra (kg)")}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="leanMassPercentage"
-                      stroke="#fb923c"
-                      name={t("LEAN_MASS_PERCENTAGE", "Massa magra (%)")}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="fatWeight"
-                      stroke="#f43f5e"
-                      name={t("FAT_WEIGHT", "Peso de gordura (kg)")}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-5 flex justify-end">
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleCalculatePhysical}
+                disabled={loadingAction === "physical"}
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-[#b5f03c] px-4 text-sm font-bold text-black transition hover:brightness-110 disabled:opacity-50"
+              >
+                <Calculator size={15} />
+                {loadingAction === "physical" ? "Calculando..." : "Calcular"}
+              </button>
+              {selectedStudentId && (
                 <button
                   type="button"
-                  onClick={() => setShowEvolutionPhotos(true)}
-                  className="rounded-md bg-[#b5f03c] px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110"
+                  onClick={handleSaveAssessment}
+                  disabled={loadingAction === "save-assessment"}
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.04] px-4 text-sm font-bold text-white/78 transition hover:border-[#b5f03c]/35 hover:text-white disabled:opacity-50"
                 >
-                  {t("VIEW_EVOLUTION", "Ver evolução")}
+                  <Save size={15} />
+                  {loadingAction === "save-assessment"
+                    ? "Salvando..."
+                    : "Salvar avaliacao"}
                 </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showEvolutionPhotos && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
-          <section className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-lg border border-white/[0.08] bg-[#0b0b0b] p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/40">
-                  {profileName}
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-white">
-                  {t("VIEW_EVOLUTION", "Ver evolução")}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowEvolutionPhotos(false)}
-                className="rounded-md border border-white/[0.08] p-2 text-white/60 transition hover:bg-white/[0.05] hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {evolutionPhotos.first && evolutionPhotos.latest ? (
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <article className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">
-                    {t("FIRST_PHOTO", "Primeira foto")}
-                  </p>
-                  <p className="mt-1 text-sm text-white/65">
-                    {formatAssessmentDate(evolutionPhotos.first.date)}
-                  </p>
-                  <img
-                    src={evolutionPhotos.first.photos[0]}
-                    alt="primeira-foto-evolucao"
-                    className="mt-3 max-h-[62vh] w-full rounded-md border border-white/[0.06] object-contain"
-                  />
-                </article>
-
-                <article className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">
-                    {t("LATEST_PHOTO", "Último histórico")}
-                  </p>
-                  <p className="mt-1 text-sm text-white/65">
-                    {formatAssessmentDate(evolutionPhotos.latest.date)}
-                  </p>
-                  <img
-                    src={evolutionPhotos.latest.photos[0]}
-                    alt="ultima-foto-evolucao"
-                    className="mt-3 max-h-[62vh] w-full rounded-md border border-white/[0.06] object-contain"
-                  />
-                </article>
-              </div>
-            ) : (
-              <div className="mt-5 rounded-md border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-white/55">
-                {t(
-                  "NO_EVOLUTION_PHOTOS",
-                  "Adicione fotos nos históricos para comparar a evolução.",
-                )}
-              </div>
-            )}
-          </section>
-        </div>
-      )}
-
-      {selectedAssessment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8">
-          <section className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-white/[0.08] bg-[#0b0b0b] p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="h-16 w-16 overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04]">
-                  {profilePhoto ? (
-                    <img
-                      src={profilePhoto}
-                      alt={profileName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-white/35">
-                      {t("NO_PHOTO", "Sem foto")}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">
-                    {profileName}
-                  </p>
-                  <h2 className="mt-1 text-xl font-semibold text-white">
-                    {t("ASSESSMENT", "Avaliação")}{" "}
-                    {formatAssessmentDate(selectedAssessment.date)}
-                  </h2>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedAssessment(null)}
-                className="rounded-md border border-white/[0.08] p-2 text-white/60 transition hover:bg-white/[0.05] hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
-                <p className="text-xs text-white/40">{t("WEIGHT", "Peso")}</p>
-                <p className="mt-1 text-lg font-semibold text-white">
-                  {selectedAssessment.weight ?? "-"} kg
-                </p>
-              </div>
-              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
-                <p className="text-xs text-white/40">{t("HEIGHT", "Altura")}</p>
-                <p className="mt-1 text-lg font-semibold text-white">
-                  {selectedAssessment.height ?? "-"} m
-                </p>
-              </div>
-              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
-                <p className="text-xs text-white/40">{t("FAT", "Gordura")}</p>
-                <p className="mt-1 text-lg font-semibold text-white">
-                  {selectedAssessment.fatPercentage ??
-                    selectedAssessment.fat ??
-                    "-"}
-                  %
-                </p>
-              </div>
-              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
-                <p className="text-xs text-white/40">
-                  {t("LEAN_MASS", "Massa magra")}
-                </p>
-                <p className="mt-1 text-lg font-semibold text-white">
-                  {selectedAssessment.leanMass ?? "-"} kg
-                </p>
-              </div>
-              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
-                <p className="text-xs text-white/40">
-                  {t("LEAN_MASS_PERCENTAGE", "Massa magra (%)")}
-                </p>
-                <p className="mt-1 text-lg font-semibold text-white">
-                  {selectedAssessment.leanMassPercentage ?? "-"}%
-                </p>
-              </div>
-              <div className="rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
-                <p className="text-xs text-white/40">
-                  {t("FAT_WEIGHT", "Peso de gordura")}
-                </p>
-                <p className="mt-1 text-lg font-semibold text-white">
-                  {selectedAssessment.fatWeight ?? "-"} kg
-                </p>
-              </div>
-            </div>
-
-            {selectedAssessment.notes && (
-              <div className="mt-4 rounded-md border border-white/[0.06] bg-white/[0.02] p-3">
-                <p className="text-xs text-white/40">
-                  {t("NOTES", "Observações")}
-                </p>
-                <p className="mt-1 text-sm leading-6 text-white/75">
-                  {selectedAssessment.notes}
-                </p>
-              </div>
-            )}
-
-            <div className="mt-5">
-              <h3 className="font-semibold text-white">
-                {t("PHOTOS", "Fotos")}
-              </h3>
-              {selectedPhotos.length > 0 ? (
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {selectedPhotos.map((photo, index) => (
-                    <img
-                      key={`${photo}-${index}`}
-                      src={photo}
-                      alt={`foto-avaliacao-${index + 1}`}
-                      className="max-h-80 w-full rounded-md border border-white/[0.06] object-cover"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-3 rounded-md border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-white/50">
-                  {t("NO_PHOTOS", "Nenhuma foto registrada nesta avaliação.")}
-                </div>
               )}
             </div>
-          </section>
-        </div>
+          </div>
+
+          {physicalResult && (
+            <ResultCards
+              items={[
+                { label: "IMC", value: physicalResult.bmi },
+                { label: "Classificacao", value: physicalResult.bmiClassification },
+                { label: "Gordura", value: physicalResult.fatPercentage, suffix: "%" },
+                { label: "Peso de gordura", value: physicalResult.fatWeight, suffix: " kg" },
+                { label: "Massa magra", value: physicalResult.leanMass, suffix: " kg" },
+                {
+                  label: "Massa magra",
+                  value: physicalResult.leanMassPercentage,
+                  suffix: "%",
+                },
+                {
+                  label: "TMB",
+                  value: physicalResult.basalMetabolicRate,
+                  suffix: " kcal",
+                },
+                { label: "Metodo", value: physicalResult.calculationMethod },
+              ]}
+            />
+          )}
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-white">Historico</h2>
+              <p className="text-xs text-white/42">
+                {selectedStudent?.fullName || selectedStudent?.name || ""}
+              </p>
+            </div>
+            <HistoryTable assessments={assessments} />
+          </div>
+        </section>
+      )}
+
+      {activeTab === "performance" && (
+        <section className="space-y-5 rounded-md border border-white/[0.06] bg-white/[0.015] p-4">
+          <SectionHeader
+            icon={Activity}
+            title="Corrida: desempenho"
+            subtitle="Informe uma prova base para estimar outros tempos."
+          />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="Distancia em metros">
+              <TextInput
+                inputMode="decimal"
+                value={performanceForm.distanceMeters}
+                onChange={(event) =>
+                  setPerformanceForm((current) => ({
+                    ...current,
+                    distanceMeters: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Tempo">
+              <TextInput
+                value={performanceForm.time}
+                onChange={(event) =>
+                  setPerformanceForm((current) => ({
+                    ...current,
+                    time: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={() => handleRunning("performance")}
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-[#b5f03c] px-4 text-sm font-bold text-black"
+              >
+                <Timer size={15} />
+                Calcular
+              </button>
+            </div>
+          </div>
+          <RunningTable result={performanceResult} />
+        </section>
+      )}
+
+      {activeTab === "pace" && (
+        <section className="space-y-5 rounded-md border border-white/[0.06] bg-white/[0.015] p-4">
+          <SectionHeader
+            icon={Gauge}
+            title="Corrida: ritmo"
+            subtitle="Calcule ritmo por km/milha e tempos equivalentes."
+          />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="Distancia em metros">
+              <TextInput
+                inputMode="decimal"
+                value={paceForm.distanceMeters}
+                onChange={(event) =>
+                  setPaceForm((current) => ({
+                    ...current,
+                    distanceMeters: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Tempo">
+              <TextInput
+                value={paceForm.time}
+                onChange={(event) =>
+                  setPaceForm((current) => ({
+                    ...current,
+                    time: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={() => handleRunning("pace")}
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-[#b5f03c] px-4 text-sm font-bold text-black"
+              >
+                <Gauge size={15} />
+                Calcular
+              </button>
+            </div>
+          </div>
+          {paceResult && (
+            <ResultCards
+              items={[
+                {
+                  label: "Ritmo por km",
+                  value:
+                    paceResult.pacePerKm ??
+                    paceResult.paceKm ??
+                    paceResult.pacePerKilometer,
+                },
+                {
+                  label: "Ritmo por milha",
+                  value: paceResult.pacePerMile ?? paceResult.paceMile,
+                },
+                {
+                  label: "Velocidade media",
+                  value:
+                    paceResult.averageSpeedKmh ??
+                    paceResult.speedKmh ??
+                    paceResult.speedKmH,
+                  suffix: " km/h",
+                },
+              ]}
+            />
+          )}
+          <RunningTable result={paceResult} />
+        </section>
+      )}
+
+      {activeTab === "calories" && (
+        <section className="space-y-5 rounded-md border border-white/[0.06] bg-white/[0.015] p-4">
+          <SectionHeader
+            icon={Activity}
+            title="Corrida: calorias"
+            subtitle="Mostra calorias da corrida, TMB, total basal + corrida e velocidade media."
+          />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            <Field label="Sexo">
+              <SelectInput
+                value={caloriesForm.sex}
+                onChange={(event) =>
+                  setCaloriesForm((current) => ({ ...current, sex: event.target.value }))
+                }
+              >
+                <option value="M">Masculino</option>
+                <option value="F">Feminino</option>
+              </SelectInput>
+            </Field>
+            <Field label="Peso em kg">
+              <TextInput
+                inputMode="decimal"
+                value={caloriesForm.weightKg}
+                onChange={(event) =>
+                  setCaloriesForm((current) => ({
+                    ...current,
+                    weightKg: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Distancia em km">
+              <TextInput
+                inputMode="decimal"
+                value={caloriesForm.distanceKm}
+                onChange={(event) =>
+                  setCaloriesForm((current) => ({
+                    ...current,
+                    distanceKm: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Tempo em min">
+              <TextInput
+                inputMode="decimal"
+                value={caloriesForm.timeMinutes}
+                onChange={(event) =>
+                  setCaloriesForm((current) => ({
+                    ...current,
+                    timeMinutes: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Altura em cm">
+              <TextInput
+                inputMode="decimal"
+                value={caloriesForm.heightCm}
+                onChange={(event) =>
+                  setCaloriesForm((current) => ({
+                    ...current,
+                    heightCm: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Idade">
+              <TextInput
+                inputMode="numeric"
+                value={caloriesForm.age}
+                onChange={(event) =>
+                  setCaloriesForm((current) => ({ ...current, age: event.target.value }))
+                }
+              />
+            </Field>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleRunning("calories")}
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-[#b5f03c] px-4 text-sm font-bold text-black"
+          >
+            <Activity size={15} />
+            Calcular
+          </button>
+          {caloriesResult && (
+            <ResultCards
+              items={[
+                {
+                  label: "Calorias da corrida",
+                  value:
+                    caloriesResult.runningCalories ??
+                    caloriesResult.calories ??
+                    caloriesResult.runCalories,
+                  suffix: " kcal",
+                },
+                {
+                  label: "TMB",
+                  value:
+                    caloriesResult.basalMetabolicRate ?? caloriesResult.bmr,
+                  suffix: " kcal",
+                },
+                {
+                  label: "Total basal + corrida",
+                  value:
+                    caloriesResult.totalCalories ??
+                    caloriesResult.totalBasalPlusRunning,
+                  suffix: " kcal",
+                },
+                {
+                  label: "Velocidade media",
+                  value:
+                    caloriesResult.averageSpeedKmh ??
+                    caloriesResult.speedKmh ??
+                    caloriesResult.speedKmH,
+                  suffix: " km/h",
+                },
+              ]}
+            />
+          )}
+        </section>
+      )}
+
+      {activeTab === "converter" && (
+        <section className="space-y-5 rounded-md border border-white/[0.06] bg-white/[0.015] p-4">
+          <SectionHeader
+            icon={Ruler}
+            title="Conversores"
+            subtitle="Converta quilometros e milhas pelo endpoint do backend."
+          />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Entrada">
+              <SelectInput
+                value={converterForm.mode}
+                onChange={(event) =>
+                  setConverterForm((current) => ({
+                    ...current,
+                    mode: event.target.value,
+                  }))
+                }
+              >
+                <option value="kilometers">Quilometros</option>
+                <option value="miles">Milhas</option>
+              </SelectInput>
+            </Field>
+            <Field label="Valor">
+              <TextInput
+                inputMode="decimal"
+                value={converterForm.value}
+                onChange={(event) =>
+                  setConverterForm((current) => ({
+                    ...current,
+                    value: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={() => handleRunning("converter")}
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-[#b5f03c] px-4 text-sm font-bold text-black"
+              >
+                <Ruler size={15} />
+                Converter
+              </button>
+            </div>
+          </div>
+          {converterResult && (
+            <ResultCards
+              items={[
+                {
+                  label: "Quilometros",
+                  value: converterResult.kilometers ?? converterResult.km,
+                  suffix: " km",
+                },
+                {
+                  label: "Milhas",
+                  value: converterResult.miles,
+                  suffix: " mi",
+                },
+              ]}
+            />
+          )}
+        </section>
       )}
     </div>
   );

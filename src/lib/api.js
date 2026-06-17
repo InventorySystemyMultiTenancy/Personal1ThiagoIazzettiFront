@@ -472,6 +472,51 @@ export async function createAssessment(payload, tenantId) {
   return response;
 }
 
+export async function calculatePhysicalAssessment(payload, tenantId) {
+  const response = await request("/calculators/physical-assessment", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.result || response?.data || response;
+}
+
+export async function calculateRunningPerformance(payload, tenantId) {
+  const response = await request("/calculators/running/performance", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.result || response?.data || response;
+}
+
+export async function calculateRunningPace(payload, tenantId) {
+  const response = await request("/calculators/running/pace", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.result || response?.data || response;
+}
+
+export async function calculateRunningCalories(payload, tenantId) {
+  const response = await request("/calculators/running/calories", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.result || response?.data || response;
+}
+
+export async function convertRunningDistance(payload, tenantId) {
+  const response = await request("/calculators/running/distance", {
+    method: "POST",
+    body: payload,
+    tenantId,
+  });
+  return response?.result || response?.data || response;
+}
+
 export async function deleteAssessment(id, tenantId) {
   const response = await request(`/assessments/${encodeURIComponent(id)}`, {
     method: "DELETE",

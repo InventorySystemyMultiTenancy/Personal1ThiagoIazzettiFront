@@ -82,6 +82,10 @@ export default function App() {
                   <Route path="/admin" element={<AdminDashboardPage />} />
                   <Route path="/admin/alunos" element={<AdminDashboardPage />} />
                   <Route
+                    path="/admin/calculadoras"
+                    element={<PhysicalAssessmentPage />}
+                  />
+                  <Route
                     path="/admin/avaliacao-fisica"
                     element={<PhysicalAssessmentPage />}
                   />
@@ -112,6 +116,10 @@ export default function App() {
 
                 <Route element={<RequireRole role="ALUNO" />}>
                   <Route path="/cliente" element={<ClientDashboardPage />} />
+                  <Route
+                    path="/cliente/calculadoras"
+                    element={<PhysicalAssessmentPage />}
+                  />
                   <Route
                     path="/cliente/avaliacao-fisica"
                     element={<PhysicalAssessmentPage />}

@@ -15,6 +15,7 @@ import {
   X,
   UserRound,
   Palette,
+  Calculator,
 } from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
 import SidebarLink from "./SidebarLink.jsx";
@@ -78,9 +79,9 @@ export default function AppLayout() {
       icon: UserRound,
     },
     {
-      label: t("NAV_PHYSICAL_ASSESSMENT_THIAGOIAZZETTI", "Avaliação Física"),
-      path: "admin/avaliacao-fisica",
-      icon: BarChart3,
+      label: t("NAV_CALCULATORS_THIAGOIAZZETTI", "Calculadoras"),
+      path: "admin/calculadoras",
+      icon: Calculator,
     },
   ];
 
@@ -111,9 +112,9 @@ export default function AppLayout() {
       icon: MessageSquare,
     },
     {
-      label: t("NAV_PHYSICAL_ASSESSMENT_THIAGOIAZZETTI", "Avaliação Física"),
-      path: "cliente/avaliacao-fisica",
-      icon: BarChart3,
+      label: t("NAV_CALCULATORS_THIAGOIAZZETTI", "Calculadoras"),
+      path: "cliente/calculadoras",
+      icon: Calculator,
     },
   ];
 
