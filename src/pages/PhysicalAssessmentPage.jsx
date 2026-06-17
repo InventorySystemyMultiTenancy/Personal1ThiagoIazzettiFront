@@ -3,7 +3,6 @@ import {
   Activity,
   Calculator,
   Camera,
-  Gauge,
   Ruler,
   Save,
   Timer,
@@ -13,7 +12,6 @@ import {
   ApiError,
   calculatePhysicalAssessment,
   calculateRunningCalories,
-  calculateRunningPace,
   calculateRunningPerformance,
   convertRunningDistance,
   createAssessment,
@@ -27,13 +25,11 @@ const BRAZIL_TIME_ZONE = "America/Sao_Paulo";
 const tabs = [
   { id: "physical", label: "Avaliacao fisica" },
   { id: "performance", label: "Corrida: desempenho" },
-  { id: "pace", label: "Corrida: ritmo" },
   { id: "calories", label: "Corrida: calorias" },
   { id: "converter", label: "Conversores" },
 ];
 
 const targetPerformanceDistances = [1000, 3000, 5000, 10000, 21096.84, 42200];
-const targetPaceDistances = [1000, 5000, 10000, 21097.5, 42195];
 
 function getTodayInBrazil() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -80,6 +76,19 @@ function formatDate(value) {
 function getErrorMessage(error) {
   if (error instanceof ApiError) return error.message;
   return error?.message || "Nao foi possivel concluir a operacao.";
+}
+
+function getCalculationMethodItems(method) {
+  if (!method) return [];
+
+  if (method === "US_NAVY_BODY_FAT_MIFFLIN_ST_JEOR_BMR") {
+    return [
+      { label: "Gordura corporal", value: "Marinha dos EUA" },
+      { label: "TMB", value: "Mifflin-St Jeor" },
+    ];
+  }
+
+  return [{ label: "Metodo", value: String(method).replaceAll("_", " ") }];
 }
 
 function normalizeRows(result) {
@@ -280,7 +289,6 @@ export default function PhysicalAssessmentPage() {
   const [assessments, setAssessments] = useState([]);
   const [physicalResult, setPhysicalResult] = useState(null);
   const [performanceResult, setPerformanceResult] = useState(null);
-  const [paceResult, setPaceResult] = useState(null);
   const [caloriesResult, setCaloriesResult] = useState(null);
   const [converterResult, setConverterResult] = useState(null);
   const [message, setMessage] = useState("");
@@ -301,10 +309,6 @@ export default function PhysicalAssessmentPage() {
   const [performanceForm, setPerformanceForm] = useState({
     distanceMeters: "3000",
     time: "00:15:15",
-  });
-  const [paceForm, setPaceForm] = useState({
-    distanceMeters: "5000",
-    time: "00:30:00",
   });
   const [caloriesForm, setCaloriesForm] = useState({
     sex: "M",
@@ -475,19 +479,6 @@ export default function PhysicalAssessmentPage() {
           targetDistancesMeters: targetPerformanceDistances,
         });
         setPerformanceResult(result);
-      }
-
-      if (kind === "pace") {
-        if (!paceForm.distanceMeters || !isValidTime(paceForm.time)) {
-          setMessage("Tempo aceita hh:mm:ss ou mm:ss.");
-          return;
-        }
-        const result = await calculateRunningPace({
-          distanceMeters: readNumber(paceForm.distanceMeters),
-          time: paceForm.time,
-          targetDistancesMeters: targetPaceDistances,
-        });
-        setPaceResult(result);
       }
 
       if (kind === "calories") {
@@ -736,7 +727,7 @@ export default function PhysicalAssessmentPage() {
                   value: physicalResult.basalMetabolicRate,
                   suffix: " kcal",
                 },
-                { label: "Metodo", value: physicalResult.calculationMethod },
+                ...getCalculationMethodItems(physicalResult.calculationMethod),
               ]}
             />
           )}
@@ -796,77 +787,6 @@ export default function PhysicalAssessmentPage() {
             </div>
           </div>
           <RunningTable result={performanceResult} />
-        </section>
-      )}
-
-      {activeTab === "pace" && (
-        <section className="space-y-5 rounded-md border border-white/[0.06] bg-white/[0.015] p-4">
-          <SectionHeader
-            icon={Gauge}
-            title="Corrida: ritmo"
-            subtitle="Calcule ritmo por km/milha e tempos equivalentes."
-          />
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Distancia em metros">
-              <TextInput
-                inputMode="decimal"
-                value={paceForm.distanceMeters}
-                onChange={(event) =>
-                  setPaceForm((current) => ({
-                    ...current,
-                    distanceMeters: event.target.value,
-                  }))
-                }
-              />
-            </Field>
-            <Field label="Tempo">
-              <TextInput
-                value={paceForm.time}
-                onChange={(event) =>
-                  setPaceForm((current) => ({
-                    ...current,
-                    time: event.target.value,
-                  }))
-                }
-              />
-            </Field>
-            <div className="flex items-end">
-              <button
-                type="button"
-                onClick={() => handleRunning("pace")}
-                className="inline-flex h-10 items-center gap-2 rounded-md bg-[#b5f03c] px-4 text-sm font-bold text-black"
-              >
-                <Gauge size={15} />
-                Calcular
-              </button>
-            </div>
-          </div>
-          {paceResult && (
-            <ResultCards
-              items={[
-                {
-                  label: "Ritmo por km",
-                  value:
-                    paceResult.pacePerKm ??
-                    paceResult.paceKm ??
-                    paceResult.pacePerKilometer,
-                },
-                {
-                  label: "Ritmo por milha",
-                  value: paceResult.pacePerMile ?? paceResult.paceMile,
-                },
-                {
-                  label: "Velocidade media",
-                  value:
-                    paceResult.averageSpeedKmh ??
-                    paceResult.speedKmh ??
-                    paceResult.speedKmH,
-                  suffix: " km/h",
-                },
-              ]}
-            />
-          )}
-          <RunningTable result={paceResult} />
         </section>
       )}
 
