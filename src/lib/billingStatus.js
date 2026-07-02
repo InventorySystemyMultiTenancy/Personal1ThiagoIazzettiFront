@@ -141,6 +141,18 @@ function getDueFallback(planDueDate) {
   };
 }
 
+function getOverdueDate(value) {
+  if (!value) return null;
+  const due = new Date(value);
+  if (Number.isNaN(due.getTime())) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+
+  return due < today ? value : null;
+}
+
 function buildMappedStatus(key, detail) {
   if (key === "paid") {
     return {
@@ -203,6 +215,18 @@ function buildMappedStatus(key, detail) {
 
 export function getBillingStatus(entity) {
   const subscription = getSubscriptionContainer(entity);
+  const planDueDate = firstDefinedValue([
+    entity?.planDueDate,
+    entity?.plan_due_date,
+    entity?.dueDate,
+    entity?.due_date,
+  ]);
+  const overduePlanDueDate = getOverdueDate(planDueDate);
+
+  if (overduePlanDueDate) {
+    return getDueFallback(overduePlanDueDate);
+  }
+
   const statusKey = toStatusKey(
     firstDefinedValue([
       entity?.paymentStatus,
@@ -248,7 +272,7 @@ export function getBillingStatus(entity) {
   else if (OVERDUE_STATUSES.has(statusKey)) resolvedKey = "overdue";
 
   if (!resolvedKey) {
-    return getDueFallback(entity?.planDueDate || subscription?.nextPaymentDate);
+    return getDueFallback(planDueDate || subscription?.nextPaymentDate);
   }
 
   let detail = "Status de cobrança atualizado pelo backend";
