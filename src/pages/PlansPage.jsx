@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Check, Crown, Image, Loader2, ShieldCheck, X } from "lucide-react";
 import RecurringSubscriptionForm from "../components/RecurringSubscriptionForm.jsx";
 import {
@@ -7,6 +7,7 @@ import {
   deleteStudentPlan,
   BILLING_INTERVAL_OPTIONS,
   formatCurrency,
+  getMyStudentProfile,
   getBillingIntervalSuffix,
   getPlanBillingIntervalMonths,
   isValidBillingIntervalMonths,
@@ -253,7 +254,36 @@ function PlanCard({ plan, onSelect, selected, actionLabel, t }) {
   );
 }
 
+function normalizeMatchValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function planMatchesTarget(plan, targetValues) {
+  if (targetValues.length === 0) {
+    return false;
+  }
+
+  const planValues = [
+    plan.id,
+    plan.name,
+    plan.recurringPlanId,
+    plan.preapproval_plan_id,
+    plan.preapprovalPlanId,
+    plan.alunoPlanId,
+    plan.aluno_plan_id,
+    plan.planId,
+    plan.plan_id,
+  ]
+    .map(normalizeMatchValue)
+    .filter(Boolean);
+
+  return planValues.some((value) => targetValues.includes(value));
+}
+
 export default function PlansPage({ mode = "public" }) {
+  const location = useLocation();
   const { t: rawT, locale } = useI18n();
   const t = useCallback(
     (key, fallback = "") => translatePlanPage(rawT, locale, key, fallback),
@@ -267,6 +297,7 @@ export default function PlansPage({ mode = "public" }) {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState("");
+  const checkoutRef = useRef(null);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -280,6 +311,15 @@ export default function PlansPage({ mode = "public" }) {
   const isAdminMode = mode === "admin";
   const recurringPersonalId =
     user?.personalId || import.meta.env.VITE_PERSONAL_ID || tenantId;
+  const paymentFocus = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+
+    return {
+      enabled: params.get("pagamento") === "1",
+      planId: params.get("planoId") || "",
+      planName: params.get("planoNome") || "",
+    };
+  }, [location.search]);
 
   useEffect(() => {
     let cancelled = false;
@@ -337,6 +377,88 @@ export default function PlansPage({ mode = "public" }) {
     () => plans.find((plan) => plan.id === selectedPlanId) || null,
     [plans, selectedPlanId],
   );
+
+  useEffect(() => {
+    if (
+      isAdminMode ||
+      !paymentFocus.enabled ||
+      !isClient ||
+      user?.role !== "ALUNO" ||
+      loading ||
+      plans.length === 0 ||
+      selectedPlanId
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const selectPaymentPlan = async () => {
+      const targetValues = [paymentFocus.planId, paymentFocus.planName]
+        .map(normalizeMatchValue)
+        .filter(Boolean);
+
+      if (targetValues.length === 0) {
+        try {
+          const profile = await getMyStudentProfile(tenantId);
+          const activePlan = profile?.alunoPlan || profile?.plan || null;
+          targetValues.push(
+            ...[
+              activePlan?.id,
+              activePlan?.name,
+              activePlan?.planId,
+              activePlan?.plan_id,
+              profile?.alunoPlanId,
+              profile?.planId,
+            ]
+              .map(normalizeMatchValue)
+              .filter(Boolean),
+          );
+        } catch {
+          /* Se nao der para resolver pelo perfil, usa o primeiro plano. */
+        }
+      }
+
+      const matchedPlan =
+        plans.find((plan) => planMatchesTarget(plan, targetValues)) || plans[0];
+
+      if (!cancelled && matchedPlan) {
+        setSelectedPlanId(matchedPlan.id);
+        setMessage(
+          `${t("PLANS_MESSAGE_PLAN_SELECTED_THIAGOIAZZETTI", "Plano")} ${matchedPlan.name} ${t("PLANS_MESSAGE_FILL_CARD_THIAGOIAZZETTI", "selecionado. Preencha os dados do cartÃ£o para concluir a assinatura.")}`,
+        );
+      }
+    };
+
+    selectPaymentPlan();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isAdminMode,
+    isClient,
+    loading,
+    paymentFocus.enabled,
+    paymentFocus.planId,
+    paymentFocus.planName,
+    plans,
+    selectedPlanId,
+    tenantId,
+    t,
+    user?.role,
+  ]);
+
+  useEffect(() => {
+    if (!paymentFocus.enabled || !selectedPlan || !checkoutRef.current) {
+      return;
+    }
+
+    checkoutRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [paymentFocus.enabled, selectedPlan]);
 
   const resetForm = () => {
     setEditingPlanId("");
@@ -775,16 +897,18 @@ export default function PlansPage({ mode = "public" }) {
       </section>
 
       {!isAdminMode && user?.role === "ALUNO" && selectedPlan ? (
-        <RecurringSubscriptionForm
-          key={selectedPlan.id}
-          plan={selectedPlan}
-          personalId={recurringPersonalId}
-          onSuccess={() => {
-            setMessage(
-              `${t("PLANS_SUBSCRIPTION_SUCCESS_PREFIX_THIAGOIAZZETTI", "Assinatura do plano")} ${selectedPlan.name} ${t("PLANS_SUBSCRIPTION_SUCCESS_SUFFIX_THIAGOIAZZETTI", "criada com sucesso.")}`,
-            );
-          }}
-        />
+        <div ref={checkoutRef}>
+          <RecurringSubscriptionForm
+            key={selectedPlan.id}
+            plan={selectedPlan}
+            personalId={recurringPersonalId}
+            onSuccess={() => {
+              setMessage(
+                `${t("PLANS_SUBSCRIPTION_SUCCESS_PREFIX_THIAGOIAZZETTI", "Assinatura do plano")} ${selectedPlan.name} ${t("PLANS_SUBSCRIPTION_SUCCESS_SUFFIX_THIAGOIAZZETTI", "criada com sucesso.")}`,
+              );
+            }}
+          />
+        </div>
       ) : null}
 
       {!isAdminMode && (!user || user.role !== "ALUNO") ? (

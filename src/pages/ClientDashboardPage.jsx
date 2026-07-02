@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarDays,
   CircleDollarSign,
@@ -96,6 +96,7 @@ export default function ClientDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
+  const navigate = useNavigate();
   const { tenantId } = useTenant();
   const { t, locale } = useI18n();
 
@@ -164,6 +165,20 @@ export default function ClientDashboardPage() {
       timeStyle: "short",
       timeZone: "America/Sao_Paulo",
     }).format(date);
+  };
+
+  const handleOpenPaymentArea = () => {
+    const params = new URLSearchParams({ pagamento: "1" });
+
+    if (activePlan?.id) {
+      params.set("planoId", activePlan.id);
+    }
+
+    if (activePlan?.name) {
+      params.set("planoNome", activePlan.name);
+    }
+
+    navigate(`/cliente/planos?${params.toString()}`);
   };
 
   const handleEventResponse = async (eventId, status) => {
@@ -252,8 +267,11 @@ export default function ClientDashboardPage() {
                 <Sparkles className="text-[#b5f03c]" />
               </div>
 
-              <div
-                className={`mt-5 rounded-2xl border px-4 py-4 ${billingStatus.cardClass}`}
+              <button
+                type="button"
+                onClick={handleOpenPaymentArea}
+                className={`mt-5 w-full rounded-2xl border px-4 py-4 text-left transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[#b5f03c]/45 ${billingStatus.cardClass}`}
+                aria-label={`${billingStatus.label}. Ir para pagamento`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -278,7 +296,7 @@ export default function ClientDashboardPage() {
                     {billingStatus.shortLabel}
                   </span>
                 </div>
-              </div>
+              </button>
             </article>
 
             <article className="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-6">
@@ -332,8 +350,11 @@ export default function ClientDashboardPage() {
           </section>
 
           <section className="grid gap-4 md:grid-cols-3">
-            <article
-              className={`rounded-[1.5rem] border p-5 ${billingStatus.cardClass}`}
+            <button
+              type="button"
+              onClick={handleOpenPaymentArea}
+              className={`rounded-[1.5rem] border p-5 text-left transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[#b5f03c]/45 ${billingStatus.cardClass}`}
+              aria-label={`${billingStatus.shortLabel}. Ir para pagamento`}
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -348,7 +369,7 @@ export default function ClientDashboardPage() {
                 </div>
                 <CircleDollarSign className={billingStatus.accentClass} />
               </div>
-            </article>
+            </button>
 
             <article className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
               <p className="text-xs uppercase tracking-[0.2em] text-white/45">
