@@ -103,10 +103,7 @@ function getDueFallback(planDueDate) {
     };
   }
 
-  const diffMs = due.getTime() - now.getTime();
-  const days = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
-
-  if (days < 0) {
+  if (getOverdueDate(planDueDate)) {
     return {
       key: "overdue",
       label: "Mensalidade em atraso",
@@ -117,6 +114,9 @@ function getDueFallback(planDueDate) {
       accentClass: "text-red-200",
     };
   }
+
+  const diffMs = due.getTime() - now.getTime();
+  const days = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
 
   if (days <= 6) {
     return {
@@ -215,16 +215,22 @@ function buildMappedStatus(key, detail) {
 
 export function getBillingStatus(entity) {
   const subscription = getSubscriptionContainer(entity);
-  const planDueDate = firstDefinedValue([
+  const billingDueDate = firstDefinedValue([
     entity?.planDueDate,
     entity?.plan_due_date,
     entity?.dueDate,
     entity?.due_date,
+    entity?.nextChargeAt,
+    entity?.nextBillingDate,
+    subscription?.nextChargeAt,
+    subscription?.next_charge_at,
+    subscription?.nextPaymentDate,
+    subscription?.next_payment_date,
   ]);
-  const overduePlanDueDate = getOverdueDate(planDueDate);
+  const overdueBillingDueDate = getOverdueDate(billingDueDate);
 
-  if (overduePlanDueDate) {
-    return getDueFallback(overduePlanDueDate);
+  if (overdueBillingDueDate) {
+    return getDueFallback(overdueBillingDueDate);
   }
 
   const statusKey = toStatusKey(
@@ -257,7 +263,7 @@ export function getBillingStatus(entity) {
   const nextChargeAt = firstDateValue([
     entity?.nextChargeAt,
     entity?.nextBillingDate,
-    entity?.planDueDate,
+    billingDueDate,
     subscription?.nextChargeAt,
     subscription?.nextPaymentDate,
     subscription?.next_payment_date,
@@ -272,7 +278,7 @@ export function getBillingStatus(entity) {
   else if (OVERDUE_STATUSES.has(statusKey)) resolvedKey = "overdue";
 
   if (!resolvedKey) {
-    return getDueFallback(planDueDate || subscription?.nextPaymentDate);
+    return getDueFallback(billingDueDate || subscription?.nextPaymentDate);
   }
 
   let detail = "Status de cobrança atualizado pelo backend";
