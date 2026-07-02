@@ -706,7 +706,13 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
               </div>
             ) : null}
 
-            {pixQrCodeBase64 ? (
+            {pixExpired ? (
+              <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-sm leading-7 text-amber-100">
+                Esta cobranÃ§a PIX expirou. Gere uma nova cobranÃ§a para pagar com um QR Code vÃ¡lido.
+              </div>
+            ) : null}
+
+            {pixQrCodeBase64 && !pixExpired ? (
               <div className="flex flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white p-5 text-black">
                 <img
                   src={pixQrImageSrc}
@@ -719,7 +725,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
               </div>
             ) : null}
 
-            {pixQrCode ? (
+            {pixQrCode && !pixExpired ? (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/35">
@@ -740,7 +746,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
               </div>
             ) : null}
 
-            {pixExpiresAt ? (
+            {pixExpiresAt && !pixExpired ? (
               <div
                 className={`rounded-2xl border px-4 py-3 text-sm ${
                   pixExpired
