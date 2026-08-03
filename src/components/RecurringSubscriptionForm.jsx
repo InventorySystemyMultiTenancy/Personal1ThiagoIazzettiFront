@@ -146,6 +146,7 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   const sdkStateRef = useRef("idle");
   const redirectTimeoutRef = useRef(null);
   const pollingIntervalRef = useRef(null);
+  const pixResultRef = useRef(null);
   const [studentProfile, setStudentProfile] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [sdkState, setSdkState] = useState("idle");
@@ -209,6 +210,18 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   useEffect(() => {
     sdkStateRef.current = sdkState;
   }, [sdkState]);
+
+  useEffect(() => {
+    // O QR Code aparece acima do botão que acabou de ser tocado, então sem
+    // rolar até ele o usuário no celular só veria o botão "sumir" e nada
+    // parecer ter acontecido.
+    if (pixQrCodeBase64 && pixResultRef.current) {
+      pixResultRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [pixQrCodeBase64]);
 
   useEffect(() => {
     return () => {
@@ -708,12 +721,15 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
 
             {pixExpired ? (
               <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-sm leading-7 text-amber-100">
-                Esta cobranÃ§a PIX expirou. Gere uma nova cobranÃ§a para pagar com um QR Code vÃ¡lido.
+                Esta cobrança PIX expirou. Gere uma nova cobrança para pagar com um QR Code válido.
               </div>
             ) : null}
 
             {pixQrCodeBase64 && !pixExpired ? (
-              <div className="flex flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white p-5 text-black">
+              <div
+                ref={pixResultRef}
+                className="flex flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white p-5 text-black"
+              >
                 <img
                   src={pixQrImageSrc}
                   alt="QR Code PIX"
@@ -747,18 +763,13 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
             ) : null}
 
             {pixExpiresAt && !pixExpired ? (
-              <div
-                className={`rounded-2xl border px-4 py-3 text-sm ${
-                  pixExpired
-                    ? "border-amber-400/30 bg-amber-500/10 text-amber-100"
-                    : "border-white/10 bg-white/5 text-white/70"
-                }`}
-              >
-                {pixExpired
-                  ? "Esta cobrança PIX expirou."
-                  : `Expira em ${String(pixMinutesLeft).padStart(2, "0")}:${String(
-                      pixSecondsLeft,
-                    ).padStart(2, "0")} (${formatExpirationTime(pixExpiresAt)}).`}
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/70">
+                Expira em{" "}
+                <span className="font-title text-lg text-[#b5f03c]">
+                  {String(pixMinutesLeft).padStart(2, "0")}:
+                  {String(pixSecondsLeft).padStart(2, "0")}
+                </span>{" "}
+                ({formatExpirationTime(pixExpiresAt)})
               </div>
             ) : null}
 
@@ -807,6 +818,20 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                 </button>
               ) : null}
             </div>
+
+            {pixFeedback ? (
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm ${
+                  pixState === "success"
+                    ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
+                    : pixState === "error"
+                      ? "border-red-400/30 bg-red-500/10 text-red-100"
+                      : "border-white/10 bg-black/20 text-white/70"
+                }`}
+              >
+                {pixFeedback}
+              </div>
+            ) : null}
           </div>
         ) : (
           <form id={formPrefix} className="space-y-4 rounded-3xl border border-white/10 bg-black/20 p-5">
@@ -854,6 +879,9 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                 >
                   <option value="">Selecione</option>
                 </select>
+                <span className="mt-1 block text-xs text-white/40">
+                  Preenchido automaticamente após digitar o cartão
+                </span>
               </label>
 
               <label className="text-sm text-white/70">
@@ -865,6 +893,9 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                 >
                   <option value="">Selecione</option>
                 </select>
+                <span className="mt-1 block text-xs text-white/40">
+                  Preenchido automaticamente após digitar o cartão
+                </span>
               </label>
 
               <label className="text-sm text-white/70">
@@ -917,6 +948,20 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
                 </>
               )}
             </button>
+
+            {effectiveFeedback ? (
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm ${
+                  effectiveState === "success"
+                    ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
+                    : effectiveState === "error"
+                      ? "border-red-400/30 bg-red-500/10 text-red-100"
+                      : "border-white/10 bg-black/20 text-white/70"
+                }`}
+              >
+                {effectiveFeedback}
+              </div>
+            ) : null}
           </form>
         )}
 
@@ -956,34 +1001,6 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
           {shouldShowRecurringPlanWarning ? (
             <div className="rounded-2xl border border-amber-400/25 bg-amber-500/10 p-4 text-sm text-amber-100">
               {missingRecurringPlanWarning}
-            </div>
-          ) : null}
-
-          {paymentMethod === "pix" && pixFeedback ? (
-            <div
-              className={`rounded-2xl border px-4 py-3 text-sm ${
-                pixState === "success"
-                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
-                  : pixState === "error"
-                    ? "border-red-400/30 bg-red-500/10 text-red-100"
-                    : "border-white/10 bg-black/20 text-white/70"
-              }`}
-            >
-              {pixFeedback}
-            </div>
-          ) : null}
-
-          {paymentMethod === "card" && effectiveFeedback ? (
-            <div
-              className={`rounded-2xl border px-4 py-3 text-sm ${
-                effectiveState === "success"
-                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
-                  : effectiveState === "error"
-                    ? "border-red-400/30 bg-red-500/10 text-red-100"
-                    : "border-white/10 bg-black/20 text-white/70"
-              }`}
-            >
-              {effectiveFeedback}
             </div>
           ) : null}
 

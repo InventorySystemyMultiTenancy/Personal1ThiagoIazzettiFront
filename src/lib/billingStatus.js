@@ -44,6 +44,10 @@ const OVERDUE_STATUSES = new Set([
   "chargeback",
 ]);
 
+// PIX não é cobrança recorrente automática: passado esse número de dias em
+// atraso, tratamos o plano como suspenso por falta de pagamento.
+const SUSPENDED_AFTER_DAYS_OVERDUE = 30;
+
 function toStatusKey(value) {
   if (!value) return "";
   return String(value).trim().toLowerCase().replace(/\s+/g, "_");
@@ -71,11 +75,52 @@ function getSubscriptionContainer(entity) {
     entity.paymentSubscription ||
     entity.preapproval ||
     entity.latestSubscription ||
+    (Array.isArray(entity.alunoSubscriptions)
+      ? entity.alunoSubscriptions[0]
+      : null) ||
     null
   );
 }
 
-function getDueFallback(planDueDate) {
+function getPaymentMethod(entity, subscription) {
+  const raw = firstDefinedValue([
+    subscription?.payment_method,
+    subscription?.paymentMethod,
+    entity?.payment_method,
+    entity?.paymentMethod,
+  ]);
+
+  return raw ? String(raw).trim().toLowerCase() : "";
+}
+
+function getDaysOverdue(value) {
+  if (!value) return 0;
+  const due = new Date(value);
+  if (Number.isNaN(due.getTime())) return 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+
+  return Math.round((today.getTime() - due.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+function getSuspendedStatus(planDueDate, paymentMethod, daysOverdue) {
+  return {
+    key: "suspended",
+    label: "Plano suspenso - pagamento pendente",
+    shortLabel: "Suspenso",
+    detail:
+      paymentMethod === "pix"
+        ? `PIX não pago há ${daysOverdue} dias. Gere uma nova cobrança para reativar o plano.`
+        : `Pagamento pendente há ${daysOverdue} dias. Vencimento: ${formatDate(planDueDate)}`,
+    badgeClass: "border-red-700/60 bg-red-950/50 text-red-200",
+    cardClass: "border-red-700/50 bg-[rgba(69,10,10,0.35)]",
+    accentClass: "text-red-300",
+  };
+}
+
+function getDueFallback(planDueDate, paymentMethod = "") {
   if (!planDueDate) {
     return {
       key: "unknown",
@@ -104,11 +149,20 @@ function getDueFallback(planDueDate) {
   }
 
   if (getOverdueDate(planDueDate)) {
+    const daysOverdue = getDaysOverdue(planDueDate);
+
+    if (daysOverdue >= SUSPENDED_AFTER_DAYS_OVERDUE) {
+      return getSuspendedStatus(planDueDate, paymentMethod, daysOverdue);
+    }
+
     return {
       key: "overdue",
       label: "Mensalidade em atraso",
       shortLabel: "Em atraso",
-      detail: `Venceu em ${formatDate(planDueDate)}`,
+      detail:
+        paymentMethod === "pix"
+          ? `PIX venceu em ${formatDate(planDueDate)}. Gere uma nova cobrança para regularizar.`
+          : `Venceu em ${formatDate(planDueDate)}`,
       badgeClass: "border-red-500/45 bg-red-500/20 text-red-200",
       cardClass: "border-red-500/35 bg-[rgba(127,29,29,0.24)]",
       accentClass: "text-red-200",
@@ -123,7 +177,10 @@ function getDueFallback(planDueDate) {
       key: "pending",
       label: "Vencimento proximo",
       shortLabel: "Vence em breve",
-      detail: `Proximo vencimento em ${formatDate(planDueDate)}`,
+      detail:
+        paymentMethod === "pix"
+          ? `Pague o PIX até ${formatDate(planDueDate)} para manter o plano ativo.`
+          : `Proximo vencimento em ${formatDate(planDueDate)}`,
       badgeClass: "border-amber-400/45 bg-amber-400/15 text-amber-200",
       cardClass: "border-amber-400/35 bg-[rgba(120,53,15,0.24)]",
       accentClass: "text-amber-200",
@@ -215,6 +272,7 @@ function buildMappedStatus(key, detail) {
 
 export function getBillingStatus(entity) {
   const subscription = getSubscriptionContainer(entity);
+  const paymentMethod = getPaymentMethod(entity, subscription);
   const billingDueDate = firstDefinedValue([
     entity?.planDueDate,
     entity?.plan_due_date,
@@ -230,7 +288,7 @@ export function getBillingStatus(entity) {
   const overdueBillingDueDate = getOverdueDate(billingDueDate);
 
   if (overdueBillingDueDate) {
-    return getDueFallback(overdueBillingDueDate);
+    return getDueFallback(overdueBillingDueDate, paymentMethod);
   }
 
   const statusKey = toStatusKey(
@@ -278,7 +336,7 @@ export function getBillingStatus(entity) {
   else if (OVERDUE_STATUSES.has(statusKey)) resolvedKey = "overdue";
 
   if (!resolvedKey) {
-    return getDueFallback(billingDueDate || subscription?.nextPaymentDate);
+    return getDueFallback(billingDueDate || subscription?.nextPaymentDate, paymentMethod);
   }
 
   let detail = "Status de cobrança atualizado pelo backend";

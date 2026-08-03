@@ -425,7 +425,7 @@ export default function PlansPage({ mode = "public" }) {
       if (!cancelled && matchedPlan) {
         setSelectedPlanId(matchedPlan.id);
         setMessage(
-          `${t("PLANS_MESSAGE_PLAN_SELECTED_THIAGOIAZZETTI", "Plano")} ${matchedPlan.name} ${t("PLANS_MESSAGE_FILL_CARD_THIAGOIAZZETTI", "selecionado. Preencha os dados do cartÃ£o para concluir a assinatura.")}`,
+          `${t("PLANS_MESSAGE_PLAN_SELECTED_THIAGOIAZZETTI", "Plano")} ${matchedPlan.name} ${t("PLANS_MESSAGE_FILL_CARD_THIAGOIAZZETTI", "selecionado. Escolha PIX ou cartão abaixo para concluir a assinatura.")}`,
         );
       }
     };
@@ -450,15 +450,18 @@ export default function PlansPage({ mode = "public" }) {
   ]);
 
   useEffect(() => {
-    if (!paymentFocus.enabled || !selectedPlan || !checkoutRef.current) {
+    if (!selectedPlan || !checkoutRef.current) {
       return;
     }
 
+    // Sempre rola até o checkout ao selecionar um plano (não só quando vem
+    // via link com ?pagamento=1), senão no mobile o formulário some abaixo
+    // da dobra e parece que nada aconteceu ao tocar em "Selecionar plano".
     checkoutRef.current.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
-  }, [paymentFocus.enabled, selectedPlan]);
+  }, [selectedPlan]);
 
   const resetForm = () => {
     setEditingPlanId("");
@@ -499,7 +502,7 @@ export default function PlansPage({ mode = "public" }) {
 
     setSelectedPlanId(plan.id);
     setMessage(
-      `${t("PLANS_MESSAGE_PLAN_SELECTED_THIAGOIAZZETTI", "Plano")} ${plan.name} ${t("PLANS_MESSAGE_FILL_CARD_THIAGOIAZZETTI", "selecionado. Preencha os dados do cartão para concluir a assinatura.")}`,
+      `${t("PLANS_MESSAGE_PLAN_SELECTED_THIAGOIAZZETTI", "Plano")} ${plan.name} ${t("PLANS_MESSAGE_FILL_CARD_THIAGOIAZZETTI", "selecionado. Escolha PIX ou cartão abaixo para concluir a assinatura.")}`,
     );
   };
 

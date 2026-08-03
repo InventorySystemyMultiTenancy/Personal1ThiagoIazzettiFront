@@ -5,6 +5,12 @@ function replacePrefix(text, prefix, replacement) {
   return `${replacement}${text.slice(prefix.length)}`;
 }
 
+function replacePattern(text, regex, buildReplacement) {
+  const match = text && text.match(regex);
+  if (!match) return null;
+  return buildReplacement(match);
+}
+
 export function localizeBillingStatus(status, locale) {
   if (!status) return status;
 
@@ -21,6 +27,7 @@ export function localizeBillingStatus(status, locale) {
     paused: "Subscription paused",
     canceled: "Subscription canceled",
     overdue: "Unpaid monthly fee",
+    suspended: "Suspended plan - payment pending",
     unknown: "No status",
   };
 
@@ -30,6 +37,7 @@ export function localizeBillingStatus(status, locale) {
     paused: "Paused",
     canceled: "Canceled",
     overdue: "Unpaid",
+    suspended: "Suspended",
     unknown: "No status",
   };
 
@@ -57,6 +65,27 @@ export function localizeBillingStatus(status, locale) {
     ) ||
     replacePrefix(detail, "Venceu em ", "Expired on ") ||
     replacePrefix(detail, "Proximo vencimento em ", "Next due date on ") ||
+    replacePattern(
+      detail,
+      /^PIX não pago há (\d+) dias\. Gere uma nova cobrança para reativar o plano\.$/,
+      (m) =>
+        `PIX unpaid for ${m[1]} days. Generate a new charge to reactivate the plan.`,
+    ) ||
+    replacePattern(
+      detail,
+      /^Pagamento pendente há (\d+) dias\. Vencimento: (.+)$/,
+      (m) => `Payment pending for ${m[1]} days. Due date: ${m[2]}`,
+    ) ||
+    replacePattern(
+      detail,
+      /^PIX venceu em (.+)\. Gere uma nova cobrança para regularizar\.$/,
+      (m) => `PIX expired on ${m[1]}. Generate a new charge to catch up.`,
+    ) ||
+    replacePattern(
+      detail,
+      /^Pague o PIX até (.+) para manter o plano ativo\.$/,
+      (m) => `Pay the PIX by ${m[1]} to keep the plan active.`,
+    ) ||
     (detail === "Aguardando confirmação da cobrança"
       ? "Awaiting billing confirmation"
       : null) ||

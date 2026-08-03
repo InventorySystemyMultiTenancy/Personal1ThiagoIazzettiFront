@@ -1079,6 +1079,9 @@ export default function AdminDashboardPage() {
               const overdue = students.filter(
                 (s) => getBillingStatus(s).key === "overdue",
               ).length;
+              const suspended = students.filter(
+                (s) => getBillingStatus(s).key === "suspended",
+              ).length;
               const total = students.length;
               return (
                 <article className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 sm:rounded-2xl sm:p-5">
@@ -1098,8 +1101,12 @@ export default function AdminDashboardPage() {
                       style={{ width: `${(pending / total) * 100}%` }}
                     />
                     <div
-                      className="h-full rounded-r-full bg-red-400 transition-all"
+                      className="h-full bg-red-400 transition-all"
                       style={{ width: `${(overdue / total) * 100}%` }}
+                    />
+                    <div
+                      className="h-full rounded-r-full bg-red-700 transition-all"
+                      style={{ width: `${(suspended / total) * 100}%` }}
                     />
                   </div>
                   <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[10px] text-white/50 sm:gap-5 sm:text-xs">
@@ -1116,6 +1123,14 @@ export default function AdminDashboardPage() {
                       <span className="h-2 w-2 rounded-full bg-red-400" />
                       {overdue}{" "}
                       {t("ADMIN_DASH_OVERDUE_THIAGOIAZZETTI", "atrasados")}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-red-700" />
+                      {suspended}{" "}
+                      {t(
+                        "ADMIN_DASH_SUSPENDED_THIAGOIAZZETTI",
+                        "suspensos",
+                      )}
                     </span>
                   </div>
                 </article>
@@ -1744,6 +1759,15 @@ export default function AdminDashboardPage() {
                 </span>
               </h2>
               <div className="flex gap-4 text-xs text-white/35">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-700" />
+                  {
+                    students.filter(
+                      (s) => getBillingStatus(s).key === "suspended",
+                    ).length
+                  }{" "}
+                  {t("ADMIN_DASH_SUSPENDED_THIAGOIAZZETTI", "suspensos")}
+                </span>
                 <span className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
                   {
