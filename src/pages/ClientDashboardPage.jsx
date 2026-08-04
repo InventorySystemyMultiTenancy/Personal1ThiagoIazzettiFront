@@ -14,6 +14,7 @@ import {
 import {
   formatDate,
   getMyStudentProfile,
+  getRecurringSubscription,
   listMyPersonalEvents,
   listMyMessages,
   respondPersonalEvent,
@@ -95,6 +96,7 @@ export default function ClientDashboardPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const reconciledPixRef = useRef(false);
 
   const navigate = useNavigate();
   const { tenantId } = useTenant();
@@ -139,6 +141,50 @@ export default function ClientDashboardPage() {
       cancelled = true;
     };
   }, [tenantId]);
+
+  useEffect(() => {
+    // Se o app ficou sabendo de uma cobrança PIX que ainda não foi
+    // confirmada localmente (webhook atrasado/perdido, por exemplo), essa
+    // é a tela que mais gera confusão: o aluno pagou mas continua vendo
+    // "pendente"/"em atraso" aqui. Confere direto com o Mercado Pago uma
+    // vez por sessão e, se já tiver sido pago, atualiza o card sozinho.
+    if (!profile || reconciledPixRef.current) {
+      return;
+    }
+
+    const latestSubscription = Array.isArray(profile.alunoSubscriptions)
+      ? profile.alunoSubscriptions[0]
+      : null;
+
+    if (
+      !latestSubscription ||
+      latestSubscription.payment_method !== "pix" ||
+      latestSubscription.status === "canceled" ||
+      latestSubscription.status === "authorized"
+    ) {
+      return;
+    }
+
+    reconciledPixRef.current = true;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        await getRecurringSubscription(latestSubscription.id, tenantId);
+        if (cancelled) return;
+        const refreshed = await getMyStudentProfile(tenantId);
+        if (!cancelled) {
+          setProfile(refreshed);
+        }
+      } catch {
+        // Silencioso: se a checagem falhar, mantém o status já exibido.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile, tenantId]);
 
   const workoutPlans = useMemo(() => profile?.workoutPlans || [], [profile]);
   const activePlan = profile?.alunoPlan || null;

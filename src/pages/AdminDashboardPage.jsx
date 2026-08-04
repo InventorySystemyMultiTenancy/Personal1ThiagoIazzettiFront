@@ -15,6 +15,7 @@ import {
   Trash2,
   Send,
   ChevronLeft,
+  RefreshCw,
 } from "lucide-react";
 import {
   createStudent,
@@ -24,6 +25,7 @@ import {
   formatDate,
   getBillingIntervalSuffix,
   getPlanBillingIntervalMonths,
+  getRecurringSubscription,
   isValidBillingIntervalMonths,
   listAgendaEvents,
   deleteAgendaEvent,
@@ -271,6 +273,7 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState("visao-geral");
   const [editingStudentId, setEditingStudentId] = useState("");
   const [deletingStudentId, setDeletingStudentId] = useState("");
+  const [checkingPaymentId, setCheckingPaymentId] = useState("");
   const [editingPlanId, setEditingPlanId] = useState("");
   const [deletingPlanId, setDeletingPlanId] = useState("");
   const [editStudentForm, setEditStudentForm] = useState({
@@ -892,6 +895,34 @@ export default function AdminDashboardPage() {
       );
     } finally {
       setDeletingStudentId("");
+    }
+  };
+
+  const handleCheckPixPayment = async (student) => {
+    const latestSubscription = Array.isArray(student.alunoSubscriptions)
+      ? student.alunoSubscriptions[0]
+      : null;
+
+    if (!latestSubscription?.id) return;
+
+    setCheckingPaymentId(student.id);
+    try {
+      // Confere direto com o Mercado Pago em vez de confiar só no status
+      // salvo no banco: se o webhook de confirmação atrasou ou se perdeu, a
+      // cobrança pode já estar paga sem o app saber disso ainda. Passa o
+      // aluno_id explicitamente porque quem está chamando é o personal, não
+      // o próprio aluno autenticado.
+      await getRecurringSubscription(latestSubscription.id, tenantId, student.id);
+      const refreshedStudents = await listStudents(tenantId);
+      setStudents(Array.isArray(refreshedStudents) ? refreshedStudents : []);
+      setMessage(`Status de pagamento de ${student.fullName} verificado.`);
+    } catch (error) {
+      setMessage(
+        error?.message ||
+          `Não foi possível verificar o pagamento de ${student.fullName}.`,
+      );
+    } finally {
+      setCheckingPaymentId("");
     }
   };
 
@@ -1853,6 +1884,28 @@ export default function AdminDashboardPage() {
                           <span className="text-[10px] text-white/30">
                             {billingStatus.detail}
                           </span>
+                          {student.alunoSubscriptions?.[0]?.payment_method ===
+                            "pix" &&
+                          billingStatus.key !== "paid" &&
+                          billingStatus.key !== "canceled" ? (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleCheckPixPayment(student);
+                              }}
+                              disabled={checkingPaymentId === student.id}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#b5f03c]/30 px-2.5 py-1.5 text-[10px] font-semibold text-[#b5f03c] transition hover:bg-[#b5f03c]/10 disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Verificar pagamento PIX direto no Mercado Pago"
+                            >
+                              {checkingPaymentId === student.id ? (
+                                <Loader2 size={13} className="animate-spin" />
+                              ) : (
+                                <RefreshCw size={13} />
+                              )}
+                              Verificar pagamento
+                            </button>
+                          ) : null}
                           <button
                             type="button"
                             onClick={(event) => {

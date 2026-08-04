@@ -277,6 +277,48 @@ export default function RecurringSubscriptionForm({ plan, personalId, onSuccess 
   }, [tenantId, user?.role]);
 
   useEffect(() => {
+    // Reconcilia com o Mercado Pago assim que carrega o perfil, ao invés de
+    // começar do zero: se o aluno já tinha uma cobrança PIX (paga ou não) e
+    // o app não sabe disso — por exemplo, o webhook de confirmação atrasou
+    // ou se perdeu —, isso evita mostrar "Gerar cobrança PIX" como se nada
+    // tivesse acontecido, e corrige sozinho o status "pendente" desatualizado.
+    if (!studentProfile || pixSubscription) {
+      return;
+    }
+
+    const latestSubscription = Array.isArray(studentProfile.alunoSubscriptions)
+      ? studentProfile.alunoSubscriptions[0]
+      : null;
+
+    if (!latestSubscription || latestSubscription.payment_method !== "pix") {
+      return;
+    }
+
+    if (latestSubscription.status === "canceled") {
+      return;
+    }
+
+    const relevantPlanId = getAlunoPlanId(plan) || plan?.id;
+    if (
+      relevantPlanId &&
+      latestSubscription.alunoPlanId &&
+      latestSubscription.alunoPlanId !== relevantPlanId
+    ) {
+      return;
+    }
+
+    refreshPixStatus(latestSubscription.id, { silent: true }).then(
+      (result) => {
+        const status = result?.subscription?.status;
+        if (status && status !== "authorized") {
+          startPixPolling(latestSubscription.id);
+        }
+      },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentProfile]);
+
+  useEffect(() => {
     if (paymentMethod !== "card" || sdkConfigError) {
       return undefined;
     }

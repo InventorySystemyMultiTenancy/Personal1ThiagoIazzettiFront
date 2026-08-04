@@ -351,9 +351,10 @@ export async function renewPixRecurringSubscription(
   return response?.data || response;
 }
 
-export async function getRecurringSubscription(subscriptionId, tenantId) {
+export async function getRecurringSubscription(subscriptionId, tenantId, alunoId) {
+  const query = alunoId ? `?aluno_id=${encodeURIComponent(alunoId)}` : "";
   const response = await request(
-    `/payments/recurring/subscriptions/${subscriptionId}`,
+    `/payments/recurring/subscriptions/${subscriptionId}${query}`,
     { tenantId },
   );
 
